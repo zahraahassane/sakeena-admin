@@ -1209,11 +1209,6 @@ export const {
   useGetLessonQuizzesQuery,
   useGetLessonAssignmentsQuery,
   useGetCourseReviewsQuery,
-  useGetAssignmentSubmissionsQuery,
-  useReviewAssignmentSubmissionMutation,
-  useGetConsultationsQuery,
-  useGetConsultationCalendarQuery,
-  useGetConsultationTimeslotsQuery,
   useGetTeacherUpcomingSessionsQuery,
   useGetTeacherLiveSessionsQuery,
 } = adminApi;
