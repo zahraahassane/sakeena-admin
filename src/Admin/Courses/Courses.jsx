@@ -15,6 +15,7 @@ import {
   Filter,
   Trash2,
 } from "lucide-react";
+import { toast } from "react-hot-toast";
 import {
   useGetCoursesDataQuery,
   useGetCourseCategoriesQuery,
@@ -24,6 +25,7 @@ import {
 import AddEditCourse from "./AddEditCourse";
 import CourseBuilder from "./CourseBuilder";
 import LiveSessions from "./LiveSessions";
+import Pagination from "../../components/Pagination";
 
 const Courses = () => {
   const [viewMode, setViewMode] = useState("grid");
@@ -39,8 +41,9 @@ const Courses = () => {
   const [courseToEdit, setCourseToEdit] = useState(null);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
-  const { data: apiResponse, isLoading, isError } = useGetCoursesDataQuery();
+  const { data: apiResponse, isLoading, isError } = useGetCoursesDataQuery(currentPage);
   const { data: categoriesResponse } = useGetCourseCategoriesQuery();
   const [addCategory] = useAddCourseCategoryMutation();
   const [deleteCategory] = useDeleteCourseCategoryMutation();
@@ -112,14 +115,58 @@ const Courses = () => {
 
   const handleDeleteCategory = async (id, e) => {
     e.stopPropagation();
-    try {
-      await deleteCategory(id).unwrap();
-      if (selectedCategory === id.toString()) {
-        setSelectedCategory("");
+    toast(
+      (t) => (
+        <div className="flex items-center gap-4 p-1">
+          <div className="flex-1">
+            <p className="text-sm font-bold text-neutral-800 inter-font">
+              Confirm Delete
+            </p>
+            <p className="text-xs text-neutral-500 mt-0.5">
+              Are you sure you want to remove this category?
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => toast.dismiss(t.id)}
+              className="px-3 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={async () => {
+                toast.dismiss(t.id);
+                try {
+                  await deleteCategory(id).unwrap();
+                  toast.success("Category deleted");
+                  if (selectedCategory === id.toString()) {
+                    setSelectedCategory("");
+                  }
+                } catch (err) {
+                  console.error("Failed to delete category:", err);
+                  const errorMsg = err?.data?.detail || "Failed to delete category";
+                  toast.error(errorMsg);
+                }
+              }}
+              className="px-3 py-1.5 text-xs font-medium bg-red-500 text-white hover:bg-red-600 rounded-lg transition-colors shadow-sm"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      ),
+      {
+        duration: 5000,
+        position: "top-center",
+        style: {
+          minWidth: "350px",
+          borderRadius: "16px",
+          border: "1px solid rgba(0,0,0,0.05)",
+          boxShadow:
+            "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
+        },
       }
-    } catch (err) {
-      console.error("Failed to delete category:", err);
-    }
+    );
   };
 
   const handleSaveCourse = (formData) => {
@@ -625,6 +672,16 @@ const Courses = () => {
               </table>
             </div>
           )}
+          <div className="mt-8 border-t border-black/5 pt-4">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={apiResponse?.total_pages || 1}
+              onPageChange={(page) => {
+                setCurrentPage(page);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+            />
+          </div>
         </>
       )}
     </div>

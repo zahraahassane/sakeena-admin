@@ -228,7 +228,7 @@ export const adminApi = api.injectEndpoints({
 
     // Get Courses
     getCoursesData: builder.query({
-      query: () => "/courses/",
+      query: (page = 1) => `/courses/?page=${page}`,
       providesTags: ["courses"],
     }),
     // Get Course Details

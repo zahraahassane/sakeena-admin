@@ -166,7 +166,8 @@ const Contents = () => {
                   }
                 } catch (err) {
                   console.error("Failed to delete category:", err);
-                  toast.error("Failed to delete category");
+                  const errorMsg = err?.data?.detail || "Failed to delete category";
+                  toast.error(errorMsg);
                 }
               }}
               className="px-3 py-1.5 text-xs font-medium bg-red-500 text-white hover:bg-red-600 rounded-lg transition-colors shadow-sm"
