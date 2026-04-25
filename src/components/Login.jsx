@@ -52,14 +52,14 @@ export default function Login() {
 
       if (error?.data?.detail) {
         errorMessage = error.data.detail;
+      } else if (error?.status === 401) {
+        errorMessage = "No active account found with the given credentials";
       } else if (error?.data?.email) {
         errorMessage = "Invalid email address";
       } else if (error?.data?.password) {
         errorMessage = "Invalid password";
       } else if (error?.data?.non_field_errors) {
         errorMessage = error.data.non_field_errors[0];
-      } else if (error?.status === 401) {
-        errorMessage = "No active account found with the given credentials";
       } else if (error?.status === 400) {
         errorMessage = "Invalid email or password";
       }
