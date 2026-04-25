@@ -1,5 +1,14 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
+const normalizeBaseUrl = (value) => {
+  if (!value) return null;
+  return value.endsWith("/") ? value : `${value}/`;
+};
+
+const API_BASE_URL =
+  normalizeBaseUrl(import.meta.env.VITE_API_URL) ||
+  "https://api.sakeenapress.org/";
+
 const normalizeListResponse = (response) => {
   if (Array.isArray(response)) return response;
   if (Array.isArray(response?.results)) return response.results;
@@ -7,7 +16,7 @@ const normalizeListResponse = (response) => {
 };
 
 const baseQuery = fetchBaseQuery({
-  baseUrl: "http://10.10.13.8:8000/", // https://api.sakeenapress.org/ // https://clashingly-nonlicensable-tennille.ngrok-free.dev/ // http://10.10.13.8:8000/
+  baseUrl: API_BASE_URL,
   prepareHeaders: (headers, { getState, endpoint }) => {
     // Skip ngrok browser warning
     // headers.set("ngrok-skip-browser-warning", "true");

@@ -1,12 +1,56 @@
-# React + Vite
+# Zahra Admin
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Admin dashboard built with React and Vite.
 
-Currently, two official plugins are available:
+## Local Development
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+```bash
+npm install
+npm run dev
+```
 
-## Expanding the ESLint configuration
+## Production Build
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```bash
+npm run build
+```
+
+## Dokploy Deployment
+
+This repository is configured for Docker-based deployment in Dokploy.
+
+Set this environment variable in Dokploy before deploying:
+
+- `VITE_API_URL`: your backend API base URL (for example, `https://api.sakeenapress.org`)
+
+### Required files
+
+- `Dockerfile`: multi-stage build (Node build + Nginx runtime)
+- `nginx.conf`: serves the built app and handles SPA route fallback
+- `.dockerignore`: keeps Docker context small
+- `.env.example`: documents required build-time environment values
+- `docker-compose.yml`: optional if you deploy via Dokploy Compose mode
+
+### Dokploy app settings
+
+- Source: your Git repository
+- Branch: `main` (or your release branch)
+- Build type: `Dockerfile`
+- Port: `80`
+- Health check path: `/`
+
+### What this setup does
+
+- Runs `npm ci` and `npm run build` during image build
+- Serves `dist` with Nginx
+- Supports React Router deep links with `try_files ... /index.html`
+- Injects `VITE_API_URL` at build time for the frontend API client
+
+### Optional: local Docker test
+
+```bash
+docker build -t zahra-admin .
+docker run --rm -p 8080:80 zahra-admin
+```
+
+Then open `http://localhost:8080`.
