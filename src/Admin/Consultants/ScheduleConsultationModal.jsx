@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { X, Video, User, Package, DollarSign, CircleAlert } from "lucide-react";
 import toast from "react-hot-toast";
 import {
@@ -14,13 +14,11 @@ const ScheduleConsultationModal = ({ isOpen, onClose, onSchedule }) => {
     teacherName: "",
     teacherEmail: "",
     standardPrice: "",
-    day: "",
-    startTime: "",
-    endTime: "",
-    validFrom: "",
-    validUntil: "",
     bundleSessions: "",
     discount: "",
+    schedules: [
+      { id: Date.now(), day: "", startTime: "", endTime: "", validFrom: "", validUntil: "" }
+    ],
   });
 
   const { data: teacherData, isError: isTeacherError } =
@@ -103,13 +101,11 @@ const ScheduleConsultationModal = ({ isOpen, onClose, onSchedule }) => {
       teacherName: "",
       teacherEmail: "",
       standardPrice: "",
-      day: "",
-      startTime: "",
-      endTime: "",
-      validFrom: "",
-      validUntil: "",
       bundleSessions: "",
       discount: "",
+      schedules: [
+        { id: Date.now(), day: "", startTime: "", endTime: "", validFrom: "", validUntil: "" }
+      ],
     });
   };
 
@@ -121,8 +117,10 @@ const ScheduleConsultationModal = ({ isOpen, onClose, onSchedule }) => {
       return;
     }
 
-    if (!formData.day || !formData.startTime || !formData.endTime) {
-      toast.error("Please select a recurring day and time.");
+    if (
+      formData.schedules.some((s) => !s.day || !s.startTime || !s.endTime)
+    ) {
+      toast.error("Please select a recurring day and time for all schedules.");
       return;
     }
 
@@ -135,25 +133,29 @@ const ScheduleConsultationModal = ({ isOpen, onClose, onSchedule }) => {
       }
 
       const consultation = await createConsultation(consultationBody).unwrap();
-      const recurringPayload = {
-        weekday: weekdayMap[formData.day],
-        start_time: formData.startTime,
-        end_time: formData.endTime,
-        session_duration_minutes: calculateDurationMinutes(
-          formData.startTime,
-          formData.endTime,
-        ),
-        valid_from:
-          formData.validFrom || new Date().toISOString().split("T")[0],
-      };
-      if (formData.validUntil) {
-        recurringPayload.valid_until = formData.validUntil;
-      }
+      
+      const recurringPromises = formData.schedules.map((schedule) => {
+        const recurringPayload = {
+          weekday: weekdayMap[schedule.day],
+          start_time: schedule.startTime,
+          end_time: schedule.endTime,
+          session_duration_minutes: calculateDurationMinutes(
+            schedule.startTime,
+            schedule.endTime,
+          ),
+          valid_from: schedule.validFrom || new Date().toISOString().split("T")[0],
+        };
+        if (schedule.validUntil) {
+          recurringPayload.valid_until = schedule.validUntil;
+        }
 
-      const recurring = await createConsultationRecurring({
-        consultationId: consultation.id,
-        body: recurringPayload,
-      }).unwrap();
+        return createConsultationRecurring({
+          consultationId: consultation.id,
+          body: recurringPayload,
+        }).unwrap();
+      });
+
+      const recurrings = await Promise.all(recurringPromises);
 
       let bundle = null;
       if (formData.bundleSessions) {
@@ -169,7 +171,7 @@ const ScheduleConsultationModal = ({ isOpen, onClose, onSchedule }) => {
         }).unwrap();
       }
 
-      onSchedule({ consultation, recurring, bundle });
+      onSchedule({ consultation, recurring: recurrings[0], bundle });
       onClose();
       resetForm();
     } catch (error) {
@@ -262,88 +264,130 @@ const ScheduleConsultationModal = ({ isOpen, onClose, onSchedule }) => {
             </div> */}
           </div>
 
-          <div className="p-6 bg-teal-50/20 rounded-2xl border-2 border-teal-500/30 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-stone-700 inter-font">
-                  Select Day <span className="text-red-500">*</span>
-                </label>
-                <select
-                  required
-                  value={formData.day}
-                  onChange={(e) =>
-                    setFormData({ ...formData, day: e.target.value })
-                  }
-                  className="w-full bg-stone-100/50 border border-transparent rounded-xl px-4 py-3 outline-none focus:bg-white focus:border-teal-500 transition-all font-medium text-stone-800 inter-font appearance-none"
+          {formData.schedules.map((schedule, index) => (
+            <div key={schedule.id} className="p-6 bg-teal-50/20 rounded-2xl border-2 border-teal-500/30 space-y-6 relative group">
+              {formData.schedules.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newSchedules = formData.schedules.filter(s => s.id !== schedule.id);
+                    setFormData({ ...formData, schedules: newSchedules });
+                  }}
+                  className="absolute right-4 top-4 p-1 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 transition-colors opacity-0 group-hover:opacity-100"
+                  title="Remove this schedule"
                 >
-                  <option value="">Choose day...</option>
-                  {days.map((day) => (
-                    <option key={day} value={day}>
-                      {day}
-                    </option>
-                  ))}
-                </select>
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+              <h3 className="text-sm font-black text-teal-800 tracking-wider">Schedule #{index + 1}</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-stone-700 inter-font">
+                    Select Day <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    required
+                    value={schedule.day}
+                    onChange={(e) => {
+                      const newSchedules = [...formData.schedules];
+                      newSchedules[index].day = e.target.value;
+                      setFormData({ ...formData, schedules: newSchedules });
+                    }}
+                    className="w-full bg-stone-100/50 border border-transparent rounded-xl px-4 py-3 outline-none focus:bg-white focus:border-teal-500 transition-all font-medium text-stone-800 inter-font appearance-none"
+                  >
+                    <option value="">Choose day...</option>
+                    {days.map((day) => (
+                      <option key={day} value={day}>
+                        {day}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-stone-700 inter-font">
+                    Start Time <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="time"
+                    required
+                    value={schedule.startTime}
+                    onChange={(e) => {
+                      const newSchedules = [...formData.schedules];
+                      newSchedules[index].startTime = e.target.value;
+                      setFormData({ ...formData, schedules: newSchedules });
+                    }}
+                    className="w-full bg-stone-100/50 border border-transparent rounded-xl px-4 py-3 outline-none focus:bg-white focus:border-teal-500 transition-all font-medium text-stone-800 inter-font"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-stone-700 inter-font">
+                    End Time <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="time"
+                    required
+                    value={schedule.endTime}
+                    onChange={(e) => {
+                      const newSchedules = [...formData.schedules];
+                      newSchedules[index].endTime = e.target.value;
+                      setFormData({ ...formData, schedules: newSchedules });
+                    }}
+                    className="w-full bg-stone-100/50 border border-transparent rounded-xl px-4 py-3 outline-none focus:bg-white focus:border-teal-500 transition-all font-medium text-stone-800 inter-font"
+                  />
+                </div>
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-stone-700 inter-font">
-                  Start Time <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="time"
-                  required
-                  value={formData.startTime}
-                  onChange={(e) =>
-                    setFormData({ ...formData, startTime: e.target.value })
-                  }
-                  className="w-full bg-stone-100/50 border border-transparent rounded-xl px-4 py-3 outline-none focus:bg-white focus:border-teal-500 transition-all font-medium text-stone-800 inter-font"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-stone-700 inter-font">
-                  End Time <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="time"
-                  required
-                  value={formData.endTime}
-                  onChange={(e) =>
-                    setFormData({ ...formData, endTime: e.target.value })
-                  }
-                  className="w-full bg-stone-100/50 border border-transparent rounded-xl px-4 py-3 outline-none focus:bg-white focus:border-teal-500 transition-all font-medium text-stone-800 inter-font"
-                />
-              </div>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-stone-700 inter-font">
-                  Valid From <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  required
-                  value={formData.validFrom}
-                  onChange={(e) =>
-                    setFormData({ ...formData, validFrom: e.target.value })
-                  }
-                  className="w-full bg-stone-100/50 border border-transparent rounded-xl px-4 py-3 outline-none focus:bg-white focus:border-teal-500 transition-all font-medium text-stone-800 inter-font"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-stone-700 inter-font">
-                  Valid Until
-                </label>
-                <input
-                  type="date"
-                  value={formData.validUntil}
-                  onChange={(e) =>
-                    setFormData({ ...formData, validUntil: e.target.value })
-                  }
-                  className="w-full bg-stone-100/50 border border-transparent rounded-xl px-4 py-3 outline-none focus:bg-white focus:border-teal-500 transition-all font-medium text-stone-800 inter-font"
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-stone-700 inter-font">
+                    Valid From <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={schedule.validFrom}
+                    onChange={(e) => {
+                      const newSchedules = [...formData.schedules];
+                      newSchedules[index].validFrom = e.target.value;
+                      setFormData({ ...formData, schedules: newSchedules });
+                    }}
+                    className="w-full bg-stone-100/50 border border-transparent rounded-xl px-4 py-3 outline-none focus:bg-white focus:border-teal-500 transition-all font-medium text-stone-800 inter-font"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-stone-700 inter-font">
+                    Valid Until
+                  </label>
+                  <input
+                    type="date"
+                    value={schedule.validUntil}
+                    onChange={(e) => {
+                      const newSchedules = [...formData.schedules];
+                      newSchedules[index].validUntil = e.target.value;
+                      setFormData({ ...formData, schedules: newSchedules });
+                    }}
+                    className="w-full bg-stone-100/50 border border-transparent rounded-xl px-4 py-3 outline-none focus:bg-white focus:border-teal-500 transition-all font-medium text-stone-800 inter-font"
+                  />
+                </div>
               </div>
             </div>
-          </div>
+          ))}
+
+          <button
+            type="button"
+            onClick={() => {
+              setFormData({
+                ...formData,
+                schedules: [
+                  ...formData.schedules,
+                  { id: Date.now(), day: "", startTime: "", endTime: "", validFrom: "", validUntil: "" }
+                ]
+              });
+            }}
+            className="flex items-center justify-center gap-2 w-full py-4 border-2 border-dashed border-teal-200 rounded-2xl text-teal-600 font-bold hover:bg-teal-50/50 hover:border-teal-400 transition-all"
+          >
+            <span>+ Add Another Schedule</span>
+          </button>
 
           <div className="p-6 bg-amber-50 rounded-2xl border-2 border-amber-600/20 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

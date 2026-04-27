@@ -8,7 +8,9 @@ const ScheduleRescheduleSection = ({ classes = [] }) => {
   const formatTime = (isoString) => {
     if (!isoString) return "N/A";
     const date = new Date(isoString);
-    return date.toLocaleTimeString("en-US", {
+    return date.toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
       hour12: true,
@@ -75,24 +77,36 @@ const ScheduleRescheduleSection = ({ classes = [] }) => {
                     {formatTime(item.scheduled_at)}
                   </span>
                 </div>
-                {item.zoom_join_url && (
+                {(item.zoom_join_url || item.zoom_start_url) && (
                   <div className="flex items-center gap-2 bg-white rounded-lg p-2 border border-neutral-200">
                     <span className="text-xs text-neutral-600 truncate flex-1">
-                      {shortenUrl(item.zoom_join_url)}
+                      {shortenUrl(item.zoom_join_url || item.zoom_start_url)}
                     </span>
-                    <button
-                      onClick={() =>
-                        handleCopyUrl(item.zoom_join_url, item.lesson_id)
-                      }
-                      className="p-1.5 hover:bg-neutral-100 rounded-md transition-colors flex-shrink-0"
-                      title="Copy Zoom URL"
-                    >
-                      {copiedId === item.lesson_id ? (
-                        <Check className="w-4 h-4 text-green-500" />
-                      ) : (
-                        <Copy className="w-4 h-4 text-neutral-400 hover:text-neutral-600" />
-                      )}
-                    </button>
+                    {item.zoom_join_url && (
+                      <button
+                        onClick={() =>
+                          handleCopyUrl(item.zoom_join_url, item.lesson_id)
+                        }
+                        className="p-1.5 hover:bg-neutral-100 rounded-md transition-colors flex-shrink-0"
+                        title="Copy Participant Zoom URL"
+                      >
+                        {copiedId === item.lesson_id ? (
+                          <Check className="w-4 h-4 text-green-500" />
+                        ) : (
+                          <Copy className="w-4 h-4 text-neutral-400 hover:text-neutral-600" />
+                        )}
+                      </button>
+                    )}
+                    {item.zoom_start_url && (
+                      <a
+                        href={item.zoom_start_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-colors flex-shrink-0 shadow-sm"
+                      >
+                        Join as Host
+                      </a>
+                    )}
                   </div>
                 )}
               </div>

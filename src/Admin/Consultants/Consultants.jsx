@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { skipToken } from "@reduxjs/toolkit/query";
 import {
   User,
   Mail,
@@ -14,7 +15,7 @@ import {
   AlertCircle,
   ChevronDown,
   ArrowRight,
-  Search
+  Search,
 } from "lucide-react";
 import ScheduleConsultationModal from "./ScheduleConsultationModal";
 import ConsultationDetailsModal from "./ConsultationDetailsModal";
@@ -23,7 +24,7 @@ import Pagination from "../../components/Pagination";
 import {
   useGetConsultationsQuery,
   useGetTeacherProfilesQuery,
-  useGetRescheduleRequestsQuery
+  useGetRescheduleRequestsQuery,
 } from "../../Api/adminApi";
 import { toast } from "react-hot-toast";
 
@@ -50,31 +51,39 @@ const Consultants = () => {
   } = useGetTeacherProfilesQuery({
     offers_consultations: true,
     page: teacherPage,
-    search: searchQuery
+    search: searchQuery,
   });
   const teachers = teachersData?.results || [];
   const totalTeacherPages = teachersData?.total_pages || 1;
 
-  // Fetch Consultations for selected teacher
+  // Only fetch consultations when a teacher is selected and in the correct view/tab
+  const shouldFetchConsultations =
+    !!selectedTeacher &&
+    activeView === "consultations" &&
+    activeTab === "Consultations";
   const {
     data: consultationsData,
     isLoading: isLoadingConsultations,
     isError: isConsultationsError,
   } = useGetConsultationsQuery(
-    { teacher: selectedTeacher?.id, search: searchQuery },
-    { skip: !selectedTeacher || activeView !== "consultations" || activeTab !== "Consultations" }
+    shouldFetchConsultations
+      ? { teacher: selectedTeacher.id, search: searchQuery }
+      : skipToken,
   );
-  const consultations = consultationsData?.results || [];
+  const consultations = consultationsData || [];
 
   // Fetch Reschedule Requests
   const {
     data: rescheduleData,
     isLoading: isLoadingReschedule,
     isError: isRescheduleError,
-  } = useGetRescheduleRequestsQuery({
-    page: reschedulePage,
-    search: searchQuery
-  }, { skip: activeTab !== "Reschedule Requests" });
+  } = useGetRescheduleRequestsQuery(
+    {
+      page: reschedulePage,
+      search: searchQuery,
+    },
+    { skip: activeTab !== "Reschedule Requests" },
+  );
 
   const rescheduleRequests = rescheduleData?.results || [];
   const totalReschedulePages = rescheduleData?.total_pages || 1;
@@ -158,14 +167,14 @@ const Consultants = () => {
 
   const getStatusBadge = (status) => {
     switch (status?.toLowerCase()) {
-      case 'accepted':
+      case "accepted":
         return (
           <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border border-emerald-100">
             <CheckCircle2 className="w-3 h-3" />
             Accepted
           </span>
         );
-      case 'rejected':
+      case "rejected":
         return (
           <span className="inline-flex items-center gap-1.5 bg-rose-50 text-rose-700 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border border-rose-100">
             <XCircle className="w-3 h-3" />
@@ -187,7 +196,7 @@ const Consultants = () => {
       {/* Header section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-3 md:gap-4">
-          {(activeView === "consultations" && activeTab === "Consultations") && (
+          {activeView === "consultations" && activeTab === "Consultations" && (
             <button
               onClick={handleBackToTeachers}
               className="p-2.5 md:p-3 bg-white border border-stone-100 rounded-2xl text-stone-400 hover:text-teal-600 hover:border-teal-100 hover:bg-teal-50 shadow-sm transition-all group"
@@ -208,7 +217,11 @@ const Consultants = () => {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-300 w-5 h-5" />
             <input
               type="text"
-              placeholder={activeTab === "Consultations" ? "Search teachers..." : "Search students or emails..."}
+              placeholder={
+                activeTab === "Consultations"
+                  ? "Search teachers..."
+                  : "Search students or emails..."
+              }
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-12 pr-4 py-3 bg-white border border-stone-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all placeholder:text-stone-300 shadow-sm"
@@ -236,10 +249,11 @@ const Consultants = () => {
             <button
               key={tab}
               onClick={() => handleTabChange(tab)}
-              className={`px-6 md:px-8 py-3 rounded-2xl text-xs md:text-sm font-bold transition-all inter-font whitespace-nowrap ${activeTab === tab
-                ? "bg-white text-teal-600 shadow-sm border border-stone-100"
-                : "text-stone-400 hover:text-stone-600 hover:bg-stone-50"
-                }`}
+              className={`px-6 md:px-8 py-3 rounded-2xl text-xs md:text-sm font-bold transition-all inter-font whitespace-nowrap ${
+                activeTab === tab
+                  ? "bg-white text-teal-600 shadow-sm border border-stone-100"
+                  : "text-stone-400 hover:text-stone-600 hover:bg-stone-50"
+              }`}
             >
               {tab}
             </button>
@@ -251,7 +265,9 @@ const Consultants = () => {
             <h2 className="text-stone-400 font-bold uppercase tracking-widest text-[10px] inter-font flex items-center gap-2">
               <div className="w-1.5 h-1.5 rounded-full bg-teal-500" />
               {activeTab === "Consultations"
-                ? (activeView === "teachers" ? "Select a Teacher" : `Plans for ${selectedTeacher?.user?.first_name}`)
+                ? activeView === "teachers"
+                  ? "Select a Teacher"
+                  : `Plans for ${selectedTeacher?.user?.first_name}`
                 : "Manage Reschedule Inquiries"}
             </h2>
           </div>
@@ -266,7 +282,9 @@ const Consultants = () => {
                         <div className="w-20 h-20 bg-stone-50 rounded-full flex items-center justify-center border-2 border-dashed border-stone-200">
                           <User className="w-10 h-10 text-stone-300 animate-pulse" />
                         </div>
-                        <h3 className="text-xl font-bold text-stone-900">Loading Teachers...</h3>
+                        <h3 className="text-xl font-bold text-stone-900">
+                          Loading Teachers...
+                        </h3>
                       </div>
                     ) : teachers.length > 0 ? (
                       teachers.map((teacher) => (
@@ -301,7 +319,8 @@ const Consultants = () => {
                             </div>
                             <div className="flex-1 min-w-0">
                               <h4 className="text-lg font-black text-stone-900 arimo-font tracking-tight mb-0.5 group-hover:text-teal-900 truncate">
-                                {teacher.user?.first_name} {teacher.user?.last_name}
+                                {teacher.user?.first_name}{" "}
+                                {teacher.user?.last_name}
                               </h4>
                               <p className="text-[11px] font-bold text-stone-400 mb-3 truncate inter-font uppercase tracking-wider">
                                 {teacher.professional_title || "Teacher"}
@@ -318,7 +337,9 @@ const Consultants = () => {
                         <div className="w-20 h-20 bg-stone-50 rounded-full flex items-center justify-center border-2 border-dashed border-stone-200">
                           <User className="w-10 h-10 text-stone-300" />
                         </div>
-                        <h3 className="text-xl font-bold text-stone-900">No teachers found</h3>
+                        <h3 className="text-xl font-bold text-stone-900">
+                          No teachers found
+                        </h3>
                       </div>
                     )}
                   </div>
@@ -339,11 +360,15 @@ const Consultants = () => {
                       <div className="w-20 h-20 bg-stone-50 rounded-full flex items-center justify-center border-2 border-dashed border-stone-200">
                         <Calendar className="w-10 h-10 text-stone-300 animate-pulse" />
                       </div>
-                      <h3 className="text-xl font-bold text-stone-900">Loading consultations...</h3>
+                      <h3 className="text-xl font-bold text-stone-900">
+                        Loading consultations...
+                      </h3>
                     </div>
                   ) : consultations.length > 0 ? (
                     consultations.map((consultation) => {
-                      const slotSummaries = buildSlotSummaries(consultation.timeslots);
+                      const slotSummaries = buildSlotSummaries(
+                        consultation.timeslots,
+                      );
                       return (
                         <div
                           key={consultation.id}
@@ -362,30 +387,36 @@ const Consultants = () => {
                             <div className="flex-1 space-y-4">
                               <div className="space-y-1">
                                 <h3 className="text-xl font-black text-stone-900 arimo-font tracking-tight group-hover:text-teal-900 transition-colors">
-                                  {consultation.teacher?.user?.first_name}'s Plan
+                                  {consultation.teacher?.user?.first_name}'s
+                                  Plan
                                 </h3>
                                 <div className="flex items-center gap-2 text-stone-400 font-medium text-xs inter-font">
                                   <Clock className="w-3.5 h-3.5 text-stone-300" />
-                                  Active Plan with {consultation.timeslots?.length || 0} slots
+                                  Active Plan with{" "}
+                                  {consultation.timeslots?.length || 0} slots
                                 </div>
                               </div>
 
                               <div className="flex flex-wrap gap-3">
                                 {Object.values(slotSummaries).length > 0 ? (
-                                  Object.values(slotSummaries).map((group, idx) => (
-                                    <div
-                                      key={idx}
-                                      className="bg-stone-50/50 rounded-2xl p-3 border border-stone-100 group-hover:bg-teal-50/30 group-hover:border-teal-50 transition-colors duration-500"
-                                    >
-                                      <span className="text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-2 opacity-70">
-                                        {group.dateLabel}
-                                      </span>
-                                      <div className="inline-flex items-center gap-1.5 bg-white text-teal-700 px-3 py-1.5 rounded-xl text-xs font-bold border border-stone-100 shadow-sm">
-                                        <Clock className="w-3.5 h-3.5 text-teal-500" />
-                                        <span>{group.firstStart} - {group.lastEnd}</span>
+                                  Object.values(slotSummaries).map(
+                                    (group, idx) => (
+                                      <div
+                                        key={idx}
+                                        className="bg-stone-50/50 rounded-2xl p-3 border border-stone-100 group-hover:bg-teal-50/30 group-hover:border-teal-50 transition-colors duration-500"
+                                      >
+                                        <span className="text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-2 opacity-70">
+                                          {group.dateLabel}
+                                        </span>
+                                        <div className="inline-flex items-center gap-1.5 bg-white text-teal-700 px-3 py-1.5 rounded-xl text-xs font-bold border border-stone-100 shadow-sm">
+                                          <Clock className="w-3.5 h-3.5 text-teal-500" />
+                                          <span>
+                                            {group.firstStart} - {group.lastEnd}
+                                          </span>
+                                        </div>
                                       </div>
-                                    </div>
-                                  ))
+                                    ),
+                                  )
                                 ) : (
                                   <div className="text-stone-400 text-xs font-medium italic flex items-center gap-2">
                                     <Calendar className="w-4 h-4" />
@@ -416,8 +447,12 @@ const Consultants = () => {
                       <div className="w-20 h-20 bg-stone-50 rounded-full flex items-center justify-center border-2 border-dashed border-stone-200">
                         <Calendar className="w-10 h-10 text-stone-300" />
                       </div>
-                      <h3 className="text-xl font-bold text-stone-900">No consultations scheduled</h3>
-                      <p className="text-stone-500">This teacher has no consultation plans yet.</p>
+                      <h3 className="text-xl font-bold text-stone-900">
+                        No consultations scheduled
+                      </h3>
+                      <p className="text-stone-500">
+                        This teacher has no consultation plans yet.
+                      </p>
                     </div>
                   )}
                 </div>
@@ -432,7 +467,9 @@ const Consultants = () => {
                     <div className="w-20 h-20 bg-stone-50 rounded-full flex items-center justify-center border-2 border-dashed border-stone-200">
                       <Clock className="w-10 h-10 text-stone-300 animate-pulse" />
                     </div>
-                    <h3 className="text-xl font-bold text-stone-900">Loading Reschedule Requests...</h3>
+                    <h3 className="text-xl font-bold text-stone-900">
+                      Loading Reschedule Requests...
+                    </h3>
                   </div>
                 ) : rescheduleRequests.length > 0 ? (
                   rescheduleRequests.map((request) => (
@@ -453,7 +490,9 @@ const Consultants = () => {
                             <p className="text-sm font-bold text-stone-900 truncate">
                               {request.student_email || "Student"}
                             </p>
-                            <p className="text-[10px] text-stone-400 font-medium">Requested on {formatDate(request.created_at)}</p>
+                            <p className="text-[10px] text-stone-400 font-medium">
+                              Requested on {formatDate(request.created_at)}
+                            </p>
                           </div>
                         </div>
                         <div className="shrink-0">
@@ -464,15 +503,23 @@ const Consultants = () => {
                       <div className="flex flex-col gap-4 bg-stone-50/50 rounded-3xl p-5 border border-stone-100 group-hover:bg-teal-50/30 group-hover:border-teal-50 transition-all">
                         <div className="flex items-center justify-between gap-4">
                           <div className="flex-1 space-y-1">
-                            <span className="text-[9px] font-black text-stone-400 uppercase tracking-widest block">Old Slot</span>
-                            <p className="text-xs font-bold text-stone-600">{formatDate(request.old_slot_time, true)}</p>
+                            <span className="text-[9px] font-black text-stone-400 uppercase tracking-widest block">
+                              Old Slot
+                            </span>
+                            <p className="text-xs font-bold text-stone-600">
+                              {formatDate(request.old_slot_time, true)}
+                            </p>
                           </div>
                           <div className="shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-white border border-stone-100 text-stone-300">
                             <ArrowRight className="w-4 h-4" />
                           </div>
                           <div className="flex-1 space-y-1 text-right">
-                            <span className="text-[9px] font-black text-teal-400 uppercase tracking-widest block">New Request</span>
-                            <p className="text-xs font-black text-teal-700">{formatDate(request.requested_slot_time, true)}</p>
+                            <span className="text-[9px] font-black text-teal-400 uppercase tracking-widest block">
+                              New Request
+                            </span>
+                            <p className="text-xs font-black text-teal-700">
+                              {formatDate(request.requested_slot_time, true)}
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -486,7 +533,9 @@ const Consultants = () => {
                       )}
 
                       <div className="mt-auto pt-6 border-t border-stone-50 flex items-center justify-between">
-                        <span className="text-[10px] font-black text-stone-300 uppercase tracking-[0.2em]">View Details</span>
+                        <span className="text-[10px] font-black text-stone-300 uppercase tracking-[0.2em]">
+                          View Details
+                        </span>
                         <div className="w-8 h-8 rounded-xl bg-stone-50 flex items-center justify-center group-hover:bg-teal-600 group-hover:text-white transition-all">
                           <ChevronRight className="w-4 h-4" />
                         </div>
@@ -498,7 +547,9 @@ const Consultants = () => {
                     <div className="w-20 h-20 bg-stone-50 rounded-full flex items-center justify-center border-2 border-dashed border-stone-200">
                       <Clock className="w-10 h-10 text-stone-300" />
                     </div>
-                    <h3 className="text-xl font-bold text-stone-900">No reschedule requests</h3>
+                    <h3 className="text-xl font-bold text-stone-900">
+                      No reschedule requests
+                    </h3>
                     <p className="text-stone-500">Everything up to date!</p>
                   </div>
                 )}

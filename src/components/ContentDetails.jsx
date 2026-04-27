@@ -1,12 +1,22 @@
 import { ArrowLeft } from 'lucide-react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useGetBlogDetailsQuery } from '../Api/adminApi';
 
 export default function ContentDetails() {
-    const location = useLocation();
+    const { id } = useParams();
     const navigate = useNavigate();
-    const content = location.state?.content;
 
-    if (!content) {
+    const { data: content, isLoading, isError } = useGetBlogDetailsQuery(id);
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-white flex items-center justify-center p-6">
+                <div className="w-12 h-12 border-4 border-teal-600 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+        );
+    }
+
+    if (isError || !content) {
         return (
             <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6">
                 <h2 className="text-2xl font-bold text-gray-900 mb-4">Content not found</h2>
@@ -20,6 +30,11 @@ export default function ContentDetails() {
             </div>
         );
     }
+
+    const dateRaw = content.published_at || content.created_at;
+    const formattedDate = dateRaw 
+        ? new Date(dateRaw).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+        : "Unpublished";
 
     return (
         <div className="min-h-screen bg-white">
@@ -37,7 +52,7 @@ export default function ContentDetails() {
             {/* Hero Section with Cover Image */}
             <div className="relative h-96 overflow-hidden bg-gray-200">
                 <img
-                    src={content.image || '/placeholder.svg'}
+                    src={content.cover_image || '/placeholder.svg'}
                     alt={content.title}
                     className="w-full h-full object-cover"
                 />
@@ -56,72 +71,64 @@ export default function ContentDetails() {
             <div className="max-w-4xl mx-auto px-6 py-12">
                 {/* Author Info */}
                 <div className="flex items-center gap-4 mb-8 pb-8 border-b border-gray-200">
-                    <div className="w-12 h-12 bg-teal-600 rounded-full flex items-center justify-center text-white font-bold">
-                        {content.author
-                            .split(' ')
-                            .map((n) => n[0])
-                            .join('')}
+                    <div className="w-12 h-12 bg-teal-600 rounded-full flex items-center justify-center text-white font-bold overflow-hidden shadow-sm">
+                        {content.author_detail?.profile_picture ? (
+                             <img src={content.author_detail.profile_picture} alt={content.author_detail.full_name} className="w-full h-full object-cover" />
+                        ) : (
+                             (content.author_detail?.full_name || 'Admin')
+                                .split(' ')
+                                .map((n) => n[0])
+                                .join('')
+                                .substring(0, 2)
+                        )}
                     </div>
                     <div>
-                        <p className="font-semibold text-gray-900">About {content.author}</p>
+                        <p className="font-semibold text-gray-900">About {content.author_detail?.full_name || 'Unknown'}</p>
                         <p className="text-sm text-gray-600">
-                            Clinical Psychologist & Trauma Specialist in mindfulness based therapy
+                            {content.author_detail?.professional_title || 'Content Author'}
                         </p>
                         <p className="text-xs text-gray-500 mt-1">
-                            {content.date} • {content.readTime}
+                            {formattedDate} • {content.reading_time || 0} min read
                         </p>
                     </div>
                 </div>
 
                 {/* Blog Content */}
                 <div className="prose prose-lg max-w-none mb-12">
-                    <p className="text-gray-700 leading-relaxed mb-6">{content.description}</p>
-
-                    <p className="text-gray-700 leading-relaxed mb-6">
-                        In our fast-paced modern world, finding moments of peace and tranquility can seem like an impossible task. However, Islamic tradition offers us a wealth of mindfulness practices that have been used for centuries to cultivate inner peace and spiritual well-being.
-                    </p>
-
-                    <p className="text-gray-700 leading-relaxed mb-6">
-                        Other denominations of Islam is perhaps the most fundamental mindfulness practice in Islam. When we engage in prayer with true present moment, we experience a state of undivided attention. This practice strengthens our connection with the Divine and helps us navigate life's challenges with greater clarity and peace of mind.
-                    </p>
-
-                    <p className="text-gray-700 leading-relaxed mb-6">
-                        Practical ideas for incorporating Islamic mindfulness into your daily life include: Setting aside specific times for dhikr, practicing gratitude throughout the day, incorporating Quranic recitation into your routine, and creating a dedicated space for spiritual practice. Even small moments of mindfulness can have powerful effects.
-                    </p>
-
-                    <p className="text-gray-700 leading-relaxed mb-8">
-                        This key is consistently and sincerely. Even five minutes of focused dhikr can transform your day and create a sense of peace that carries through your life and creates a feeling of peace that carries through your life and opens in our current world through your day, step of these deeply meditative activities.
-                    </p>
-
-                    <a href="#" className="text-teal-600 hover:text-teal-700 font-medium">
-                        see more
-                    </a>
+                    {content.excerpt && (
+                        <p className="text-gray-700 leading-relaxed mb-6 font-medium text-xl border-l-4 border-teal-600 pl-4">{content.excerpt}</p>
+                    )}
+                    
+                    <div className="text-gray-800 ckeditor-content" dangerouslySetInnerHTML={{ __html: content.content }}></div>
                 </div>
 
                 {/* Video Section */}
-                <div className="mb-12">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-6">{content.videoTitle || 'The Power of Gratitude in Islam'}</h3>
-                    <div className="relative w-full bg-gray-200 rounded-lg overflow-hidden" style={{ aspectRatio: '16/9' }}>
-                        <img
-                            src={content.videoThumbnail || '/placeholder.svg'}
-                            alt="Video thumbnail"
-                            className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 hover:bg-opacity-40 transition-all cursor-pointer">
-                            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center">
-                                <div className="w-0 h-0 border-l-8 border-l-teal-600 border-t-5 border-t-transparent border-b-5 border-b-transparent ml-1"></div>
-                            </div>
-                        </div>
-                        <p className="absolute bottom-4 right-4 text-white text-sm bg-black bg-opacity-50 px-2 py-1 rounded">
-                            Watch Full Page
-                        </p>
-                    </div>
-                </div>
+                {/* Video Section - Removed, video belongs to video specific views */}
 
                 {/* Related Content */}
                 <div className="mt-12 pt-12 border-t border-gray-200">
                     <h3 className="text-2xl font-bold text-gray-900 mb-6">Related Content</h3>
-                    <p className="text-gray-600">More resources on Islamic mindfulness and spiritual practices coming soon...</p>
+                    {content.related_blogs?.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {content.related_blogs.map(related => (
+                                <div 
+                                    key={related.id} 
+                                    className="cursor-pointer group flex flex-col gap-3"
+                                    onClick={() => navigate(`/teacher/content-details/${related.slug || related.id}`)}
+                                >
+                                    <div className="w-full h-40 rounded-xl overflow-hidden bg-gray-100">
+                                        <img src={related.cover_image || "/placeholder.svg"} alt={related.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold text-gray-900 line-clamp-2 group-hover:text-teal-600 transition-colors">{related.title}</h4>
+                                        <p className="text-xs text-gray-500 mt-1">{new Date(related.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} • {related.reading_time || 0} min read</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-gray-600">No related content available right now.</p>
+                    )}
                 </div>
             </div>
         </div>

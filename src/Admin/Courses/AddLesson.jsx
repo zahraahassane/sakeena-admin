@@ -52,6 +52,7 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
     maxFileSize: 10,
     allowedFileTypes: "pdf, docx",
   });
+  const [isDownloadable, setIsDownloadable] = useState(false);
   const [quizData, setQuizData] = useState({
     timeLimit: 30,
     passingScore: 70,
@@ -92,6 +93,7 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
       setDuration(lessonDetails.duration_in_minutes || "");
       setIsPreview(lessonDetails.is_preview || false);
       setIsReleased(lessonDetails.is_released ?? true);
+      setIsDownloadable(lessonDetails.is_downloadable || false);
       
       if (lessonDetails.content_type === "video") {
         setExistingFileUrl(lessonDetails.video_content || null);
@@ -136,6 +138,7 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
       }
     } else if (isOpen && !lessonId) {
       resetForm();
+      setIsDownloadable(false);
     }
   }, [lessonDetails, isOpen, lessonId]);
 
@@ -291,6 +294,10 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
       payload.append("duration_in_minutes", duration || 0);
       payload.append("is_preview", isPreview);
       payload.append("is_released", isReleased);
+      
+      if (contentType === "document") {
+        payload.append("is_downloadable", isDownloadable);
+      }
 
       if (contentType === "live") {
         payload.append("scheduled_at", `${liveDate}T${liveTime}:00Z`);
@@ -566,6 +573,24 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
                     </div>
                     <span className="text-sm font-bold text-stone-700 group-hover:text-stone-900 transition-colors">
                       Free Preview
+                    </span>
+                  </label>
+                )}
+
+                {contentType === "document" && (
+                  <label className="flex items-center gap-3 cursor-pointer group">
+                    <div className="relative">
+                      <input
+                        type="checkbox"
+                        checked={isDownloadable}
+                        onChange={(e) => setIsDownloadable(e.target.checked)}
+                        className="peer hidden"
+                      />
+                      <div className="w-12 h-6 bg-stone-200 rounded-full peer-checked:bg-blue-500 transition-all shadow-inner"></div>
+                      <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-all peer-checked:translate-x-6 shadow-sm"></div>
+                    </div>
+                    <span className="text-sm font-bold text-stone-700 group-hover:text-stone-900 transition-colors">
+                      Allow Download
                     </span>
                   </label>
                 )}

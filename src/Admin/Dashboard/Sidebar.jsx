@@ -95,12 +95,12 @@ export const Sidebar = ({ onClose }) => {
         active: false,
         slug: "teacher/content-upload",
       },
-      {
-        icon: DollarSign,
-        label: "Earnings & Revenue",
-        active: false,
-        slug: "teacher/earnings-revenue",
-      },
+      // {
+      //   icon: DollarSign,
+      //   label: "Earnings & Revenue",
+      //   active: false,
+      //   slug: "teacher/earnings-revenue",
+      // },
       {
         icon: Settings,
         label: "Settings",
@@ -164,10 +164,11 @@ export const Sidebar = ({ onClose }) => {
                         ? "bg-primary rounded-full"
                         : "bg-greenTeal rounded-xl";
 
-                      return `flex items-center h-12 pl-6 py-3 text-start text-base font-normal transition-colors mx-4 mb-1 gap-3 ${isActive
-                        ? `${activeClasses} text-[#FFFFFF] shadow-lg backdrop-blur-md`
-                        : "text-[#4A5565] rounded-sm"
-                        }`;
+                      return `flex items-center h-12 pl-6 py-3 text-start text-base font-normal transition-colors mx-4 mb-1 gap-3 ${
+                        isActive
+                          ? `${activeClasses} text-[#FFFFFF] shadow-lg backdrop-blur-md`
+                          : "text-[#4A5565] rounded-sm"
+                      }`;
                     }}
                   >
                     <Icon className="w-5 h-5" />

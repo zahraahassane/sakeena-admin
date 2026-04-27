@@ -4,6 +4,7 @@ import CommunityChat from "./CommunityChat";
 import CourseReviews from "./CourseReviews";
 import CourseDetailsContent from "./CourseDetailsContent";
 import CourseCurriculum from "./CourseCurriculum";
+import CourseEnrollments from "./CourseEnrollments";
 import { useGetCourseDetailsQuery } from "../../Api/adminApi";
 import { Loader2 } from "lucide-react";
 
@@ -14,6 +15,7 @@ const CourseBuilder = ({ course, onBack }) => {
   const tabs = [
     "Course Details",
     "Curriculum",
+    "Enrollments",
     // "Review",
     "Community Chat",
   ];
@@ -78,6 +80,9 @@ const CourseBuilder = ({ course, onBack }) => {
           )}
           {activeTab === "Curriculum" && (
             <CourseCurriculum courseId={course.id} />
+          )}
+          {activeTab === "Enrollments" && (
+            <CourseEnrollments courseId={course.id} />
           )}
           {activeTab === "Review" && <CourseReviews />}
           {activeTab === "Community Chat" && (

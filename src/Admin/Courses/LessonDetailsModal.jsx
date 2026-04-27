@@ -1,4 +1,5 @@
 import React from "react";
+import toast from "react-hot-toast";
 import {
   X,
   Video as VideoIcon,
@@ -116,6 +117,61 @@ const LessonDetailsModal = ({ lesson, isOpen, onClose }) => {
                   </div>
                   <span className="text-sm font-black text-stone-800">
                     {lesson.duration_in_minutes} mins
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Live Session Details */}
+          {lesson.content_type === "live" && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {lesson.zoom_join_url && (
+                <div className="p-5 bg-red-50/50 border border-red-100 rounded-3xl space-y-2 md:col-span-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-red-600 font-bold text-xs uppercase tracking-wider">
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      <span>Zoom Join URL</span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(lesson.zoom_join_url);
+                        toast.success("Zoom URL copied to clipboard!");
+                      }}
+                      className="px-3 py-1 bg-white text-red-600 rounded-full border border-red-200 text-xs font-bold hover:bg-red-50 transition-colors"
+                    >
+                      Copy URL
+                    </button>
+                  </div>
+                  <a
+                    href={lesson.zoom_join_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-sm font-bold text-red-700 hover:underline break-all block mt-2"
+                  >
+                    {lesson.zoom_join_url}
+                  </a>
+                </div>
+              )}
+              {lesson.duration_in_minutes > 0 && (
+                <div className="p-5 bg-stone-50 border border-stone-100 rounded-3xl space-y-2">
+                  <div className="flex items-center gap-2 text-stone-500 font-bold text-xs uppercase tracking-wider">
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>Duration</span>
+                  </div>
+                  <span className="text-sm font-black text-stone-800">
+                    {lesson.duration_in_minutes} mins
+                  </span>
+                </div>
+              )}
+              {lesson.scheduled_at && (
+                <div className="p-5 bg-stone-50 border border-stone-100 rounded-3xl space-y-2">
+                  <div className="flex items-center gap-2 text-stone-500 font-bold text-xs uppercase tracking-wider">
+                    <Calendar className="w-3.5 h-3.5" />
+                    <span>Scheduled Time</span>
+                  </div>
+                  <span className="text-sm font-black text-stone-800">
+                    {new Date(lesson.scheduled_at).toLocaleString()}
                   </span>
                 </div>
               )}

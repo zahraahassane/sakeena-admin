@@ -267,7 +267,9 @@ export const adminApi = api.injectEndpoints({
     // Course Modules
     getCourseModules: builder.query({
       query: (course_pk) => `/courses/${course_pk}/modules/`,
-      providesTags: (result, error, course_pk) => [{ type: "courseModules", id: course_pk }],
+      providesTags: (result, error, course_pk) => [
+        { type: "courseModules", id: course_pk },
+      ],
     }),
     createCourseModule: builder.mutation({
       query: ({ course_pk, body }) => ({
@@ -275,14 +277,18 @@ export const adminApi = api.injectEndpoints({
         method: "POST",
         body,
       }),
-      invalidatesTags: (result, error, { course_pk }) => [{ type: "courseModules", id: course_pk }],
+      invalidatesTags: (result, error, { course_pk }) => [
+        { type: "courseModules", id: course_pk },
+      ],
     }),
     deleteCourseModule: builder.mutation({
       query: ({ course_pk, id }) => ({
         url: `/courses/${course_pk}/modules/${id}/`,
         method: "DELETE",
       }),
-      invalidatesTags: (result, error, { course_pk }) => [{ type: "courseModules", id: course_pk }],
+      invalidatesTags: (result, error, { course_pk }) => [
+        { type: "courseModules", id: course_pk },
+      ],
     }),
     // Module Lessons
     getModuleLessons: builder.query({
@@ -293,7 +299,8 @@ export const adminApi = api.injectEndpoints({
       ],
     }),
     getLessonDetails: builder.query({
-      query: ({ course_pk, module_pk, id }) => `/courses/${course_pk}/modules/${module_pk}/lessons/${id}/`,
+      query: ({ course_pk, module_pk, id }) =>
+        `/courses/${course_pk}/modules/${module_pk}/lessons/${id}/`,
       providesTags: (result, error, { id }) => [{ type: "lesson", id }],
     }),
     createModuleLesson: builder.mutation({
@@ -302,7 +309,9 @@ export const adminApi = api.injectEndpoints({
         method: "POST",
         body,
       }),
-      invalidatesTags: (result, error, { module_pk }) => [{ type: "moduleLessons", id: module_pk }],
+      invalidatesTags: (result, error, { module_pk }) => [
+        { type: "moduleLessons", id: module_pk },
+      ],
     }),
     updateModuleLesson: builder.mutation({
       query: ({ course_pk, module_pk, id, body }) => ({
@@ -312,7 +321,7 @@ export const adminApi = api.injectEndpoints({
       }),
       invalidatesTags: (result, error, { module_pk, id }) => [
         { type: "moduleLessons", id: module_pk },
-        { type: "lesson", id }
+        { type: "lesson", id },
       ],
     }),
     deleteModuleLesson: builder.mutation({
@@ -320,10 +329,13 @@ export const adminApi = api.injectEndpoints({
         url: `/courses/${course_pk}/modules/${module_pk}/lessons/${id}/`,
         method: "DELETE",
       }),
-      invalidatesTags: (result, error, { module_pk }) => [{ type: "moduleLessons", id: module_pk }],
+      invalidatesTags: (result, error, { module_pk }) => [
+        { type: "moduleLessons", id: module_pk },
+      ],
     }),
     getVideoStatus: builder.query({
-      query: ({ course_pk, module_pk, id }) => `/courses/${course_pk}/modules/${module_pk}/lessons/${id}/video/`,
+      query: ({ course_pk, module_pk, id }) =>
+        `/courses/${course_pk}/modules/${module_pk}/lessons/${id}/video/`,
     }),
     createLessonQuiz: builder.mutation({
       query: ({ course_pk, module_pk, lesson_pk, body }) => ({
@@ -331,7 +343,9 @@ export const adminApi = api.injectEndpoints({
         method: "POST",
         body,
       }),
-      invalidatesTags: (result, error, { module_pk }) => [{ type: "moduleLessons", id: module_pk }],
+      invalidatesTags: (result, error, { module_pk }) => [
+        { type: "moduleLessons", id: module_pk },
+      ],
     }),
     updateLessonQuiz: builder.mutation({
       query: ({ course_pk, module_pk, lesson_pk, id, body }) => ({
@@ -341,7 +355,7 @@ export const adminApi = api.injectEndpoints({
       }),
       invalidatesTags: (result, error, { module_pk, lesson_pk }) => [
         { type: "moduleLessons", id: module_pk },
-        { type: "lesson", id: lesson_pk }
+        { type: "lesson", id: lesson_pk },
       ],
     }),
     createLessonQuizQuestion: builder.mutation({
@@ -352,7 +366,7 @@ export const adminApi = api.injectEndpoints({
       }),
       invalidatesTags: (result, error, { module_pk, lesson_pk }) => [
         { type: "moduleLessons", id: module_pk },
-        { type: "lesson", id: lesson_pk }
+        { type: "lesson", id: lesson_pk },
       ],
     }),
     createLessonAssignment: builder.mutation({
@@ -361,7 +375,9 @@ export const adminApi = api.injectEndpoints({
         method: "POST",
         body,
       }),
-      invalidatesTags: (result, error, { module_pk }) => [{ type: "moduleLessons", id: module_pk }],
+      invalidatesTags: (result, error, { module_pk }) => [
+        { type: "moduleLessons", id: module_pk },
+      ],
     }),
     updateLessonAssignment: builder.mutation({
       query: ({ course_pk, module_pk, lesson_pk, id, body }) => ({
@@ -371,7 +387,7 @@ export const adminApi = api.injectEndpoints({
       }),
       invalidatesTags: (result, error, { module_pk, lesson_pk }) => [
         { type: "moduleLessons", id: module_pk },
-        { type: "lesson", id: lesson_pk }
+        { type: "lesson", id: lesson_pk },
       ],
     }),
     // Course Categories
@@ -545,9 +561,20 @@ export const adminApi = api.injectEndpoints({
     getConsultations: builder.query({
       query: (params = {}) => {
         const queryParams = new URLSearchParams();
-        if (params.teacher) queryParams.append("teacher", params.teacher);
         if (params.page) queryParams.append("page", params.page);
+        if (params.page_size) queryParams.append("page_size", params.page_size);
         if (params.search) queryParams.append("search", params.search);
+        if (params.teacher) queryParams.append("teacher", params.teacher);
+        if (params["teacher__user__email"])
+          queryParams.append(
+            "teacher__user__email",
+            params["teacher__user__email"],
+          );
+        if (params["teacher__user__email__icontains"])
+          queryParams.append(
+            "teacher__user__email__icontains",
+            params["teacher__user__email__icontains"],
+          );
         const q = queryParams.toString();
         return `/consultations/${q ? `?${q}` : ""}`;
       },
@@ -557,7 +584,9 @@ export const adminApi = api.injectEndpoints({
     // Course Discussions
     getCourseDiscussions: builder.query({
       query: (course_pk) => `/courses/${course_pk}/discussions/`,
-      providesTags: (result, error, course_pk) => [{ type: "discussions", id: course_pk }],
+      providesTags: (result, error, course_pk) => [
+        { type: "discussions", id: course_pk },
+      ],
     }),
 
     getCourseDiscussionDetails: builder.query({
@@ -571,7 +600,9 @@ export const adminApi = api.injectEndpoints({
         method: "POST",
         body,
       }),
-      invalidatesTags: (result, error, { course_pk }) => [{ type: "discussions", id: course_pk }],
+      invalidatesTags: (result, error, { course_pk }) => [
+        { type: "discussions", id: course_pk },
+      ],
     }),
 
     patchCourseDiscussion: builder.mutation({
@@ -610,12 +641,17 @@ export const adminApi = api.injectEndpoints({
         url: `/courses/${course_pk}/discussions/${id}/`,
         method: "DELETE",
       }),
-      invalidatesTags: (result, error, { course_pk }) => [{ type: "discussions", id: course_pk }],
+      invalidatesTags: (result, error, { course_pk }) => [
+        { type: "discussions", id: course_pk },
+      ],
     }),
 
     getDiscussionReplies: builder.query({
-      query: ({ course_pk, post_pk }) => `/courses/${course_pk}/discussions/${post_pk}/replies/`,
-      providesTags: (result, error, { post_pk }) => [{ type: "replies", id: post_pk }],
+      query: ({ course_pk, post_pk }) =>
+        `/courses/${course_pk}/discussions/${post_pk}/replies/`,
+      providesTags: (result, error, { post_pk }) => [
+        { type: "replies", id: post_pk },
+      ],
     }),
 
     createDiscussionReply: builder.mutation({
@@ -624,7 +660,9 @@ export const adminApi = api.injectEndpoints({
         method: "POST",
         body,
       }),
-      invalidatesTags: (result, error, { post_pk }) => [{ type: "replies", id: post_pk }],
+      invalidatesTags: (result, error, { post_pk }) => [
+        { type: "replies", id: post_pk },
+      ],
     }),
 
     patchDiscussionReply: builder.mutation({
@@ -1033,7 +1071,6 @@ export const adminApi = api.injectEndpoints({
       invalidatesTags: ["bundles"],
     }),
 
-
     // Get Teacher Profile
     getTeacherProfile: builder.query({
       query: (id) => `/teacher-profiles/${id}/`,
@@ -1042,7 +1079,6 @@ export const adminApi = api.injectEndpoints({
     getTeacherProfileMe: builder.query({
       query: () => "/teacher-profiles/me/",
       providesTags: ["teacher"],
-
     }),
 
     getCourseById: builder.query({
@@ -1075,11 +1111,19 @@ export const adminApi = api.injectEndpoints({
     }),
 
     getAssignmentSubmissions: builder.query({
-      query: ({ status, assignment, courseId, moduleId, search, page = 1 } = {}) => {
+      query: ({
+        status,
+        assignment,
+        courseId,
+        moduleId,
+        search,
+        page = 1,
+      } = {}) => {
         const params = new URLSearchParams({ page });
         if (status) params.append("status", status);
         if (assignment) params.append("assignment", assignment);
-        if (courseId) params.append("assignment__lesson__module__course", courseId);
+        if (courseId)
+          params.append("assignment__lesson__module__course", courseId);
         if (moduleId) params.append("assignment__lesson__module", moduleId);
         if (search) params.append("search", search);
         return `/assignment-submissions/?${params.toString()}`;
@@ -1148,15 +1192,23 @@ export const adminApi = api.injectEndpoints({
     }),
 
     getSales: builder.query({
-      query: ({ page = 1, search, type, payment_status, date_from, date_to } = {}) => {
+      query: ({
+        page = 1,
+        search,
+        type,
+        payment_status,
+        date_from,
+        date_to,
+      } = {}) => {
         const params = new URLSearchParams();
         if (page) params.append("page", page);
         if (search) params.append("search", search);
         if (type && type !== "All Types") params.append("type", type);
-        if (payment_status && payment_status !== "All Status") params.append("payment_status", payment_status);
+        if (payment_status && payment_status !== "All Status")
+          params.append("payment_status", payment_status);
         if (date_from) params.append("date_from", date_from);
         if (date_to) params.append("date_to", date_to);
-        
+
         return `/orders/sales/?${params.toString()}`;
       },
       providesTags: ["sales"],
