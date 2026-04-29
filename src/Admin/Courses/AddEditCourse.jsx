@@ -41,7 +41,7 @@ const AddEditCourse = ({ course, onBack, onSave }) => {
     hours_per_session: "",
     thumbnail: null,
     thumbnailPreview: null,
-    video: null,
+    preview_video: null,
     videoName: "",
     learningObjectives: [],
     requirements: [],
@@ -139,7 +139,7 @@ const AddEditCourse = ({ course, onBack, onSave }) => {
     if (file) {
       setFormData((prev) => ({
         ...prev,
-        video: file,
+        preview_video: file,
         videoName: file.name,
       }));
     }
@@ -301,6 +301,45 @@ const AddEditCourse = ({ course, onBack, onSave }) => {
         toast.success("Course created! Now add your curriculum.");
         setActiveTab("Course Curriculum");
       }
+
+      // Clear the form on success
+      setFormData({
+        title: "",
+        subtitle: "",
+        description: "",
+        teacher: "",
+        category: "",
+        status: "upcoming",
+        price: "",
+        duration_in_weeks: "",
+        level: "beginner",
+        total_hours: "",
+        hours_per_session: "",
+        thumbnail: null,
+        thumbnailPreview: null,
+        preview_video: null,
+        videoName: "",
+        learningObjectives: [],
+        requirements: [],
+        curriculum: [
+          {
+            id: 1,
+            title: "Getting Started",
+            lessons: [
+              {
+                id: 101,
+                title: "Course Overview & Welcome",
+                type: "video",
+                duration: "05:45",
+              },
+            ],
+          },
+        ],
+        start_date: "",
+        is_active: true,
+      });
+      setCourseId(null);
+      if (onSave) onSave(); // Notify parent to refresh list if needed
     } catch (err) {
       console.error("Failed to save course:", err);
       const errorMsg = err?.data
@@ -349,10 +388,10 @@ const AddEditCourse = ({ course, onBack, onSave }) => {
                 setActiveTab(tab);
               }}
               className={`px-6 py-4 text-sm font-bold transition-all border-b-2 whitespace-nowrap ${activeTab === tab
-                  ? "border-teal-600 text-teal-700"
-                  : isLocked
-                    ? "border-transparent text-stone-300 cursor-not-allowed"
-                    : "border-transparent text-stone-400 hover:text-stone-600"
+                ? "border-teal-600 text-teal-700"
+                : isLocked
+                  ? "border-transparent text-stone-300 cursor-not-allowed"
+                  : "border-transparent text-stone-400 hover:text-stone-600"
                 }`}
             >
               {tab}

@@ -158,7 +158,15 @@ const ConsultationDetailsModal = ({ isOpen, onClose, consultation }) => {
           <div className="flex-1 space-y-6">
             <div className="bg-white p-4 rounded-3xl shadow-sm border border-stone-100 flex flex-col gap-4 sm:flex-row sm:items-center">
               <div className="w-16 h-16 bg-stone-100 rounded-full flex items-center justify-center border-2 border-stone-50 overflow-hidden shrink-0">
-                <User className="w-8 h-8 text-stone-400" />
+                {consultation.teacher?.profile_picture ? (
+                  <img 
+                    src={consultation.teacher.profile_picture} 
+                    alt={consultation.teacher?.user?.first_name} 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <User className="w-8 h-8 text-stone-400" />
+                )}
               </div>
               <div className="flex-1">
                 <h3 className="font-bold text-stone-900 inter-font">
@@ -166,9 +174,20 @@ const ConsultationDetailsModal = ({ isOpen, onClose, consultation }) => {
                     consultation.teacher?.user?.last_name || ""
                   }`.trim() || "Teacher"}
                 </h3>
-                <p className="text-xs text-stone-500 font-medium inter-font">
-                  {consultation.teacher?.professional_title || "Professional"}
+                <p className="text-xs text-stone-500 font-medium inter-font flex items-center gap-2">
+                  <span>{consultation.teacher?.professional_title || "Professional"}</span>
+                  {consultation.teacher?.location && (
+                    <>
+                      <span className="text-stone-300">•</span>
+                      <span>{consultation.teacher.location}</span>
+                    </>
+                  )}
                 </p>
+                {consultation.teacher?.about && (
+                  <p className="text-[10px] text-stone-400 mt-1 line-clamp-1">
+                    {consultation.teacher.about}
+                  </p>
+                )}
               </div>
               <div className="text-stone-900 font-bold text-lg">
                 ${consultation.teacher?.consultation_rate ?? "N/A"}
@@ -216,24 +235,46 @@ const ConsultationDetailsModal = ({ isOpen, onClose, consultation }) => {
                                 : "border-stone-200 hover:border-teal-500 hover:bg-teal-50/30"
                           }`}
                         >
-                          <div className="flex items-center gap-3">
-                            <Clock
-                              className={`w-4 h-4 ${
-                                isUnavailable
-                                  ? "text-stone-300"
-                                  : "text-teal-500"
-                              }`}
-                            />
-                            <span
-                              className={`text-sm font-bold inter-font ${
-                                isUnavailable
-                                  ? "text-stone-400 line-through"
-                                  : "text-stone-800"
-                              }`}
-                            >
-                              {formatTime(slot.scheduled_start)} -{" "}
-                              {formatTime(slot.scheduled_end)}
-                            </span>
+                          <div className="flex flex-col gap-2">
+                            <div className="flex items-center gap-3">
+                              <Clock
+                                className={`w-4 h-4 ${
+                                  isUnavailable
+                                    ? "text-stone-300"
+                                    : "text-teal-500"
+                                }`}
+                              />
+                              <span
+                                className={`text-sm font-bold inter-font ${
+                                  isUnavailable
+                                    ? "text-stone-400"
+                                    : "text-stone-800"
+                                }`}
+                              >
+                                {formatTime(slot.scheduled_start)} -{" "}
+                                {formatTime(slot.scheduled_end)}
+                              </span>
+                            </div>
+                            
+                            {isUnavailable && slot.student && (
+                              <div className="ml-7 flex flex-col gap-1">
+                                <span className="text-[11px] font-bold text-stone-500 flex items-center gap-1.5">
+                                  <User className="w-3 h-3" />
+                                  Booked by: {slot.student.user?.first_name} {slot.student.user?.last_name}
+                                </span>
+                                {slot.meeting_link && (
+                                  <a 
+                                    href={slot.meeting_link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="text-[10px] font-black text-teal-600 hover:text-teal-700 underline underline-offset-2 uppercase tracking-widest"
+                                  >
+                                    Join Meeting
+                                  </a>
+                                )}
+                              </div>
+                            )}
                           </div>
                           {isUnavailable && (
                             <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-2 py-0.5 rounded-full uppercase tracking-wider">
@@ -369,7 +410,7 @@ const ConsultationDetailsModal = ({ isOpen, onClose, consultation }) => {
           </div>
         </div>
 
-        {consultation.bundleSessions && (
+        {consultation.bundle_sessions && (
           <div className="px-6 pb-8 md:px-8">
             <div className="relative bg-white rounded-3xl border-2 border-amber-600 shadow-xl p-6 flex flex-col items-center text-center group">
               <div className="absolute -top-4 bg-amber-600 text-white text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest shadow-lg transform transition-transform group-hover:scale-110">
@@ -383,20 +424,20 @@ const ConsultationDetailsModal = ({ isOpen, onClose, consultation }) => {
                   Complete Bundle
                 </h3>
                 <p className="text-sm font-bold text-stone-500 inter-font uppercase tracking-widest">
-                  {consultation.bundleSessions} sessions included
+                  {consultation.bundle_sessions} sessions included
                 </p>
               </div>
               <div className="mt-4 flex items-baseline gap-3">
                 <span className="text-4xl font-black text-amber-600 arimo-font tracking-tighter">
                   $
                   {(
-                    50 *
-                    consultation.bundleSessions *
-                    (1 - consultation.discount / 100)
+                    Number(consultation.teacher?.consultation_rate || 0) *
+                    consultation.bundle_sessions *
+                    (1 - (parseFloat(consultation.discount_percentage) || 0) / 100)
                   ).toFixed(0)}
                 </span>
                 <span className="text-lg font-bold text-stone-300 line-through decoration-amber-200/50">
-                  ${50 * consultation.bundleSessions}
+                  ${(Number(consultation.teacher?.consultation_rate || 0) * consultation.bundle_sessions).toFixed(0)}
                 </span>
               </div>
             </div>

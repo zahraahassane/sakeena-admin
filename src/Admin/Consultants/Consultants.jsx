@@ -138,26 +138,24 @@ const Consultants = () => {
   };
 
   const buildSlotSummaries = (slots) => {
-    if (!slots?.length) return {};
+    if (!slots?.length) return [];
     const sortedSlots = [...slots].sort(
       (a, b) => new Date(a.scheduled_start) - new Date(b.scheduled_start),
     );
 
-    return sortedSlots.reduce((groups, slot) => {
-      const date = new Date(slot.day || slot.scheduled_start);
-      const dateLabel = formatSlotDate(slot);
+    return sortedSlots.map((slot) => {
+      const date = new Date(slot.scheduled_start);
       const monthYear = date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
-      const start = formatTime(slot.scheduled_start);
-      const end = formatTime(slot.scheduled_end);
-
-      if (!groups[dateLabel]) {
-        groups[dateLabel] = { dateLabel, monthYear, firstStart: start, lastEnd: end };
-      } else {
-        groups[dateLabel].lastEnd = end;
-      }
-
-      return groups;
-    }, {});
+      
+      return {
+        id: slot.id,
+        dateLabel: formatDate(slot.scheduled_start),
+        monthYear,
+        startTime: formatTime(slot.scheduled_start),
+        endTime: formatTime(slot.scheduled_end),
+        isBooked: slot.is_booked
+      };
+    });
   };
 
   const handleTeacherClick = (teacher) => {
@@ -420,10 +418,9 @@ const Consultants = () => {
                     </div>
                   ) : consultations.length > 0 ? (
                     consultations.map((consultation) => {
-                      const slotSummaries = buildSlotSummaries(
+                      const slotSummariesList = buildSlotSummaries(
                         consultation.timeslots,
                       );
-                      const slotSummariesList = Object.values(slotSummaries);
                       const uniqueMonths = [...new Set(slotSummariesList.map(s => s.monthYear))];
                       const currentActiveMonth = activeMonths[consultation.id] || uniqueMonths[0];
                       const filteredSlots = slotSummariesList.filter(s => s.monthYear === currentActiveMonth);
@@ -522,23 +519,34 @@ const Consultants = () => {
                           {/* Precise Slots Grid */}
                           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                             {filteredSlots.length > 0 ? (
-                              filteredSlots.map((group, idx) => (
+                              filteredSlots.map((slot) => (
                                 <div
-                                  key={idx}
-                                  className="group/slot bg-white rounded-[2rem] border border-stone-100 p-6 flex flex-col gap-5 shadow-sm hover:shadow-2xl hover:shadow-stone-900/5 transition-all duration-500 border-t-2 border-t-transparent hover:border-t-teal-500"
+                                  key={slot.id}
+                                  className={`group/slot bg-white rounded-[2rem] border p-6 flex flex-col gap-5 shadow-sm hover:shadow-2xl hover:shadow-stone-900/5 transition-all duration-500 border-t-2 border-t-transparent ${slot.isBooked ? 'opacity-70 grayscale-[0.5] border-stone-100' : 'hover:border-t-teal-500 border-stone-100'}`}
                                 >
-                                  <div className="space-y-1">
-                                    <span className="text-[10px] font-black text-stone-300 uppercase tracking-[0.2em] block leading-none">
-                                      Availability
-                                    </span>
-                                    <span className="text-[11px] font-black text-stone-900 uppercase tracking-wider block">
-                                      {group.dateLabel}
-                                    </span>
+                                  <div className="flex items-center justify-between">
+                                    <div className="space-y-1">
+                                      <span className="text-[10px] font-black text-stone-300 uppercase tracking-[0.2em] block leading-none">
+                                        Availability
+                                      </span>
+                                      <span className="text-[11px] font-black text-stone-900 uppercase tracking-wider block">
+                                        {slot.dateLabel}
+                                      </span>
+                                    </div>
+                                    {slot.isBooked && (
+                                      <span className="text-[8px] font-black bg-rose-50 text-rose-500 px-2 py-1 rounded-full uppercase tracking-tighter">
+                                        Booked
+                                      </span>
+                                    )}
                                   </div>
-                                  <div className="flex items-center gap-3 bg-stone-50 border border-stone-100 rounded-2xl px-4 py-3 text-stone-600 font-bold text-xs group-hover/slot:bg-teal-50 group-hover/slot:border-teal-100 group-hover/slot:text-teal-700 transition-colors">
-                                    <Clock className="w-4 h-4 text-stone-300 group-hover/slot:text-teal-500" />
+                                  <div className={`flex items-center gap-3 border rounded-2xl px-4 py-3 font-bold text-xs transition-colors ${
+                                    slot.isBooked 
+                                      ? 'bg-stone-50 border-stone-100 text-stone-400' 
+                                      : 'bg-stone-50 border-stone-100 text-stone-600 group-hover/slot:bg-teal-50 group-hover/slot:border-teal-100 group-hover/slot:text-teal-700'
+                                  }`}>
+                                    <Clock className={`w-4 h-4 ${slot.isBooked ? 'text-stone-300' : 'text-stone-300 group-hover/slot:text-teal-500'}`} />
                                     <span className="font-black text-[11px] tracking-tight">
-                                      {group.firstStart} - {group.lastEnd}
+                                      {slot.startTime} - {slot.endTime}
                                     </span>
                                   </div>
                                 </div>
