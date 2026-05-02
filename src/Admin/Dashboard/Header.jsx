@@ -4,8 +4,10 @@ import { Bell, LogOut } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { clearAuth } from "@/Redux/features/auth/authSlice";
+import { useGetTeacherProfileMeQuery } from "@/Api/adminApi";
 
 const Header = ({ title, subtitle }) => {
+  const { data: profileData } = useGetTeacherProfileMeQuery();
   const [hasNotification, setHasNotification] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
@@ -16,6 +18,9 @@ const Header = ({ title, subtitle }) => {
     dispatch(clearAuth());
     navigate("/login");
   };
+
+  const displayName = profileData?.user?.first_name + " " + profileData?.user?.last_name || "Teacher";
+  const displayImage = profileData?.profile_picture || profile;
 
   return (
     <div className="flex items-center justify-between px-4 md:px-8 py-5 md:py-7 bg-[#FFFFFF] border-b border-neutral-100 flex-wrap gap-4">
@@ -29,11 +34,11 @@ const Header = ({ title, subtitle }) => {
       </div>
       <div className="flex items-center gap-4">
 <<<<<<< HEAD
-        
-        <div className="flex items-center gap-3 border-l-2 border-[#0000001A] pl-4">
-          <div className="flex flex-col">
-            <h1 className="text-right justify-start text-neutral-950 text-sm font-semibold inter-font">
-              Fatima Ara
+
+  <div className="flex items-center gap-3 border-l-2 border-[#0000001A] pl-4">
+    <div className="flex flex-col">
+      <h1 className="text-right justify-start text-neutral-950 text-sm font-semibold inter-font">
+        Fatima Ara
 =======
 
         <div className="flex items-center gap-2 md:gap-3 border-l md:border-l-2 border-slate-100 pl-3 md:pl-4">
@@ -51,19 +56,19 @@ const Header = ({ title, subtitle }) => {
             <img src={profile} alt="" />
 =======
           <button className="w-9 h-9 md:w-11 md:h-11 rounded-xl overflow-hidden bg-slate-50 border border-slate-200 shadow-sm transition-transform active:scale-95 shrink-0">
-            <img src={displayImage} alt="profile" className="w-full h-full object-cover" />
+      <img src={displayImage} alt="profile" className="w-full h-full object-cover" />
 >>>>>>> 06b4bc7 (updated)
-          </button>
-        </div>
-        <button
-          onClick={handleLogout}
-          className="p-2 text-[#4A5565] transition-colors hover:text-red-600"
-          title="Logout"
-        >
-          <LogOut size={20} />
-        </button>
-      </div>
-    </div>
+    </button>
+  </div>
+    <button
+      onClick={handleLogout}
+      className="p-2 text-[#4A5565] transition-colors hover:text-red-600"
+      title="Logout"
+    >
+      <LogOut size={20} />
+    </button>
+      </div >
+    </div >
   );
 };
 

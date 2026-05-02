@@ -1,4 +1,4 @@
-import { api } from "./api";
+import { api, normalizeListResponse } from "./api";
 
 export const adminApi = api.injectEndpoints({
   endpoints: (builder) => ({
@@ -1112,6 +1112,7 @@ export const adminApi = api.injectEndpoints({
     getCourseReviews: builder.query({
       query: ({ courseId, page = 1 } = {}) =>
         `/courses/${courseId}/reviews/?page=${page}`,
+      transformResponse: normalizeListResponse,
       providesTags: ["reviews"],
     }),
 
@@ -1133,6 +1134,7 @@ export const adminApi = api.injectEndpoints({
         if (search) params.append("search", search);
         return `/assignment-submissions/?${params.toString()}`;
       },
+      transformResponse: normalizeListResponse,
       providesTags: ["assignmentSubmissions"],
     }),
 
@@ -1165,18 +1167,9 @@ export const adminApi = api.injectEndpoints({
       providesTags: ["consultations"],
     }),
 
-    getConsultationCalendar: builder.query({
-      query: ({ id, month }) => `/consultations/${id}/calendar/?month=${month}`,
-      providesTags: ["consultationCalendar"],
-    }),
-
-    getConsultationTimeslots: builder.query({
-      query: ({ id, date }) => `/consultations/${id}/timeslots/?date=${date}`,
-      providesTags: ["consultationTimeslots"],
-    }),
-
     getTeacherUpcomingSessions: builder.query({
       query: () => "/teacher/consultations/",
+      transformResponse: normalizeListResponse,
       providesTags: ["teacherSessions"],
     }),
 
@@ -1186,6 +1179,7 @@ export const adminApi = api.injectEndpoints({
         if (status) params.append("status", status);
         return `/teacher/live-sessions/?${params.toString()}`;
       },
+      transformResponse: normalizeListResponse,
       providesTags: ["teacherLiveSessions"],
     }),
 
@@ -1267,6 +1261,11 @@ export const {
   useGetSiteSettingsQuery,
   useUpdateSiteSettingsMutation,
   useGetAdminDashboardQuery,
+  useGetCourseByIdQuery,
+  useGetCourseEnrollmentsQuery,
+  useGetLessonQuizzesQuery,
+  useGetLessonAssignmentsQuery,
+  useGetCourseReviewsQuery,
   useGetAssignmentSubmissionsQuery,
   useGetAssignmentSubmissionQuery,
   useReviewAssignmentSubmissionMutation,
@@ -1277,6 +1276,8 @@ export const {
   useCreateConsultationBundleMutation,
   useGetConsultationCalendarQuery,
   useGetConsultationTimeslotsQuery,
+  useGetTeacherUpcomingSessionsQuery,
+  useGetTeacherLiveSessionsQuery,
   useGetRescheduleRequestsQuery,
   useGetRescheduleRequestDetailsQuery,
   useAcceptRescheduleRequestMutation,
@@ -1343,13 +1344,6 @@ export const {
   usePatchDiscussionReplyMutation,
   useDeleteDiscussionReplyMutation,
   useGetTeacherEarningsQuery,
-  useGetCourseByIdQuery,
-  useGetCourseEnrollmentsQuery,
-  useGetLessonQuizzesQuery,
-  useGetLessonAssignmentsQuery,
-  useGetCourseReviewsQuery,
-  useGetTeacherUpcomingSessionsQuery,
-  useGetTeacherLiveSessionsQuery,
   useGetTeacherDashboardQuery,
   useGetQuizAttemptsQuery,
   useGetQuizAttemptDetailsQuery,

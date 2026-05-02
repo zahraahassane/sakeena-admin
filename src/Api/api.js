@@ -9,7 +9,7 @@ const API_BASE_URL =
   normalizeBaseUrl(import.meta.env.VITE_API_URL) ||
   "https://api.sakeenapress.org/";
 
-const normalizeListResponse = (response) => {
+export const normalizeListResponse = (response) => {
   if (Array.isArray(response)) return response;
   if (Array.isArray(response?.results)) return response.results;
   return [];
@@ -131,8 +131,19 @@ export const api = createApi({
             ]
           : [{ type: "courses", id: "LIST" }],
     }),
+    setPassword: builder.mutation({
+      query: (body) => ({
+        url: "auth/users/set_password/",
+        method: "POST",
+        body,
+      }),
+    }),
   }),
 });
 
-export const { useLoginMutation, useGetCategoriesQuery, useGetCoursesQuery } =
-  api;
+export const {
+  useLoginMutation,
+  useGetCategoriesQuery,
+  useGetCoursesQuery,
+  useSetPasswordMutation,
+} = api;

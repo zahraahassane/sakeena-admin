@@ -18,8 +18,6 @@ export default function TeacherSettings() {
           <div className="flex gap-8">
             {[
               { id: "general", label: "General" },
-              { id: "terms", label: "Terms & Conditions" },
-              { id: "privacy", label: "Privacy Policy" },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -42,8 +40,6 @@ export default function TeacherSettings() {
         {/* Content */}
         <div className="mt-6">
           {activeTab === "general" && <General />}
-          {activeTab === "terms" && <TermsAndConditions />}
-          {activeTab === "privacy" && <PrivacyPolicy />}
         </div>
       </div>
     </div>
