@@ -1,4 +1,4 @@
-import { api } from "./api";
+import { api, normalizeListResponse } from "./api";
 
 export const adminApi = api.injectEndpoints({
   endpoints: (builder) => ({
