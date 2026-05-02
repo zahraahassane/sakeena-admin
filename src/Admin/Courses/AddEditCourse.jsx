@@ -222,7 +222,8 @@ const AddEditCourse = ({ course, onBack, onSave }) => {
       } else {
         const response = await createCourse(payload).unwrap();
         setCourseId(response.id);
-        toast.success("Course created successfully!");
+        toast.success("Course created! Now add your curriculum.");
+        setActiveTab("Course Curriculum");
       }
     } catch (err) {
       console.error("Failed to save course:", err);
@@ -259,19 +260,30 @@ const AddEditCourse = ({ course, onBack, onSave }) => {
 
       {/* Tabs */}
       <div className="flex border-b border-stone-200 overflow-x-auto no-scrollbar">
-        {tabs.map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`px-6 py-4 text-sm font-bold transition-all border-b-2 whitespace-nowrap ${
-              activeTab === tab
-                ? "border-teal-600 text-teal-700"
-                : "border-transparent text-stone-400 hover:text-stone-600"
-            }`}
-          >
-            {tab}
-          </button>
-        ))}
+        {tabs.map((tab) => {
+          const isLocked = tab === "Course Curriculum" && !courseId;
+          return (
+            <button
+              key={tab}
+              onClick={() => {
+                if (isLocked) {
+                  toast.error("Save the course overview first.");
+                  return;
+                }
+                setActiveTab(tab);
+              }}
+              className={`px-6 py-4 text-sm font-bold transition-all border-b-2 whitespace-nowrap ${
+                activeTab === tab
+                  ? "border-teal-600 text-teal-700"
+                  : isLocked
+                  ? "border-transparent text-stone-300 cursor-not-allowed"
+                  : "border-transparent text-stone-400 hover:text-stone-600"
+              }`}
+            >
+              {tab}
+            </button>
+          );
+        })}
       </div>
 
       {isLoadingDetails ? (
@@ -492,12 +504,29 @@ const AddEditCourse = ({ course, onBack, onSave }) => {
           )}
 
           {activeTab === "Course Curriculum" && (
-            <CourseCurriculum
-              courseId={courseId}
-              onInitialize={handleSubmit}
-              modules={formData.curriculum}
-              onModulesChange={handleCurriculumChange}
-            />
+            <>
+              {!courseId && (
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl px-6 py-4 text-amber-800 font-medium text-sm">
+                  Save the course overview first before adding curriculum.
+                </div>
+              )}
+              <CourseCurriculum
+                courseId={courseId}
+                onInitialize={handleSubmit}
+                modules={formData.curriculum}
+                onModulesChange={handleCurriculumChange}
+              />
+              {courseId && (
+                <div className="flex justify-end pt-2">
+                  <button
+                    onClick={onBack}
+                    className="flex items-center gap-2 bg-greenTeal text-white px-8 py-3 rounded-xl font-bold hover:bg-teal-700 transition-all shadow-lg active:scale-95"
+                  >
+                    Done — Back to Courses
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </>
       )}
