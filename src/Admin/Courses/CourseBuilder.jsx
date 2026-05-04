@@ -51,11 +51,10 @@ const CourseBuilder = ({ course, onBack }) => {
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`px-6 py-4 text-sm font-bold transition-all border-b-2 whitespace-nowrap ${
-              activeTab === tab
+            className={`px-6 py-4 text-sm font-bold transition-all border-b-2 whitespace-nowrap ${activeTab === tab
                 ? "border-teal-600 text-teal-700"
                 : "border-transparent text-stone-400 hover:text-stone-600"
-            }`}
+              }`}
           >
             {tab}
           </button>
@@ -86,8 +85,8 @@ const CourseBuilder = ({ course, onBack }) => {
           )}
           {activeTab === "Review" && <CourseReviews />}
           {activeTab === "Community Chat" && (
-            <CommunityChat 
-              courseTitle={fullCourse?.title || course.title} 
+            <CommunityChat
+              courseTitle={fullCourse?.title || course.title}
               courseId={course.id}
             />
           )}
@@ -131,8 +130,8 @@ const UploadCard = ({
       />
 
       {preview &&
-      typeof preview === "string" &&
-      preview.startsWith("data:image") ? (
+        typeof preview === "string" &&
+        preview.startsWith("data:image") ? (
         <div className="absolute inset-0 z-0">
           <img
             src={preview}

@@ -101,9 +101,18 @@ const CourseDetailsContent = ({ course }) => {
             <label className="text-xs font-semibold text-stone-500 uppercase tracking-widest mb-3 block">
               Description
             </label>
-            <div className="p-5 bg-stone-50 rounded-2xl border border-stone-100 text-[15px] text-stone-600 leading-relaxed font-medium">
-              {course.description || "No description provided."}
-            </div>
+            {(() => {
+              const cleanDescription = (course.description || "")
+                .replace(/&lt;/g, "<")
+                .replace(/&gt;/g, ">")
+                .replace(/&amp;/g, "&");
+              return (
+                <div
+                  className="p-5 bg-stone-50 rounded-2xl border border-stone-100 text-[15px] text-stone-600 leading-relaxed font-medium rich-text-content"
+                  dangerouslySetInnerHTML={{ __html: cleanDescription || "No description provided." }}
+                />
+              );
+            })()}
           </div>
         </div>
       </div>
