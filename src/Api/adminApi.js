@@ -1120,8 +1120,24 @@ export const adminApi = api.injectEndpoints({
     getCourseReviews: builder.query({
       query: ({ courseId, page = 1 } = {}) =>
         `/courses/${courseId}/reviews/?page=${page}`,
-      transformResponse: normalizeListResponse,
       providesTags: ["reviews"],
+    }),
+
+    updateCourseReview: builder.mutation({
+      query: ({ courseId, reviewId, ...body }) => ({
+        url: `/courses/${courseId}/reviews/${reviewId}/`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: ["reviews"],
+    }),
+
+    deleteCourseReview: builder.mutation({
+      query: ({ courseId, reviewId }) => ({
+        url: `/courses/${courseId}/reviews/${reviewId}/`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["reviews"],
     }),
 
     getAssignmentSubmissions: builder.query({
@@ -1281,6 +1297,8 @@ export const {
   useGetLessonQuizzesQuery,
   useGetLessonAssignmentsQuery,
   useGetCourseReviewsQuery,
+  useUpdateCourseReviewMutation,
+  useDeleteCourseReviewMutation,
   useGetAssignmentSubmissionsQuery,
   useGetAssignmentSubmissionQuery,
   useReviewAssignmentSubmissionMutation,

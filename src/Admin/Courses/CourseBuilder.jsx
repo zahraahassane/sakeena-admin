@@ -16,7 +16,7 @@ const CourseBuilder = ({ course, onBack }) => {
     "Course Details",
     "Curriculum",
     "Enrollments",
-    // "Review",
+    "Reviews",
     "Community Chat",
   ];
 
@@ -83,7 +83,7 @@ const CourseBuilder = ({ course, onBack }) => {
           {activeTab === "Enrollments" && (
             <CourseEnrollments courseId={course.id} />
           )}
-          {activeTab === "Review" && <CourseReviews />}
+          {activeTab === "Reviews" && <CourseReviews courseId={course.id} />}
           {activeTab === "Community Chat" && (
             <CommunityChat
               courseTitle={fullCourse?.title || course.title}
