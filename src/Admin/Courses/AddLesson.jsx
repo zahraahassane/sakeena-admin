@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import * as tus from "tus-js-client";
 import {
   X,
   Video,
@@ -22,6 +23,7 @@ import {
   useUpdateModuleLessonMutation,
   useGetLessonDetailsQuery,
   useLazyGetVideoStatusQuery,
+  useInitLessonVideoUploadMutation,
   useCreateLessonQuizMutation,
   useUpdateLessonQuizMutation,
   useCreateLessonQuizQuestionMutation,
@@ -77,6 +79,7 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
   }, { skip: !lessonId || !isOpen, refetchOnMountOrArgChange: true });
 
   const [getVideoStatus] = useLazyGetVideoStatusQuery();
+  const [initVideoUpload] = useInitLessonVideoUploadMutation();
   const [createQuiz] = useCreateLessonQuizMutation();
   const [updateQuiz] = useUpdateLessonQuizMutation();
   const [createQuizQuestion] = useCreateLessonQuizQuestionMutation();
@@ -303,11 +306,10 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
         payload.append("scheduled_at", `${liveDate}T${liveTime}:00Z`);
       } else if (contentType === "external_link") {
         payload.append("content", link);
-      } else if (file) {
+      } else if (contentType === "document" && file) {
         payload.append("file_content", file);
-      } else if (existingFileUrl && (contentType === "video" || contentType === "document")) {
-        // If we have an existing URL and no new file, we don't append file_content
-        // unless the backend requires it. Usually PATCH only updates what's provided.
+      } else if (existingFileUrl && contentType === "document") {
+        // keep existing doc — nothing to append
       }
 
       let resLesson;
@@ -400,19 +402,45 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
             body: assignmentPayload
           }).unwrap();
         }
-      } else if (contentType === "video" && file && !lessonId) {
-        // Only trigger special video flow on initial create if file is present
-        if (resLesson.video_upload?.upload_url) {
-          setVideoStatus('uploading');
-          await fetch(resLesson.video_upload.upload_url, {
-            method: resLesson.video_upload.upload_method || "PUT",
-            headers: resLesson.video_upload.upload_headers || {},
-            body: file,
+      } else if (contentType === "video" && file) {
+        // TUS upload flow: init on backend, then upload via tus-js-client
+        const tusData = await initVideoUpload({
+          course_pk: courseId,
+          module_pk: moduleId,
+          id: activeLessonId,
+        }).unwrap();
+
+        setVideoStatus("uploading");
+        setUploadProgress(0);
+
+        await new Promise((resolve, reject) => {
+          const upload = new tus.Upload(file, {
+            endpoint: tusData.tus_endpoint,
+            headers: {
+              AuthorizationSignature: tusData.tus_signature,
+              AuthorizationExpire: String(tusData.tus_expiration_time),
+              VideoId: tusData.video_id,
+              LibraryId: String(tusData.tus_library_id),
+            },
+            metadata: { filetype: file.type, title: file.name },
+            onProgress: (uploaded, total) => {
+              setUploadProgress(Math.round((uploaded / total) * 100));
+            },
+            onSuccess: () => {
+              startPolling(activeLessonId);
+              resolve();
+            },
+            onError: (err) => {
+              reject(err);
+            },
           });
-          startPolling(resLesson.id);
-          toast.success("Video upload started!");
-          // Don't close yet if we want to show progress? Actually let's close for consistency.
-        }
+          upload.start();
+        });
+
+        toast.success("Video uploaded! Processing in background…");
+        resetForm();
+        onClose();
+        return;
       }
 
       toast.success(lessonId ? "Lesson updated successfully" : "Lesson added successfully");
@@ -502,11 +530,19 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
                     <AlertCircle className="w-5 h-5" />
                   )}
                   <span className="text-sm font-bold">
-                    {videoStatus === 'uploading' && "Uploading video file..."}
+                    {videoStatus === 'uploading' && `Uploading video… ${uploadProgress}%`}
                     {videoStatus === 'processing' && "Video is processing. This may take a few minutes."}
                     {videoStatus === 'ready' && "Video is ready and available for students."}
                     {videoStatus === 'error' && "There was an error processing your video."}
                   </span>
+                  {videoStatus === 'uploading' && (
+                    <div className="w-full mt-2 bg-blue-200 rounded-full h-1.5">
+                      <div
+                        className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
+                        style={{ width: `${uploadProgress}%` }}
+                      />
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -770,7 +806,11 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
             {isUploading ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
-                <span>Working...</span>
+                <span>
+                  {videoStatus === 'uploading'
+                    ? `Uploading ${uploadProgress}%`
+                    : "Working…"}
+                </span>
               </>
             ) : (
               <>

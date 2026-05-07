@@ -348,6 +348,12 @@ export const adminApi = api.injectEndpoints({
       query: ({ course_pk, module_pk, id }) =>
         `/courses/${course_pk}/modules/${module_pk}/lessons/${id}/video/`,
     }),
+    initLessonVideoUpload: builder.mutation({
+      query: ({ course_pk, module_pk, id }) => ({
+        url: `/courses/${course_pk}/modules/${module_pk}/lessons/${id}/video/`,
+        method: "POST",
+      }),
+    }),
     createLessonQuiz: builder.mutation({
       query: ({ course_pk, module_pk, lesson_pk, body }) => ({
         url: `/courses/${course_pk}/modules/${module_pk}/lessons/${lesson_pk}/quizzes/`,
@@ -1360,6 +1366,7 @@ export const {
   useUpdateModuleLessonMutation,
   useDeleteModuleLessonMutation,
   useLazyGetVideoStatusQuery,
+  useInitLessonVideoUploadMutation,
   useCreateLessonQuizMutation,
   useUpdateLessonQuizMutation,
   useCreateLessonQuizQuestionMutation,
