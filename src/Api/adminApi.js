@@ -316,6 +316,13 @@ export const adminApi = api.injectEndpoints({
         "courses",
       ],
     }),
+    deleteCourse: builder.mutation({
+      query: (id) => ({
+        url: `/courses/${id}/`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["courses"],
+    }),
     // Course Modules
     getCourseModules: builder.query({
       query: (course_pk) => `/courses/${course_pk}/modules/`,
@@ -1403,6 +1410,7 @@ export const {
   useDeleteNewsletterSubscriberMutation,
   useCreateCourseMutation,
   useUpdateCourseMutation,
+  useDeleteCourseMutation,
   useGetCourseModulesQuery,
   useCreateCourseModuleMutation,
   useDeleteCourseModuleMutation,

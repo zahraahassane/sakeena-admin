@@ -36,6 +36,7 @@ import {
   useGetCoursesDataQuery,
   useGetAllCoursesUnpaginatedQuery,
   useReorderCoursesMutation,
+  useDeleteCourseMutation,
   useGetCourseCategoriesQuery,
   useAddCourseCategoryMutation,
   useDeleteCourseCategoryMutation,
@@ -128,6 +129,7 @@ const Courses = () => {
     { skip: !isReorderMode }
   );
   const [reorderCourses, { isLoading: isSavingOrder }] = useReorderCoursesMutation();
+  const [deleteCourse] = useDeleteCourseMutation();
   const { data: categoriesResponse } = useGetCourseCategoriesQuery();
   const [addCategory] = useAddCourseCategoryMutation();
   const [deleteCategory] = useDeleteCourseCategoryMutation();
@@ -189,6 +191,53 @@ const Courses = () => {
   const handleOpenBuilder = (course) => {
     setSelectedCourse(course);
     setActiveView("builder");
+  };
+
+  const handleDeleteCourse = (course) => {
+    toast(
+      (t) => (
+        <div className="flex items-center gap-4 p-1">
+          <div className="flex-1">
+            <p className="text-sm font-bold text-neutral-800 inter-font">Delete Course?</p>
+            <p className="text-xs text-neutral-500 mt-0.5 line-clamp-1">
+              "{course.title}" will be permanently deleted.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => toast.dismiss(t.id)}
+              className="px-3 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={async () => {
+                toast.dismiss(t.id);
+                try {
+                  await deleteCourse(course.id).unwrap();
+                  toast.success("Course deleted");
+                } catch (err) {
+                  toast.error(err?.data?.detail || "Failed to delete course");
+                }
+              }}
+              className="px-3 py-1.5 text-xs font-medium bg-red-500 text-white hover:bg-red-600 rounded-lg transition-colors shadow-sm"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      ),
+      {
+        duration: 6000,
+        position: "top-center",
+        style: {
+          minWidth: "360px",
+          borderRadius: "16px",
+          border: "1px solid rgba(0,0,0,0.05)",
+          boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05)",
+        },
+      }
+    );
   };
 
   const handleAddCategory = async () => {
@@ -748,6 +797,12 @@ const Courses = () => {
                           >
                             <Eye className="w-4 h-4" />
                           </button>
+                          <button
+                            onClick={() => handleDeleteCourse(c)}
+                            className="w-10 h-10 bg-white rounded-xl border border-stone-200 flex justify-center items-center text-stone-400 hover:text-red-600 hover:border-red-300 hover:bg-red-50 transition-all shadow-sm"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -824,6 +879,12 @@ const Courses = () => {
                               className="p-1.5 hover:bg-gray-100 rounded text-slate-400"
                             >
                               <Eye className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteCourse(c)}
+                              className="p-1.5 hover:bg-red-50 rounded text-slate-400 hover:text-red-500"
+                            >
+                              <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
                         </td>
