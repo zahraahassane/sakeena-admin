@@ -25,7 +25,11 @@ import {
   BookOpen,
   Edit2,
   Search,
-  X
+  X,
+  LayoutGrid,
+  List,
+  Clock,
+  Award
 } from "lucide-react";
 
 const AnnouncementCard = ({ announcement, onEdit, onDelete }) => {
@@ -200,6 +204,7 @@ const CourseAnnouncementCard = ({ announcement, onDelete }) => {
 
 const Announcement = () => {
   const [activeTab, setActiveTab] = useState("announcements");
+  const [viewMode, setViewMode] = useState("grid");
   
   const [isModalOpen, setIsModalOpen] = useState(false); // For Course Announcement Creates
   const [isCreatePopupOpen, setIsCreatePopupOpen] = useState(false);
@@ -351,6 +356,22 @@ const Announcement = () => {
         </div>
 
         <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
+          {/* View Mode Toggle */}
+          <div className="flex bg-zinc-100 p-1 rounded-xl shrink-0">
+            <button
+              onClick={() => setViewMode("grid")}
+              className={`p-1.5 rounded-lg transition-all ${viewMode === "grid" ? "bg-white shadow-sm text-[#7AA4A5]" : "text-gray-400 hover:text-gray-600"}`}
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setViewMode("list")}
+              className={`p-1.5 rounded-lg transition-all ${viewMode === "list" ? "bg-white shadow-sm text-[#7AA4A5]" : "text-gray-400 hover:text-gray-600"}`}
+            >
+              <List className="w-4 h-4" />
+            </button>
+          </div>
+
           {/* Search Bar */}
           <div className="relative group w-full sm:w-72 lg:w-96">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 group-focus-within:text-[#7AA4A5] transition-colors" size={18} />
@@ -437,32 +458,120 @@ const Announcement = () => {
                   </div>
                ) : (
                  <>
-                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
+                   <div className={viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6" : "flex flex-col gap-4"}>
                       {coursesList.map((course) => (
-                         <div 
-                           key={course.id}
-                           onClick={() => {
-                             setSelectedCourse(course);
-                             setCourseAnnouncementPage(1);
-                           }}
-                           className="bg-white rounded-3xl p-6 border border-black/5 hover:border-[#7AA4A5] hover:shadow-xl transition-all cursor-pointer group flex flex-col justify-between min-h-[220px]"
-                         >
-                            <div>
-                               <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
-                                  <BookOpen size={24} />
-                               </div>
-                               <h3 className="font-bold text-lg text-neutral-800 line-clamp-2 leading-tight mb-2 group-hover:text-[#7AA4A5] transition-colors">{course.title}</h3>
-                               {course.category && (
-                                  <span className="text-xs font-bold bg-neutral-100 text-neutral-500 px-3 py-1 rounded-full uppercase tracking-wider">
-                                    {course.category.name}
-                                  </span>
-                               )}
-                            </div>
-                            <div className="flex items-center gap-2 mt-5 text-sm text-neutral-500 font-medium border-t border-black/5 pt-4">
-                               <img src={course.teacher?.profile_picture} alt="" className="w-6 h-6 rounded-full object-cover" onError={(e) => e.target.style.display='none'}/>
-                               <span className="truncate">{course.teacher?.user?.first_name} {course.teacher?.user?.last_name}</span>
-                            </div>
-                         </div>
+                         <React.Fragment key={course.id}>
+                           {viewMode === "grid" ? (
+                             <div 
+                               onClick={() => {
+                                 setSelectedCourse(course);
+                                 setCourseAnnouncementPage(1);
+                               }}
+                               className="bg-white rounded-3xl p-6 border border-black/5 hover:border-[#7AA4A5] hover:shadow-xl transition-all cursor-pointer group flex flex-col justify-between min-h-[240px]"
+                             >
+                                <div>
+                                   <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+                                      <BookOpen size={24} />
+                                   </div>
+                                   <h3 className="font-bold text-lg text-neutral-800 line-clamp-3 leading-tight mb-2 group-hover:text-[#7AA4A5] transition-colors">{course.title}</h3>
+                                   {course.category && (
+                                      <span className="text-xs font-bold bg-neutral-100 text-neutral-500 px-3 py-1 rounded-full uppercase tracking-wider">
+                                        {course.category.name}
+                                      </span>
+                                   )}
+                                </div>
+                                <div className="flex items-center gap-2 mt-5 text-sm text-neutral-500 font-medium border-t border-black/5 pt-4">
+                                   <img src={course.teacher?.profile_picture} alt="" className="w-6 h-6 rounded-full object-cover" onError={(e) => e.target.style.display='none'}/>
+                                   <span className="truncate">{course.teacher?.user?.first_name} {course.teacher?.user?.last_name}</span>
+                                </div>
+                             </div>
+                           ) : (
+                             <div 
+                               onClick={() => {
+                                 setSelectedCourse(course);
+                                 setCourseAnnouncementPage(1);
+                               }}
+                               className="bg-white rounded-2xl p-5 border border-black/5 hover:border-[#7AA4A5] hover:shadow-xl transition-all cursor-pointer group flex flex-col lg:flex-row lg:items-center justify-between gap-6"
+                             >
+                                {/* Left: Thumbnail & Title & Meta */}
+                                <div className="flex items-center gap-5 flex-1 min-w-0">
+                                   {/* Thumbnail Image */}
+                                   <div className="w-24 h-16 rounded-xl overflow-hidden shrink-0 bg-neutral-100 border border-black/5 relative flex items-center justify-center">
+                                     {course.thumbnail ? (
+                                       <img src={course.thumbnail} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                                     ) : (
+                                       <BookOpen size={20} className="text-neutral-400" />
+                                     )}
+                                   </div>
+
+                                   {/* Title, Category & Stats */}
+                                   <div className="flex-1 min-w-0 space-y-2">
+                                      <div className="flex flex-wrap items-center gap-2">
+                                         <h3 className="font-bold text-lg text-neutral-800 line-clamp-1 group-hover:text-[#7AA4A5] transition-colors pr-2">{course.title}</h3>
+                                         {course.category && (
+                                            <span className="text-[10px] font-black bg-[#7AA4A5]/10 text-[#7AA4A5] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                                              {course.category.name}
+                                            </span>
+                                         )}
+                                         {course.level && (
+                                            <span className="text-[10px] font-black bg-purple-50 text-purple-600 px-2.5 py-0.5 rounded-full uppercase tracking-wider border border-purple-100">
+                                              {course.level}
+                                            </span>
+                                         )}
+                                         {course.status && (
+                                            <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider border ${
+                                              course.status === 'running' 
+                                                ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
+                                                : course.status === 'upcoming' 
+                                                  ? 'bg-amber-50 text-amber-600 border-amber-100' 
+                                                  : 'bg-blue-50 text-blue-600 border-blue-100'
+                                            }`}>
+                                              {course.status}
+                                            </span>
+                                         )}
+                                      </div>
+
+                                      {/* Stats Row */}
+                                      <div className="flex flex-wrap items-center gap-3 pt-1">
+                                         <div className="flex items-center gap-2 text-stone-600 bg-stone-50 px-3 py-1.5 rounded-xl border border-black/5 shadow-sm text-xs font-bold">
+                                            <Calendar size={14} className="text-[#7AA4A5]" />
+                                            <span>{course.duration_in_weeks || 0} Weeks</span>
+                                         </div>
+                                         <div className="flex items-center gap-2 text-stone-600 bg-stone-50 px-3 py-1.5 rounded-xl border border-black/5 shadow-sm text-xs font-bold">
+                                            <Clock size={14} className="text-[#7AA4A5]" />
+                                            <span>{course.total_hours ? parseFloat(course.total_hours) : 0} hr</span>
+                                         </div>
+                                         <div className="flex items-center gap-2 text-stone-600 bg-stone-50 px-3 py-1.5 rounded-xl border border-black/5 shadow-sm text-xs font-bold">
+                                            <Award size={14} className="text-[#7AA4A5]" />
+                                            <span>{course.total_lessons || 0} Lessons</span>
+                                         </div>
+                                      </div>
+                                   </div>
+                                </div>
+
+                                {/* Right: Teacher & Price */}
+                                <div className="flex items-center justify-between lg:justify-end gap-6 border-t lg:border-t-0 border-neutral-100 pt-4 lg:pt-0 shrink-0">
+                                   {/* Teacher */}
+                                   {course.teacher && (
+                                      <div className="flex items-center gap-2.5 text-sm text-neutral-500 font-medium">
+                                         <img src={course.teacher.profile_picture} alt="" className="w-8 h-8 rounded-full object-cover border border-black/5" />
+                                         <div className="flex flex-col">
+                                            <span className="font-bold text-neutral-800 line-clamp-1">{course.teacher.user?.first_name} {course.teacher.user?.last_name}</span>
+                                            <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider">Instructor</span>
+                                         </div>
+                                      </div>
+                                   )}
+
+                                   {/* Price */}
+                                   <div className="text-right">
+                                      <span className="text-xl font-black text-teal-700 bg-teal-50/50 border border-teal-100 px-4 py-1.5 rounded-2xl block">
+                                         ${course.price}
+                                      </span>
+                                   </div>
+                                </div>
+                             </div>
+                           )}
+                         </React.Fragment>
                       ))}
                    </div>
                    {coursesData?.total_pages > 1 && (
@@ -520,7 +629,7 @@ const Announcement = () => {
                     )}
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+                  <div className={viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6" : "flex flex-col gap-4"}>
                      {courseAnnouncementsList.map((ann) => (
                         <CourseAnnouncementCard 
                           key={ann.id}

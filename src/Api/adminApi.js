@@ -160,6 +160,16 @@ export const adminApi = api.injectEndpoints({
       invalidatesTags: ["blogs"],
     }),
 
+    // Update Blog
+    updateBlog: builder.mutation({
+      query: ({ slug, body }) => ({
+        url: `/blogs/${slug}/`,
+        method: "PATCH",
+        body: body,
+      }),
+      invalidatesTags: ["blogs"],
+    }),
+
     // single blog get
     getBlogDetails: builder.query({
       query: (slug) => `/blogs/${slug}/`,
@@ -219,6 +229,16 @@ export const adminApi = api.injectEndpoints({
         url: "/videos/",
         method: "POST",
         body: data,
+      }),
+      invalidatesTags: ["videos"],
+    }),
+
+    // Update Video
+    updateVideo: builder.mutation({
+      query: ({ slug, body }) => ({
+        url: `/videos/${slug}/`,
+        method: "PATCH",
+        body: body,
       }),
       invalidatesTags: ["videos"],
     }),
@@ -1350,6 +1370,7 @@ export const {
   useGetBookSalesDataQuery,
   useGetBlogsDataQuery,
   useAddBlogMutation,
+  useUpdateBlogMutation,
   useDeleteBlogMutation,
   useGetBlogDetailsQuery,
   useApproveBlogMutation,
@@ -1359,6 +1380,7 @@ export const {
   useDeleteBlogCategoryMutation,
   useGetVideosDataQuery,
   useAddVideoMutation,
+  useUpdateVideoMutation,
   useDeleteVideoMutation,
   useGetVideoDetailsQuery,
   useGetVideoCategoriesQuery,

@@ -33,12 +33,15 @@ const Contents = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [showUploadForm, setShowUploadForm] = useState(null); // 'article', 'video', or null
+  const [editItem, setEditItem] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState("");
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
 
-  const { data: blogsResponse, isLoading: isBlogsLoading } = useGetBlogsDataQuery();
-  const { data: videosResponse, isLoading: isVideosLoading } = useGetVideosDataQuery();
+  const { data: blogsResponse, isLoading: isBlogsLoading } =
+    useGetBlogsDataQuery();
+  const { data: videosResponse, isLoading: isVideosLoading } =
+    useGetVideosDataQuery();
   const { data: categoriesResponse } = useGetBlogCategoriesQuery();
   const [addBlogCategory] = useAddBlogCategoryMutation();
   const [deleteBlogCategory] = useDeleteBlogCategoryMutation();
@@ -166,7 +169,8 @@ const Contents = () => {
                   }
                 } catch (err) {
                   console.error("Failed to delete category:", err);
-                  const errorMsg = err?.data?.detail || "Failed to delete category";
+                  const errorMsg =
+                    err?.data?.detail || "Failed to delete category";
                   toast.error(errorMsg);
                 }
               }}
@@ -238,7 +242,9 @@ const Contents = () => {
   };
 
   const blogs = (blogsResponse?.results || []).map((b) => {
-    const categoryObj = categories.find((c) => c.id === (b.category?.id || b.category));
+    const categoryObj = categories.find(
+      (c) => c.id === (b.category?.id || b.category),
+    );
     return {
       ...b,
       dbId: b.id,
@@ -274,7 +280,9 @@ const Contents = () => {
         ? `https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg`
         : "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?q=80&w=2670&auto=format&fit=crop");
 
-    const categoryObj = categories.find((c) => c.id === (v.category?.id || v.category));
+    const categoryObj = categories.find(
+      (c) => c.id === (v.category?.id || v.category),
+    );
 
     return {
       ...v,
@@ -311,13 +319,18 @@ const Contents = () => {
   const handleSaveContent = (newItem) => {
     // Both articles and videos now handled by API invalidation
     setShowUploadForm(null);
+    setEditItem(null);
   };
 
   if (showUploadForm === "article") {
     return (
       <UploadContent
+        editItem={editItem}
         onSave={handleSaveContent}
-        onBack={() => setShowUploadForm(null)}
+        onBack={() => {
+          setShowUploadForm(null);
+          setEditItem(null);
+        }}
       />
     );
   }
@@ -325,8 +338,12 @@ const Contents = () => {
   if (showUploadForm === "video") {
     return (
       <UploadVideo
+        editItem={editItem}
         onSave={handleSaveContent}
-        onBack={() => setShowUploadForm(null)}
+        onBack={() => {
+          setShowUploadForm(null);
+          setEditItem(null);
+        }}
       />
     );
   }
@@ -561,7 +578,7 @@ const Contents = () => {
                     <User className="w-3.5 h-3.5 text-stone-400" />
                   </div>
                   <span className="text-stone-600 text-xs font-normal italic">
-                    {item.author}
+                    {item.author === "Admin" ? "Sakeena Press" : item.author}
                   </span>
                 </div>
               </div>
@@ -574,6 +591,23 @@ const Contents = () => {
                 >
                   <Trash2 className="w-5 h-4" />
                 </button>
+                {(item.type === "Article" || item.type === "Video") && (
+                  <button
+                    onClick={() => {
+                      setEditItem(item);
+                      setShowUploadForm(
+                        item.type === "Video" ? "video" : "article",
+                      );
+                    }}
+                    className={`px-4 py-1.5 bg-white border rounded-lg text-xs font-semibold transition-colors ${
+                      item.type === "Video"
+                        ? "border-amber-200 text-amber-600 hover:bg-amber-50"
+                        : "border-teal-200 text-teal-600 hover:bg-teal-50"
+                    }`}
+                  >
+                    Edit
+                  </button>
+                )}
                 <button
                   onClick={() =>
                     navigate(`/admin/contents/${item.id}?type=${item.type}`)

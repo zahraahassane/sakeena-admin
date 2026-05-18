@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import {
   useAddVideoMutation,
+  useUpdateVideoMutation,
   useGetVideoCategoriesQuery,
   useAddVideoCategoryMutation,
   useDeleteVideoCategoryMutation,
@@ -21,16 +22,16 @@ import {
 import toast from "react-hot-toast";
 import TextEditor from "../../components/Editor";
 
-const UploadVideo = ({ onSave, onBack }) => {
+const UploadVideo = ({ onSave, onBack, editItem }) => {
   const [formData, setFormData] = useState({
-    title: "",
-    excerpt: "",
-    content: "",
-    category: "",
-    tags: [],
-    coverImage: null, // This will store the preview URL
+    title: editItem?.title || "",
+    excerpt: editItem?.description || "",
+    content: editItem?.content || "",
+    category: editItem?.categoryId || "",
+    tags: editItem?.tags || [],
+    coverImage: editItem?.thumbnail && !editItem.thumbnail.startsWith("blob:") ? editItem.thumbnail : null, // This will store the preview URL
     coverImageFile: null, // This will store the actual File object
-    videoUrl: "", // For external links
+    videoUrl: editItem?.video_url || "", // For external links
   });
 
   const [tagInput, setTagInput] = useState("");
@@ -39,7 +40,9 @@ const UploadVideo = ({ onSave, onBack }) => {
   const fileInputRef = useRef(null);
 
   const { data: categoriesResponse } = useGetVideoCategoriesQuery();
-  const [addVideo, { isLoading: isUploading }] = useAddVideoMutation();
+  const [addVideo, { isLoading: isAdding }] = useAddVideoMutation();
+  const [updateVideo, { isLoading: isUpdating }] = useUpdateVideoMutation();
+  const isUploading = isAdding || isUpdating;
   const [addVideoCategory] = useAddVideoCategoryMutation();
   const [deleteVideoCategory] = useDeleteVideoCategoryMutation();
 
@@ -172,12 +175,17 @@ const UploadVideo = ({ onSave, onBack }) => {
         data.append("cover_image", formData.coverImageFile);
       }
 
-      await addVideo(data).unwrap();
-      toast.success("Video uploaded successfully!");
+      if (editItem) {
+        await updateVideo({ slug: editItem.slug, body: data }).unwrap();
+        toast.success("Video updated successfully!");
+      } else {
+        await addVideo(data).unwrap();
+        toast.success("Video uploaded successfully!");
+      }
       onSave(); // Close form or refresh
     } catch (err) {
-      console.error("Failed to upload video:", err);
-      toast.error(err?.data?.detail || "Failed to upload video. Please try again.");
+      console.error(editItem ? "Failed to update video:" : "Failed to upload video:", err);
+      toast.error(err?.data?.detail || "Failed to " + (editItem ? "update" : "upload") + " video. Please try again.");
     }
   };
 
@@ -355,7 +363,7 @@ const UploadVideo = ({ onSave, onBack }) => {
             </h3>
             <div className="space-y-2">
               <TextEditor
-                value={formData.content}
+                htmlElement={formData.content}
                 onChange={(html) =>
                   setFormData({ ...formData, content: html })
                 }

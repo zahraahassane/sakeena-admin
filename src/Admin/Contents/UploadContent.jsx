@@ -10,6 +10,7 @@ import {
 import { useRef, useState } from "react";
 import {
   useAddBlogMutation,
+  useUpdateBlogMutation,
   useGetBlogCategoriesQuery,
   useAddBlogCategoryMutation,
   useDeleteBlogCategoryMutation,
@@ -17,15 +18,18 @@ import {
 import TextEditor from "../../components/Editor";
 import toast from "react-hot-toast";
 
-const UploadContent = ({ onSave, onBack }) => {
+const UploadContent = ({ onSave, onBack, editItem }) => {
   const [formData, setFormData] = useState({
-    title: "",
-    excerpt: "",
-    content: "",
-    tags: [],
+    title: editItem?.title || "",
+    excerpt: editItem?.description || "",
+    content: editItem?.content || "",
+    tags: editItem?.tags || [],
     coverImage: null,
-    coverImagePreview: null,
-    category: "",
+    coverImagePreview:
+      editItem?.thumbnail && !editItem.thumbnail.startsWith("blob:")
+        ? editItem.thumbnail
+        : null,
+    category: editItem?.categoryId || "",
   });
 
   const [tagInput, setTagInput] = useState("");
@@ -35,6 +39,7 @@ const UploadContent = ({ onSave, onBack }) => {
 
   const { data: categoriesResponse } = useGetBlogCategoriesQuery();
   const [addBlog] = useAddBlogMutation();
+  const [updateBlog] = useUpdateBlogMutation();
   const [addBlogCategory] = useAddBlogCategoryMutation();
   const [deleteBlogCategory] = useDeleteBlogCategoryMutation();
 
@@ -114,7 +119,7 @@ const UploadContent = ({ onSave, onBack }) => {
           boxShadow:
             "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
         },
-      }
+      },
     );
   };
 
@@ -159,7 +164,7 @@ const UploadContent = ({ onSave, onBack }) => {
       uploadData.append("title", formData.title);
       uploadData.append("excerpt", formData.excerpt);
       uploadData.append("content", formData.content);
-      uploadData.append("category", formData.category);
+      uploadData.append("category_id", formData.category);
       if (formData.coverImage) {
         uploadData.append("cover_image", formData.coverImage);
       }
@@ -167,11 +172,25 @@ const UploadContent = ({ onSave, onBack }) => {
         uploadData.append("tags", tag);
       });
 
-      await addBlog(uploadData).unwrap();
+      if (editItem) {
+        await updateBlog({ slug: editItem.slug, body: uploadData }).unwrap();
+        toast.success("Blog updated successfully");
+      } else {
+        await addBlog(uploadData).unwrap();
+        toast.success("Blog added successfully");
+      }
       onBack();
     } catch (err) {
-      console.error("Failed to add blog:", err);
-      toast.error("Error adding blog: " + (err.data?.detail || err.message || "Unknown error"));
+      console.error(
+        editItem ? "Failed to update blog:" : "Failed to add blog:",
+        err,
+      );
+      toast.error(
+        "Error " +
+          (editItem ? "updating" : "adding") +
+          " blog: " +
+          (err.data?.detail || err.message || "Unknown error"),
+      );
     }
   };
 
@@ -278,10 +297,8 @@ const UploadContent = ({ onSave, onBack }) => {
             </h3>
             <div className="space-y-2">
               <TextEditor
-                value={formData.content}
-                onChange={(html) =>
-                  setFormData({ ...formData, content: html })
-                }
+                htmlElement={formData.content}
+                onChange={(html) => setFormData({ ...formData, content: html })}
                 isEditable={true}
                 placeholder="Write your content here..."
               />
@@ -305,8 +322,9 @@ const UploadContent = ({ onSave, onBack }) => {
                   className="w-full h-11 px-4 bg-zinc-100 rounded-lg flex items-center justify-between text-neutral-900 text-sm font-medium hover:bg-zinc-200 transition-all outline-none focus:ring-2 focus:ring-[#7AA4A5]/20"
                 >
                   <span className="truncate">
-                    {categories.find((c) => c.id.toString() === formData.category.toString())
-                      ?.name || "Select Category"}
+                    {categories.find(
+                      (c) => c.id.toString() === formData.category.toString(),
+                    )?.name || "Select Category"}
                   </span>
                   <ChevronDown
                     className={`w-4 h-4 transition-transform duration-300 ${isCategoryOpen ? "rotate-180" : ""}`}
@@ -322,24 +340,33 @@ const UploadContent = ({ onSave, onBack }) => {
                     <div className="absolute top-12 left-0 mt-2 p-1 bg-white border border-stone-100 rounded-xl shadow-2xl flex flex-col gap-1 min-w-[220px] z-50 animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden">
                       <div className="max-h-60 overflow-y-auto p-2 scrollbar-thin scrollbar-thumb-stone-200 scrollbar-track-transparent">
                         {categories.length === 0 ? (
-                          <p className="text-xs text-stone-400 p-4 text-center">No categories found</p>
+                          <p className="text-xs text-stone-400 p-4 text-center">
+                            No categories found
+                          </p>
                         ) : (
                           categories.map((cat) => (
                             <div
                               key={cat.id}
-                              className={`group flex items-center justify-between px-4 py-2.5 rounded-lg text-sm transition-all cursor-pointer ${formData.category.toString() === cat.id.toString()
-                                ? "bg-teal-50 text-teal-700 font-bold"
-                                : "text-stone-600 hover:bg-stone-50"
-                                }`}
+                              className={`group flex items-center justify-between px-4 py-2.5 rounded-lg text-sm transition-all cursor-pointer ${
+                                formData.category.toString() ===
+                                cat.id.toString()
+                                  ? "bg-teal-50 text-teal-700 font-bold"
+                                  : "text-stone-600 hover:bg-stone-50"
+                              }`}
                               onClick={() => {
-                                setFormData((prev) => ({ ...prev, category: cat.id.toString() }));
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  category: cat.id.toString(),
+                                }));
                                 setIsCategoryOpen(false);
                               }}
                             >
                               <span className="truncate">{cat.name}</span>
                               <button
                                 type="button"
-                                onClick={(e) => handleDeleteCategory(cat.slug, cat.id, e)}
+                                onClick={(e) =>
+                                  handleDeleteCategory(cat.slug, cat.id, e)
+                                }
                                 className="p-1.5 text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-all ml-2"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -355,7 +382,9 @@ const UploadContent = ({ onSave, onBack }) => {
                           placeholder="Add category..."
                           value={newCategoryName}
                           onChange={(e) => setNewCategoryName(e.target.value)}
-                          onKeyPress={(e) => e.key === "Enter" && handleAddCategory()}
+                          onKeyPress={(e) =>
+                            e.key === "Enter" && handleAddCategory()
+                          }
                           className="flex-1 h-9 px-3 text-xs bg-white border border-stone-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-600/20 transition-all shadow-sm"
                         />
                         <button
