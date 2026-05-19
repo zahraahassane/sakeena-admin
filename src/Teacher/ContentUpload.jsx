@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Eye, X, Play, Upload } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
-  useGetBlogsDataQuery,
+  useGetMyBlogsDataQuery,
   useAddBlogMutation,
   useGetBlogCategoriesQuery,
   useGetTeacherProfileMeQuery
@@ -19,7 +19,7 @@ export default function ContentUpload() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
 
-  const { data: blogsResponse, isLoading: blogsLoading } = useGetBlogsDataQuery({ search, page });
+  const { data: blogsResponse, isLoading: blogsLoading } = useGetMyBlogsDataQuery({ search, page });
   const { data: categoriesData } = useGetBlogCategoriesQuery();
   const { data: teacherProfile } = useGetTeacherProfileMeQuery();
   const [addBlog, { isLoading: isAdding }] = useAddBlogMutation();

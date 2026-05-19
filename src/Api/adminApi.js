@@ -125,8 +125,24 @@ export const adminApi = api.injectEndpoints({
       providesTags: ["book-sales"],
     }),
 
-    // Get Blogs
+    // Get Blogs (All Blogs - Admin)
     getBlogsData: builder.query({
+      query: (params = {}) => {
+        const queryParams = new URLSearchParams();
+        if (params.page) queryParams.append("page", params.page);
+        if (params.search) queryParams.append("search", params.search);
+        if (params.status) queryParams.append("status", params.status);
+        if (params.category__slug) queryParams.append("category__slug", params.category__slug);
+        if (params.ordering) queryParams.append("ordering", params.ordering);
+        if (params.page_size) queryParams.append("page_size", params.page_size);
+
+        return `/blogs/?${queryParams.toString()}`;
+      },
+      providesTags: ["blogs"],
+    }),
+
+    // Get My Blogs (Teacher specific)
+    getMyBlogsData: builder.query({
       query: (params = {}) => {
         const queryParams = new URLSearchParams();
         if (params.page) queryParams.append("page", params.page);
@@ -1374,6 +1390,7 @@ export const {
   useDeleteBookCategoryMutation,
   useGetBookSalesDataQuery,
   useGetBlogsDataQuery,
+  useGetMyBlogsDataQuery,
   useAddBlogMutation,
   useUpdateBlogMutation,
   useDeleteBlogMutation,
