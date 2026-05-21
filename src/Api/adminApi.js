@@ -385,6 +385,17 @@ export const adminApi = api.injectEndpoints({
         { type: "courseModules", id: course_pk },
       ],
     }),
+    // Update Course Module
+    updateCourseModule: builder.mutation({
+      query: ({ course_pk, id, body }) => ({
+        url: `/courses/${course_pk}/modules/${id}/`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: (result, error, { course_pk }) => [
+        { type: "courseModules", id: course_pk },
+      ],
+    }),
     // Module Lessons
     getModuleLessons: builder.query({
       query: ({ course_pk, module_pk, page = 1 }) =>
@@ -423,6 +434,16 @@ export const adminApi = api.injectEndpoints({
       query: ({ course_pk, module_pk, id }) => ({
         url: `/courses/${course_pk}/modules/${module_pk}/lessons/${id}/`,
         method: "DELETE",
+      }),
+      invalidatesTags: (result, error, { module_pk }) => [
+        { type: "moduleLessons", id: module_pk },
+      ],
+    }),
+    reorderModuleLessons: builder.mutation({
+      query: ({ course_pk, module_pk, order }) => ({
+        url: `/courses/${course_pk}/modules/${module_pk}/lessons/reorder/`,
+        method: "POST",
+        body: { order },
       }),
       invalidatesTags: (result, error, { module_pk }) => [
         { type: "moduleLessons", id: module_pk },
@@ -805,6 +826,28 @@ export const adminApi = api.injectEndpoints({
         url: `/consultations/${consultationId}/recurring/`,
         method: "POST",
         body,
+      }),
+      invalidatesTags: ["consultations"],
+    }),
+
+    getConsultationRecurrings: builder.query({
+      query: (consultationId) => `/consultations/${consultationId}/recurring/`,
+      providesTags: ["consultations"],
+    }),
+
+    updateConsultationRecurring: builder.mutation({
+      query: ({ consultationId, id, body }) => ({
+        url: `/consultations/${consultationId}/recurring/${id}/`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: ["consultations"],
+    }),
+
+    deleteConsultationRecurring: builder.mutation({
+      query: ({ consultationId, id }) => ({
+        url: `/consultations/${consultationId}/recurring/${id}/`,
+        method: "DELETE",
       }),
       invalidatesTags: ["consultations"],
     }),
@@ -1443,6 +1486,9 @@ export const {
   useGetConsultationQuery,
   useCreateConsultationMutation,
   useCreateConsultationRecurringMutation,
+  useGetConsultationRecurringsQuery,
+  useUpdateConsultationRecurringMutation,
+  useDeleteConsultationRecurringMutation,
   useCreateConsultationBundleMutation,
   useGetConsultationCalendarQuery,
   useGetConsultationTimeslotsQuery,
@@ -1492,11 +1538,13 @@ export const {
   useGetCourseModulesQuery,
   useCreateCourseModuleMutation,
   useDeleteCourseModuleMutation,
+  useUpdateCourseModuleMutation,
   useGetModuleLessonsQuery,
   useGetLessonDetailsQuery,
   useCreateModuleLessonMutation,
   useUpdateModuleLessonMutation,
   useDeleteModuleLessonMutation,
+  useReorderModuleLessonsMutation,
   useLazyGetVideoStatusQuery,
   useInitLessonVideoUploadMutation,
   useCreateLessonQuizMutation,
