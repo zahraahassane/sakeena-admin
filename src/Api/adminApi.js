@@ -132,7 +132,8 @@ export const adminApi = api.injectEndpoints({
         if (params.page) queryParams.append("page", params.page);
         if (params.search) queryParams.append("search", params.search);
         if (params.status) queryParams.append("status", params.status);
-        if (params.category__slug) queryParams.append("category__slug", params.category__slug);
+        if (params.category__slug)
+          queryParams.append("category__slug", params.category__slug);
         if (params.ordering) queryParams.append("ordering", params.ordering);
         if (params.page_size) queryParams.append("page_size", params.page_size);
 
@@ -148,7 +149,8 @@ export const adminApi = api.injectEndpoints({
         if (params.page) queryParams.append("page", params.page);
         if (params.search) queryParams.append("search", params.search);
         if (params.status) queryParams.append("status", params.status);
-        if (params.category__slug) queryParams.append("category__slug", params.category__slug);
+        if (params.category__slug)
+          queryParams.append("category__slug", params.category__slug);
         if (params.ordering) queryParams.append("ordering", params.ordering);
         if (params.page_size) queryParams.append("page_size", params.page_size);
 
@@ -593,7 +595,10 @@ export const adminApi = api.injectEndpoints({
         if (page) queryParams.append("page", page);
         if (params && typeof params !== "number") {
           if (params.offers_consultations !== undefined) {
-            queryParams.append("offers_consultations", String(params.offers_consultations));
+            queryParams.append(
+              "offers_consultations",
+              String(params.offers_consultations),
+            );
           }
           if (params.search) {
             queryParams.append("search", params.search);
@@ -686,10 +691,16 @@ export const adminApi = api.injectEndpoints({
         if (params.teacher) queryParams.append("teacher", params.teacher);
 
         if (params["teacher__user__email"]) {
-          queryParams.append("teacher__user__email", params["teacher__user__email"]);
+          queryParams.append(
+            "teacher__user__email",
+            params["teacher__user__email"],
+          );
         }
         if (params["teacher__user__email__icontains"]) {
-          queryParams.append("teacher__user__email__icontains", params["teacher__user__email__icontains"]);
+          queryParams.append(
+            "teacher__user__email__icontains",
+            params["teacher__user__email__icontains"],
+          );
         }
 
         const q = queryParams.toString();
@@ -1320,10 +1331,10 @@ export const adminApi = api.injectEndpoints({
       providesTags: ["quizAttempts"],
     }),
 
-    getConsultations: builder.query({
-      query: () => "/consultations/",
-      providesTags: ["consultations"],
-    }),
+    // getConsultations: builder.query({
+    //   query: () => "/consultations/",
+    //   providesTags: ["consultations"],
+    // }),
 
     getTeacherUpcomingSessions: builder.query({
       query: () => "/teacher/consultations/",
