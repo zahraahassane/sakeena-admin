@@ -139,7 +139,12 @@ const Courses = () => {
     data: apiResponse,
     isLoading,
     isError,
-  } = useGetCoursesDataQuery(currentPage);
+  } = useGetCoursesDataQuery({
+    page: currentPage,
+    search: searchQuery,
+    category: selectedCategory,
+    status: selectedStatus,
+  });
   const { data: allCoursesRaw, isLoading: isLoadingAll } =
     useGetAllCoursesUnpaginatedQuery({}, { skip: !isReorderMode });
   const [reorderCourses, { isLoading: isSavingOrder }] =
@@ -155,6 +160,11 @@ const Courses = () => {
       setReorderedCourses(allCoursesRaw);
     }
   }, [allCoursesRaw]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedCategory, selectedStatus]);
 
   const categories = categoriesResponse || [];
   const statuses = ["All", "Running", "Recorded", "Upcoming"];
@@ -172,22 +182,13 @@ const Courses = () => {
   };
 
   const filteredCourses = (apiResponse?.results || []).filter((c) => {
-    const instructorName = getInstructorName(c.teacher);
-    const statusLabel = getStatusLabel(c.status);
-
-    const matchesSearch =
-      c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      instructorName.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory =
-      selectedCategory === "" || c.category?.id === parseInt(selectedCategory);
-    const matchesStatus =
-      selectedStatus === "All" || statusLabel === selectedStatus;
-
+    // API handles search, category, and status filtering
+    // Only apply date range filtering here
     const matchesDate =
       (!dateFrom || new Date(c.start_date) >= new Date(dateFrom)) &&
       (!dateTo || new Date(c.start_date) <= new Date(dateTo));
 
-    return matchesSearch && matchesCategory && matchesStatus && matchesDate;
+    return matchesDate;
   });
 
   const handleViewCourse = (course) => {

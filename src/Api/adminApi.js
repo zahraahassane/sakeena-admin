@@ -302,8 +302,16 @@ export const adminApi = api.injectEndpoints({
       query: (params = {}) => {
         const queryParams = new URLSearchParams();
         const page = typeof params === "number" ? params : params?.page || 1;
+        const pageSize = params?.page_size || 20;
+        
         queryParams.append("page", page);
+        queryParams.append("page_size", pageSize);
+        
         if (params?.search) queryParams.append("search", params.search);
+        if (params?.category && params.category !== "All") queryParams.append("category", params.category);
+        if (params?.status && params.status !== "All") queryParams.append("status", params.status?.toLowerCase());
+        if (params?.teacher) queryParams.append("teacher", params.teacher);
+        
         return `/courses/?${queryParams.toString()}`;
       },
       providesTags: ["courses"],
