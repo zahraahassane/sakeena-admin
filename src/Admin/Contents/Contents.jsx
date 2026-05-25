@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Search,
   Filter,
@@ -28,6 +28,7 @@ import {
 } from "../../Api/adminApi";
 import UploadContent from "./UploadContent";
 import UploadVideo from "./UploadVideo";
+import Pagination from "../../components/Pagination";
 
 const Contents = () => {
   const navigate = useNavigate();
@@ -37,11 +38,12 @@ const Contents = () => {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const { data: blogsResponse, isLoading: isBlogsLoading } =
-    useGetBlogsDataQuery();
+    useGetBlogsDataQuery({ page: currentPage });
   const { data: videosResponse, isLoading: isVideosLoading } =
-    useGetVideosDataQuery();
+    useGetVideosDataQuery({ page: currentPage });
   const { data: categoriesResponse } = useGetBlogCategoriesQuery();
   const [addBlogCategory] = useAddBlogCategoryMutation();
   const [deleteBlogCategory] = useDeleteBlogCategoryMutation();
@@ -51,6 +53,22 @@ const Contents = () => {
   const [deleteVideo] = useDeleteVideoMutation();
 
   const categories = categoriesResponse || [];
+
+  // Determine combined total pages (use the larger of the two)
+  const totalPages = Math.max(
+    blogsResponse?.total_pages || 1,
+    videosResponse?.total_pages || 1,
+  );
+
+  // Clamp current page if APIs report fewer pages
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages || 1);
+  }, [totalPages]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedCategory]);
 
   const handleDelete = async (slug, type) => {
     const isVideo = type === "Video";
@@ -666,6 +684,17 @@ const Contents = () => {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {(blogsResponse || videosResponse) && (
+        <div className="mt-8">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={(newPage) => setCurrentPage(newPage)}
+          />
         </div>
       )}
     </div>
