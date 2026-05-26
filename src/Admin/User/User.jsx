@@ -59,7 +59,7 @@ const User = () => {
             teacher.user.email.split("@")[0],
           email: teacher.user.email,
           department: teacher.professional_title || "N/A",
-          courses: teacher.courses ? teacher.courses.length : 0,
+          courses: teacher.courses ? teacher.courses || teacher.courses.length : 0,
           students: 0,
           raw: teacher,
         })),
