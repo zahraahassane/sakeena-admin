@@ -208,7 +208,8 @@ const User = () => {
                 : "text-neutral-600 hover:text-neutral-950 hover:bg-gray-300/30"
             }`}
           >
-            Students ({students.length})
+            Students
+            {/* Students ({students.length}) */}
           </button>
           <button
             onClick={() => setActiveTab("teachers")}
@@ -218,7 +219,8 @@ const User = () => {
                 : "text-neutral-600 hover:text-neutral-950 hover:bg-gray-300/30"
             }`}
           >
-            Teachers ({teachers.length})
+            Teachers
+            {/* Teachers ({teachers.length}) */}
           </button>
         </div>
 

@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { X, Package, Check } from "lucide-react";
-import { useGetCoursesDataQuery, useCreateBundleMutation } from "../../Api/adminApi";
+import { useGetAllCoursesUnpaginatedQuery, useCreateBundleMutation } from "../../Api/adminApi";
 import toast from "react-hot-toast";
 
 const CreateBundleModal = ({ isOpen, onClose }) => {
-  const { data: coursesData } = useGetCoursesDataQuery();
+  const [courseSearchQuery, setCourseSearchQuery] = useState("");
+  const { data: coursesData } = useGetAllCoursesUnpaginatedQuery(
+    { search: courseSearchQuery },
+    { skip: !isOpen }
+  );
   const availableCourses = coursesData?.results || [];
   const [createBundle, { isLoading }] = useCreateBundleMutation();
 
@@ -52,6 +56,10 @@ const CreateBundleModal = ({ isOpen, onClose }) => {
       return total + (course ? parseFloat(course.price || 0) : 0);
     }, 0);
   };
+
+  const filteredCourses = availableCourses.filter((course) =>
+    course.title.toLowerCase().includes(courseSearchQuery.toLowerCase())
+  );
 
   const handleSubmit = async () => {
     if (
@@ -158,44 +166,59 @@ const CreateBundleModal = ({ isOpen, onClose }) => {
             <label className="text-neutral-700 text-sm font-normal arimo-font">
               Select Courses ({formData.selectedCourses.length} selected)
             </label>
+            <input
+              type="text"
+              placeholder="Search courses by title..."
+              value={courseSearchQuery}
+              onChange={(e) => setCourseSearchQuery(e.target.value)}
+              className="px-4 py-2 rounded-[10px] border border-neutral-300 text-neutral-950 text-base font-normal arimo-font focus:outline-none focus:border-greenTeal placeholder:text-neutral-950/50"
+            />
             <div className="w-full h-80 px-4 py-4 rounded-[10px] border border-neutral-300 bg-white overflow-y-auto space-y-2">
-              {availableCourses.map((course) => {
-                const isSelected = formData.selectedCourses.includes(course.id);
-                return (
-                  <div
-                    key={course.id}
-                    onClick={() => handleToggleCourse(course.id)}
-                    className={`flex items-center p-3 rounded-[10px] border-2 cursor-pointer transition-all ${
-                      isSelected
-                        ? "bg-neutral-50 border-neutral-300"
-                        : "bg-white border-transparent hover:bg-neutral-50"
-                    }`}
-                  >
+              {filteredCourses.length > 0 ? (
+                filteredCourses.map((course) => {
+                  const isSelected = formData.selectedCourses.includes(course.id);
+                  return (
                     <div
-                      className={`w-5 h-5 rounded border mr-4 flex items-center justify-center transition-colors ${
+                      key={course.id}
+                      onClick={() => handleToggleCourse(course.id)}
+                      className={`flex items-center p-3 rounded-[10px] border-2 cursor-pointer transition-all ${
                         isSelected
-                          ? "bg-greenTeal border-greenTeal"
-                          : "border-neutral-300 bg-white"
+                          ? "bg-neutral-50 border-neutral-300"
+                          : "bg-white border-transparent hover:bg-neutral-50"
                       }`}
                     >
-                      {isSelected && <Check size={14} className="text-white" />}
-                    </div>
-                    <div className="flex-1 flex justify-between items-center">
-                      <div className="flex flex-col">
-                        <span className="text-neutral-800 text-base font-normal arimo-font">
-                          {course.title}
-                        </span>
-                        <span className="text-neutral-500 text-sm font-normal arimo-font">
-                          {course.category?.name || "Uncategorized"}
+                      <div
+                        className={`w-5 h-5 rounded border mr-4 flex items-center justify-center transition-colors ${
+                          isSelected
+                            ? "bg-greenTeal border-greenTeal"
+                            : "border-neutral-300 bg-white"
+                        }`}
+                      >
+                        {isSelected && <Check size={14} className="text-white" />}
+                      </div>
+                      <div className="flex-1 flex justify-between items-center">
+                        <div className="flex flex-col">
+                          <span className="text-neutral-800 text-base font-normal arimo-font">
+                            {course.title}
+                          </span>
+                          <span className="text-neutral-500 text-sm font-normal arimo-font">
+                            {course.category?.name || "Uncategorized"}
+                          </span>
+                        </div>
+                        <span className="text-slate-400 text-sm font-bold arimo-font">
+                          ${course.price}
                         </span>
                       </div>
-                      <span className="text-slate-400 text-sm font-bold arimo-font">
-                        ${course.price}
-                      </span>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              ) : (
+                <div className="flex items-center justify-center py-8">
+                  <p className="text-neutral-500 text-sm arimo-font">
+                    No courses found matching "{courseSearchQuery}"
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
