@@ -38,12 +38,14 @@ const Contents = () => {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
+  const [activeTab, setActiveTab] = useState("blogs");
+  const [blogsPage, setBlogsPage] = useState(1);
+  const [videosPage, setVideosPage] = useState(1);
 
   const { data: blogsResponse, isLoading: isBlogsLoading } =
-    useGetBlogsDataQuery({ page: currentPage });
+    useGetBlogsDataQuery({ page: blogsPage });
   const { data: videosResponse, isLoading: isVideosLoading } =
-    useGetVideosDataQuery({ page: currentPage });
+    useGetVideosDataQuery({ page: videosPage });
   const { data: categoriesResponse } = useGetBlogCategoriesQuery();
   const [addBlogCategory] = useAddBlogCategoryMutation();
   const [deleteBlogCategory] = useDeleteBlogCategoryMutation();
@@ -53,22 +55,28 @@ const Contents = () => {
   const [deleteVideo] = useDeleteVideoMutation();
 
   const categories = categoriesResponse || [];
-
-  // Determine combined total pages (use the larger of the two)
-  const totalPages = Math.max(
-    blogsResponse?.total_pages || 1,
-    videosResponse?.total_pages || 1,
-  );
+  const blogTotalPages = blogsResponse?.total_pages || 1;
+  const videoTotalPages = videosResponse?.total_pages || 1;
+  const currentPage = activeTab === "blogs" ? blogsPage : videosPage;
+  const totalPages = activeTab === "blogs" ? blogTotalPages : videoTotalPages;
 
   // Clamp current page if APIs report fewer pages
   useEffect(() => {
-    if (currentPage > totalPages) setCurrentPage(totalPages || 1);
-  }, [totalPages]);
+    if (blogsPage > blogTotalPages) setBlogsPage(blogTotalPages || 1);
+  }, [blogTotalPages]);
 
-  // Reset to page 1 when filters change
   useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, selectedCategory]);
+    if (videosPage > videoTotalPages) setVideosPage(videoTotalPages || 1);
+  }, [videoTotalPages]);
+
+  // Reset active tab page when filters change
+  useEffect(() => {
+    if (activeTab === "blogs") {
+      setBlogsPage(1);
+    } else {
+      setVideosPage(1);
+    }
+  }, [searchQuery, selectedCategory, activeTab]);
 
   const handleDelete = async (slug, type) => {
     const isVideo = type === "Video";
@@ -324,7 +332,7 @@ const Contents = () => {
     };
   });
 
-  const contentsList = [...blogs, ...videos].filter((item) => {
+  const currentItems = (activeTab === "blogs" ? blogs : videos).filter((item) => {
     const matchesSearch =
       item.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.description?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -369,24 +377,49 @@ const Contents = () => {
   return (
     <div className="pt-2 flex flex-col gap-8 animate-in fade-in duration-500 pb-10 arimo-font">
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-end items-start md:items-center gap-4">
-        <div className="flex items-center gap-4 inter-font">
-          <button
-            onClick={() => setShowUploadForm("article")}
-            className="w-56 h-7 px-2 py-1 bg-greenTeal rounded-2xl outline outline-1 outline-offset-[-1px] outline-black/0 inline-flex justify-center items-center gap-1.5 hover:opacity-90 transition-all font-semibold"
-          >
-            <span className="text-center text-white text-sm font-semibold leading-5">
-              Upload New Content
-            </span>
-          </button>
-          <button
-            onClick={() => setShowUploadForm("video")}
-            className="w-56 h-7 px-2 py-1 bg-gray-200 rounded-2xl inline-flex justify-center items-center gap-1.5 hover:bg-gray-300 transition-all font-semibold"
-          >
-            <span className="text-center text-neutral-950 text-sm font-semibold leading-5">
-              Upload New Video
-            </span>
-          </button>
+      <div className="flex flex-col gap-4 md:gap-8">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="inline-flex rounded-full bg-stone-100 p-1">
+            <button
+              onClick={() => setActiveTab("blogs")}
+              className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${
+                activeTab === "blogs"
+                  ? "bg-white shadow-sm text-teal-700"
+                  : "text-stone-500 hover:bg-white/80"
+              }`}
+            >
+              Blogs ({blogsResponse?.count ?? blogs.length})
+            </button>
+            <button
+              onClick={() => setActiveTab("videos")}
+              className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${
+                activeTab === "videos"
+                  ? "bg-white shadow-sm text-teal-700"
+                  : "text-stone-500 hover:bg-white/80"
+              }`}
+            >
+              Videos ({videosResponse?.count ?? videos.length})
+            </button>
+          </div>
+
+          <div className="flex items-center gap-4 inter-font">
+            <button
+              onClick={() => setShowUploadForm("article")}
+              className="w-56 h-7 px-2 py-1 bg-greenTeal rounded-2xl outline outline-1 outline-offset-[-1px] outline-black/0 inline-flex justify-center items-center gap-1.5 hover:opacity-90 transition-all font-semibold"
+            >
+              <span className="text-center text-white text-sm font-semibold leading-5">
+                Upload New Content
+              </span>
+            </button>
+            <button
+              onClick={() => setShowUploadForm("video")}
+              className="w-56 h-7 px-2 py-1 bg-gray-200 rounded-2xl inline-flex justify-center items-center gap-1.5 hover:bg-gray-300 transition-all font-semibold"
+            >
+              <span className="text-center text-neutral-950 text-sm font-semibold leading-5">
+                Upload New Video
+              </span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -396,7 +429,7 @@ const Contents = () => {
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
           <input
             type="text"
-            placeholder="Search students by name or email..."
+            placeholder="Search content by title or description..."
             className="w-full h-11 pl-12 pr-4 bg-white border border-neutral-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-[#7AA4A5]/20 focus:border-[#7AA4A5] transition-all text-base text-neutral-900 placeholder:text-neutral-400"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -518,9 +551,18 @@ const Contents = () => {
             Fetching content...
           </p>
         </div>
+      ) : currentItems.length === 0 ? (
+        <div className="max-w-7xl mx-auto py-20 text-center text-stone-600">
+          <p className="text-lg font-semibold mb-2">
+            No {activeTab === "blogs" ? "blogs" : "videos"} found.
+          </p>
+          <p className="text-sm text-stone-500">
+            Try adjusting your search or category filter to see more results.
+          </p>
+        </div>
       ) : (
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {contentsList.map((item) => (
+          {currentItems.map((item) => (
             <div
               key={item.id}
               className="bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col"
@@ -693,7 +735,11 @@ const Contents = () => {
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
-            onPageChange={(newPage) => setCurrentPage(newPage)}
+            onPageChange={(newPage) =>
+              activeTab === "blogs"
+                ? setBlogsPage(newPage)
+                : setVideosPage(newPage)
+            }
           />
         </div>
       )}

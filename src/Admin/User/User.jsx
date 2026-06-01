@@ -67,6 +67,8 @@ const User = () => {
     }
   }, [teacherProfiles]);
 
+
+  
   const currentData = activeTab === "students" ? students : teachers;
 
   console.log(currentData);
