@@ -34,7 +34,8 @@ const UploadBookModal = ({ onClose, onSave }) => {
     digitalPrice: "",
     physicalPrice: "",
     type: "Both (Physical & Digital)",
-    isbn: "978-1-234567-89-0",
+    physical_isbn: "",
+    digital_isbn: "",
     publisher: "",
     publishDate: "",
     pages: "0",
@@ -43,6 +44,7 @@ const UploadBookModal = ({ onClose, onSave }) => {
     video_url: "",
     coverImage: null,
     otherImages: [null, null, null],
+    physical_file: null,
     digital_file: null,
     sampleFile: null,
     luluCoverPdf: null,
@@ -83,6 +85,7 @@ const UploadBookModal = ({ onClose, onSave }) => {
   const isLoading = isCreating || isUploadingGallery;
 
   const fileInputRef = useRef(null);
+  const physicalFileInputRef = useRef(null);
   const sampleInputRef = useRef(null);
   const coverInputRef = useRef(null);
   const luluCoverInputRef = useRef(null);
@@ -103,8 +106,10 @@ const UploadBookModal = ({ onClose, onSave }) => {
       const newOtherImages = [...formData.otherImages];
       newOtherImages[index] = file;
       setFormData((prev) => ({ ...prev, otherImages: newOtherImages }));
-    } else if (type === "book") {
+    } else if (type === "digital") {
       setFormData((prev) => ({ ...prev, digital_file: file }));
+    } else if (type === "physical") {
+      setFormData((prev) => ({ ...prev, physical_file: file }));
     } else if (type === "sample") {
       setFormData((prev) => ({ ...prev, sampleFile: file }));
     } else if (type === "lulu_cover") {
@@ -194,7 +199,8 @@ const UploadBookModal = ({ onClose, onSave }) => {
     data.append("author_designation", formData.authorDesignation);
     data.append("description", formData.description);
     if (formData.coverImage) data.append("cover_image", formData.coverImage);
-    data.append("isbn", formData.isbn);
+    data.append("physical_isbn", formData.physical_isbn);
+    data.append("digital_isbn", formData.digital_isbn);
     data.append("language", formData.language);
     data.append("publisher", formData.publisher);
     data.append(
@@ -203,6 +209,7 @@ const UploadBookModal = ({ onClose, onSave }) => {
     );
     data.append("page_count", formData.pages);
     if (formData.digital_file) data.append("digital_file", formData.digital_file);
+    if (formData.physical_file) data.append("physical_file", formData.physical_file);
     if (formData.sampleFile) data.append("sample_file", formData.sampleFile);
     if (formData.luluCoverPdf) data.append("lulu_cover_pdf", formData.luluCoverPdf);
     if (formData.lulu_pod_package_id) data.append("lulu_pod_package_id", formData.lulu_pod_package_id);
@@ -608,17 +615,32 @@ const UploadBookModal = ({ onClose, onSave }) => {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-neutral-950 text-sm font-normal">
-                      ISBN
+                      Physical ISBN
                     </label>
                     <input
                       type="text"
-                      name="isbn"
+                      name="physical_isbn"
                       placeholder="978-1-234567-89-0"
-                      value={formData.isbn}
+                      value={formData.physical_isbn}
                       onChange={handleChange}
                       className="w-full h-10 px-3 bg-zinc-100 rounded-lg outline-none text-sm"
                     />
                   </div>
+                  <div className="space-y-1.5">
+                    <label className="text-neutral-950 text-sm font-normal">
+                      Digital ISBN
+                    </label>
+                    <input
+                      type="text"
+                      name="digital_isbn"
+                      placeholder="978-1-234567-89-0"
+                      value={formData.digital_isbn}
+                      onChange={handleChange}
+                      className="w-full h-10 px-3 bg-zinc-100 rounded-lg outline-none text-sm"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-neutral-950 text-sm font-normal">
                       Publisher
@@ -632,26 +654,25 @@ const UploadBookModal = ({ onClose, onSave }) => {
                       className="w-full h-10 px-3 bg-zinc-100 rounded-lg outline-none text-sm placeholder:text-gray-400"
                     />
                   </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-neutral-950 text-sm font-normal">
-                    Lulu POD Package
-                  </label>
-                  <div className="relative">
-                    <select
-                      name="lulu_pod_package_id"
-                      value={formData.lulu_pod_package_id}
-                      onChange={handleChange}
-                      className="w-full h-10 px-3 bg-zinc-100 rounded-lg outline-none appearance-none text-sm text-neutral-950"
-                    >
-                      {luluPackages?.map((pkg) => (
-                        <option key={pkg.id} value={pkg.id}>
-                          {pkg.description}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                  <div className="space-y-1.5">
+                    <label className="text-neutral-950 text-sm font-normal">
+                      Lulu POD Package
+                    </label>
+                    <div className="relative">
+                      <select
+                        name="lulu_pod_package_id"
+                        value={formData.lulu_pod_package_id}
+                        onChange={handleChange}
+                        className="w-full h-10 px-3 bg-zinc-100 rounded-lg outline-none appearance-none text-sm text-neutral-950"
+                      >
+                        {luluPackages?.map((pkg) => (
+                          <option key={pkg.id} value={pkg.id}>
+                            {pkg.description}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    </div>
                   </div>
                 </div>
 
@@ -789,10 +810,10 @@ const UploadBookModal = ({ onClose, onSave }) => {
                   </div>
                 </div>
 
-                {/* Book File */}
+                {/* Digital File */}
                 <div className="space-y-2">
                   <label className="text-neutral-950 text-sm font-normal">
-                    Book File (PDF) *
+                    Digital File (PDF)
                   </label>
                   <div
                     onClick={() => fileInputRef.current?.click()}
@@ -803,13 +824,58 @@ const UploadBookModal = ({ onClose, onSave }) => {
                       className="hidden"
                       ref={fileInputRef}
                       accept=".pdf"
-                      onChange={(e) => handleFileChange(e, "book")}
+                      onChange={(e) => handleFileChange(e, "digital")}
                     />
                     {formData.digital_file ? (
                       <div className="flex items-center gap-3">
                         <FileText className="w-8 h-8 text-teal-600" />
                         <span className="text-sm font-medium text-neutral-950">
                           {formData.digital_file.name}
+                        </span>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center mb-3">
+                          <FileText className="w-6 h-6 text-gray-400" />
+                        </div>
+                        <p className="text-sm text-gray-600 font-medium">
+                          Click to upload or drag and drop
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          PDF up to 50MB
+                        </p>
+                        <button
+                          type="button"
+                          className="mt-4 px-4 py-2 bg-white border border-black/10 rounded-lg text-sm font-medium"
+                        >
+                          Select File
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Physical File */}
+                <div className="space-y-2">
+                  <label className="text-neutral-950 text-sm font-normal">
+                    Physical File (PDF)
+                  </label>
+                  <div
+                    onClick={() => physicalFileInputRef.current?.click()}
+                    className="h-40 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center p-6 cursor-pointer hover:border-teal-400 transition-colors bg-gray-50/50"
+                  >
+                    <input
+                      type="file"
+                      className="hidden"
+                      ref={physicalFileInputRef}
+                      accept=".pdf"
+                      onChange={(e) => handleFileChange(e, "physical")}
+                    />
+                    {formData.physical_file ? (
+                      <div className="flex items-center gap-3">
+                        <FileText className="w-8 h-8 text-teal-600" />
+                        <span className="text-sm font-medium text-neutral-950">
+                          {formData.physical_file.name}
                         </span>
                       </div>
                     ) : (

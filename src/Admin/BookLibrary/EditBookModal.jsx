@@ -24,7 +24,8 @@ const EditBookModal = ({ book, onClose, onSave }) => {
     digitalPrice: "0",
     physicalPrice: "0",
     type: "Both",
-    isbn: "",
+    physical_isbn: "",
+    digital_isbn: "",
     publisher: "",
     published_date: "",
     number_of_pages: "0",
@@ -33,6 +34,7 @@ const EditBookModal = ({ book, onClose, onSave }) => {
     video_url: "",
     is_visible: true,
     lulu_pod_package_id: "",
+    physical_file: null,
     digital_file: null,
     sampleFile: null,
     luluCoverPdf: null,
@@ -52,6 +54,7 @@ const EditBookModal = ({ book, onClose, onSave }) => {
   const { data: detailedBook, isFetching: isDetailsLoading } = useGetBookDetailsQuery(book.slug, { skip: !book?.slug });
 
   const fileInputRef = useRef(null);
+  const physicalFileInputRef = useRef(null);
   const sampleInputRef = useRef(null);
   const luluCoverInputRef = useRef(null);
   const coverImageRef = useRef(null);
@@ -76,7 +79,8 @@ const EditBookModal = ({ book, onClose, onSave }) => {
         digitalPrice: activeBook.digital_price || "0",
         physicalPrice: activeBook.physical_price || "0",
         type: getBookType(activeBook),
-        isbn: activeBook.isbn || "",
+        physical_isbn: activeBook.physical_isbn || "",
+        digital_isbn: activeBook.digital_isbn || "",
         publisher: activeBook.publisher || "",
         published_date: activeBook.published_date || "",
         number_of_pages: activeBook.number_of_pages?.toString() || "0",
@@ -85,6 +89,7 @@ const EditBookModal = ({ book, onClose, onSave }) => {
         video_url: activeBook.video_url || "",
         is_visible: activeBook.is_visible ?? true,
         lulu_pod_package_id: activeBook.lulu_pod_package_id || "",
+        physical_file: null,
         digital_file: null,
         sampleFile: null,
         luluCoverPdf: null,
@@ -97,8 +102,10 @@ const EditBookModal = ({ book, onClose, onSave }) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    if (type === "book") {
+    if (type === "digital") {
       setFormData((prev) => ({ ...prev, digital_file: file }));
+    } else if (type === "physical") {
+      setFormData((prev) => ({ ...prev, physical_file: file }));
     } else if (type === "sample") {
       setFormData((prev) => ({ ...prev, sampleFile: file }));
     } else if (type === "lulu_cover") {
@@ -193,7 +200,8 @@ const EditBookModal = ({ book, onClose, onSave }) => {
     data.append("author", formData.author);
     data.append("author_designation", formData.authorDesignation);
     data.append("description", formData.description);
-    data.append("isbn", formData.isbn);
+    data.append("physical_isbn", formData.physical_isbn);
+    data.append("digital_isbn", formData.digital_isbn);
     data.append("language", formData.language);
     data.append("publisher", formData.publisher);
     data.append("published_date", formData.published_date);
@@ -208,6 +216,7 @@ const EditBookModal = ({ book, onClose, onSave }) => {
     if (formData.coverImage) data.append("cover_image", formData.coverImage);
 
     if (formData.digital_file) data.append("digital_file", formData.digital_file);
+    if (formData.physical_file) data.append("physical_file", formData.physical_file);
     if (formData.sampleFile) data.append("sample_file", formData.sampleFile);
     if (formData.luluCoverPdf) data.append("lulu_cover_pdf", formData.luluCoverPdf);
     if (formData.lulu_pod_package_id) data.append("lulu_pod_package_id", formData.lulu_pod_package_id);
@@ -540,17 +549,32 @@ const EditBookModal = ({ book, onClose, onSave }) => {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-neutral-950 text-sm font-bold ml-1">
-                      ISBN
+                      Physical ISBN
                     </label>
                     <input
                       type="text"
-                      name="isbn"
+                      name="physical_isbn"
                       placeholder="978-..."
-                      value={formData.isbn}
+                      value={formData.physical_isbn}
                       onChange={handleChange}
                       className="w-full h-12 px-4 bg-zinc-50 border border-black/5 rounded-2xl outline-none text-sm placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-teal-600/10 transition-all"
                     />
                   </div>
+                  <div className="space-y-2">
+                    <label className="text-neutral-950 text-sm font-bold ml-1">
+                      Digital ISBN
+                    </label>
+                    <input
+                      type="text"
+                      name="digital_isbn"
+                      placeholder="978-..."
+                      value={formData.digital_isbn}
+                      onChange={handleChange}
+                      className="w-full h-12 px-4 bg-zinc-50 border border-black/5 rounded-2xl outline-none text-sm placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-teal-600/10 transition-all"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-neutral-950 text-sm font-bold ml-1">
                       Publisher
@@ -564,27 +588,26 @@ const EditBookModal = ({ book, onClose, onSave }) => {
                       className="w-full h-12 px-4 bg-zinc-50 border border-black/5 rounded-2xl outline-none text-sm placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-teal-600/10 transition-all"
                     />
                   </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-neutral-950 text-sm font-bold ml-1">
-                    Lulu POD Package
-                  </label>
-                  <div className="relative">
-                    <select
-                      name="lulu_pod_package_id"
-                      value={formData.lulu_pod_package_id}
-                      onChange={handleChange}
-                      className="w-full h-12 px-4 bg-zinc-50 border border-black/5 rounded-2xl outline-none appearance-none text-sm text-neutral-950 focus:bg-white focus:ring-2 focus:ring-teal-600/10 transition-all"
-                    >
-                      <option value="">Select Package</option>
-                      {luluPackages?.map((pkg) => (
-                        <option key={pkg.id} value={pkg.id}>
-                          {pkg.description}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                  <div className="space-y-2">
+                    <label className="text-neutral-950 text-sm font-bold ml-1">
+                      Lulu POD Package
+                    </label>
+                    <div className="relative">
+                      <select
+                        name="lulu_pod_package_id"
+                        value={formData.lulu_pod_package_id}
+                        onChange={handleChange}
+                        className="w-full h-12 px-4 bg-zinc-50 border border-black/5 rounded-2xl outline-none appearance-none text-sm text-neutral-950 focus:bg-white focus:ring-2 focus:ring-teal-600/10 transition-all"
+                      >
+                        <option value="">Select Package</option>
+                        {luluPackages?.map((pkg) => (
+                          <option key={pkg.id} value={pkg.id}>
+                            {pkg.description}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    </div>
                   </div>
                 </div>
 
@@ -710,10 +733,10 @@ const EditBookModal = ({ book, onClose, onSave }) => {
                   </div>
                 </div>
 
-                {/* Book File */}
+                {/* Digital File */}
                 <div className="space-y-2">
                   <label className="text-neutral-950 text-sm font-bold ml-1">
-                    Book File (PDF)
+                    Digital File (PDF)
                   </label>
                   <div
                     onClick={() => fileInputRef.current?.click()}
@@ -724,7 +747,7 @@ const EditBookModal = ({ book, onClose, onSave }) => {
                       className="hidden"
                       ref={fileInputRef}
                       accept=".pdf"
-                      onChange={(e) => handleFileChange(e, "book")}
+                      onChange={(e) => handleFileChange(e, "digital")}
                     />
                     {formData.digital_file ? (
                       <div className="flex items-center gap-3 bg-teal-50 px-4 py-2 rounded-xl border border-teal-100">
@@ -737,9 +760,44 @@ const EditBookModal = ({ book, onClose, onSave }) => {
                       <>
                         <FileText className="w-7 h-7 text-gray-300 mb-2" />
                         <p className="text-xs text-gray-500 font-bold text-center">
-                          {activeBook.digital_file ? "Click to replace book file" : "Click to upload book file"}
+                          {activeBook.digital_file ? "Click to replace digital file" : "Click to upload digital file"}
                         </p>
                         {activeBook.digital_file && <p className="text-[10px] text-teal-600 font-bold mt-1 uppercase tracking-wider">File already exists</p>}
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Physical File */}
+                <div className="space-y-2">
+                  <label className="text-neutral-950 text-sm font-bold ml-1">
+                    Physical File (PDF)
+                  </label>
+                  <div
+                    onClick={() => physicalFileInputRef.current?.click()}
+                    className="h-32 border-2 border-dashed border-gray-200 rounded-3xl flex flex-col items-center justify-center p-4 cursor-pointer hover:border-teal-400 transition-all bg-zinc-50/50"
+                  >
+                    <input
+                      type="file"
+                      className="hidden"
+                      ref={physicalFileInputRef}
+                      accept=".pdf"
+                      onChange={(e) => handleFileChange(e, "physical")}
+                    />
+                    {formData.physical_file ? (
+                      <div className="flex items-center gap-3 bg-teal-50 px-4 py-2 rounded-xl border border-teal-100">
+                        <FileText className="w-6 h-6 text-teal-600" />
+                        <span className="text-xs font-bold text-teal-900 truncate max-w-[200px]">
+                          {formData.physical_file.name}
+                        </span>
+                      </div>
+                    ) : (
+                      <>
+                        <FileText className="w-7 h-7 text-gray-300 mb-2" />
+                        <p className="text-xs text-gray-500 font-bold text-center">
+                          {activeBook.physical_file ? "Click to replace physical file" : "Click to upload physical file"}
+                        </p>
+                        {activeBook.physical_file && <p className="text-[10px] text-teal-600 font-bold mt-1 uppercase tracking-wider">File already exists</p>}
                       </>
                     )}
                   </div>
