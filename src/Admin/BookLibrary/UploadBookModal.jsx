@@ -17,7 +17,6 @@ import {
   useAddBookMutation,
   useDeleteBookCategoryMutation,
   useGetBookCategoriesQuery,
-  useGetLuluPackagesQuery,
 } from "../../Api/adminApi";
 import TextEditor from "../../components/Editor";
 
@@ -58,7 +57,6 @@ const UploadBookModal = ({ onClose, onSave }) => {
   const { data: categoriesResponse } = useGetBookCategoriesQuery();
   const [addBookCategory] = useAddBookCategoryMutation();
   const [deleteBookCategory] = useDeleteBookCategoryMutation();
-  const { data: luluPackages } = useGetLuluPackagesQuery();
 
   const categories = categoriesResponse || [];
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
@@ -72,15 +70,6 @@ const UploadBookModal = ({ onClose, onSave }) => {
       }));
     }
   }, [categories]);
-
-  useEffect(() => {
-    if (luluPackages?.length > 0) {
-      setFormData((prev) => ({
-        ...prev,
-        lulu_pod_package_id: luluPackages[0].id,
-      }));
-    }
-  }, [luluPackages]);
 
   const isLoading = isCreating || isUploadingGallery;
 
@@ -658,21 +647,14 @@ const UploadBookModal = ({ onClose, onSave }) => {
                     <label className="text-neutral-950 text-sm font-normal">
                       Lulu POD Package
                     </label>
-                    <div className="relative">
-                      <select
-                        name="lulu_pod_package_id"
-                        value={formData.lulu_pod_package_id}
-                        onChange={handleChange}
-                        className="w-full h-10 px-3 bg-zinc-100 rounded-lg outline-none appearance-none text-sm text-neutral-950"
-                      >
-                        {luluPackages?.map((pkg) => (
-                          <option key={pkg.id} value={pkg.id}>
-                            {pkg.description}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                    </div>
+                    <input
+                      type="text"
+                      name="lulu_pod_package_id"
+                      placeholder="[Trim].[Ink].[Quality].[Binding].[Paper].[Finish]"
+                      value={formData.lulu_pod_package_id}
+                      onChange={handleChange}
+                      className="w-full h-10 px-3 bg-zinc-100 rounded-lg outline-none text-sm"
+                    />
                   </div>
                 </div>
 
