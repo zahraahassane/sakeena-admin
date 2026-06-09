@@ -20,7 +20,7 @@ import {
   useGetCourseCategoriesQuery,
   useAddCourseCategoryMutation,
   useDeleteCourseCategoryMutation,
-  useGetTeacherProfilesQuery,
+  useGetAllTeacherProfilesUnpaginatedQuery,
 } from "../../Api/adminApi";
 
 const AddEditCourse = ({ onSave }) => {
@@ -77,13 +77,13 @@ const AddEditCourse = ({ onSave }) => {
   const { data: categoriesResponse } = useGetCourseCategoriesQuery();
   const [addCourseCategory] = useAddCourseCategoryMutation();
   const [deleteCourseCategory] = useDeleteCourseCategoryMutation();
-  const { data: teachersResponse } = useGetTeacherProfilesQuery();
+  const { data: teachersResponse } = useGetAllTeacherProfilesUnpaginatedQuery();
   const { data: courseDetails, isLoading: isLoadingDetails } = useGetCourseDetailsQuery(id, {
     skip: !id
   });
 
   const categories = categoriesResponse || [];
-  const teachers = teachersResponse?.results || [];
+  const teachers = Array.isArray(teachersResponse) ? teachersResponse : teachersResponse?.results || [];
 
   useEffect(() => {
     const cleanHtml = (html) => {

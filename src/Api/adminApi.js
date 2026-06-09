@@ -627,6 +627,23 @@ export const adminApi = api.injectEndpoints({
       },
       providesTags: ["teachers"],
     }),
+    // Get ALL teacher profiles (no pagination) — for dropdowns/selects
+    getAllTeacherProfilesUnpaginated: builder.query({
+      query: (params = {}) => {
+        const queryParams = new URLSearchParams({ no_page: "1" });
+        if (params.search) queryParams.append("search", params.search);
+        if (params.offers_consultations !== undefined) {
+          queryParams.append(
+            "offers_consultations",
+            String(params.offers_consultations),
+          );
+        }
+        return `/teacher-profiles/?${queryParams.toString()}`;
+      },
+      transformResponse: (response) =>
+        Array.isArray(response) ? response : response?.results || [],
+      providesTags: ["teachers"],
+    }),
     getStudentProfiles: builder.query({
       query: (params = {}) => {
         const queryParams = new URLSearchParams();
@@ -1505,6 +1522,7 @@ export const {
   useUpdateEmailTemplateMutation,
   useDeleteEmailTemplateMutation,
   useGetTeacherProfilesQuery,
+  useGetAllTeacherProfilesUnpaginatedQuery,
   useGetTeacherProfileMeQuery,
   useGetStudentProfilesQuery,
   useGetTeacherProfileQuery,
