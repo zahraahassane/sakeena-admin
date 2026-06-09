@@ -25,9 +25,9 @@ const User = () => {
   const [deleteTeacherProfile] = useDeleteTeacherProfileMutation();
 
   const { data: studentProfiles, isLoading: isStudentsLoading } =
-    useGetStudentProfilesQuery(studentPage);
+    useGetStudentProfilesQuery({ page: studentPage, search: searchQuery });
   const { data: teacherProfiles, isLoading: isTeachersLoading } =
-    useGetTeacherProfilesQuery(teacherPage);
+    useGetTeacherProfilesQuery({ page: teacherPage, search: searchQuery });
 
   const [students, setStudents] = useState([]);
   const [teachers, setTeachers] = useState([]);
@@ -59,7 +59,9 @@ const User = () => {
             teacher.user.email.split("@")[0],
           email: teacher.user.email,
           department: teacher.professional_title || "N/A",
-          courses: teacher.courses ? teacher.courses || teacher.courses.length : 0,
+          courses: teacher.courses
+            ? teacher.courses || teacher.courses.length
+            : 0,
           students: 0,
           raw: teacher,
         })),
@@ -67,8 +69,6 @@ const User = () => {
     }
   }, [teacherProfiles]);
 
-
-  
   const currentData = activeTab === "students" ? students : teachers;
 
   console.log(currentData);

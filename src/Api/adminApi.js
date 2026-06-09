@@ -241,7 +241,8 @@ export const adminApi = api.injectEndpoints({
         const queryParams = new URLSearchParams();
         if (params.page) queryParams.append("page", params.page);
         if (params.search) queryParams.append("search", params.search);
-        if (params.category__slug) queryParams.append("category__slug", params.category__slug);
+        if (params.category__slug)
+          queryParams.append("category__slug", params.category__slug);
         if (params.page_size) queryParams.append("page_size", params.page_size);
         return `/videos/?${queryParams.toString()}`;
       },
@@ -310,15 +311,17 @@ export const adminApi = api.injectEndpoints({
         const queryParams = new URLSearchParams();
         const page = typeof params === "number" ? params : params?.page || 1;
         const pageSize = params?.page_size || 20;
-        
+
         queryParams.append("page", page);
         queryParams.append("page_size", pageSize);
-        
+
         if (params?.search) queryParams.append("search", params.search);
-        if (params?.category && params.category !== "All") queryParams.append("category", params.category);
-        if (params?.status && params.status !== "All") queryParams.append("status", params.status?.toLowerCase());
+        if (params?.category && params.category !== "All")
+          queryParams.append("category", params.category);
+        if (params?.status && params.status !== "All")
+          queryParams.append("status", params.status?.toLowerCase());
         if (params?.teacher) queryParams.append("teacher", params.teacher);
-        
+
         return `/courses/?${queryParams.toString()}`;
       },
       providesTags: ["courses"],
@@ -625,8 +628,19 @@ export const adminApi = api.injectEndpoints({
       providesTags: ["teachers"],
     }),
     getStudentProfiles: builder.query({
-      query: (page = 1) => `/student-profiles/?page=${page}`,
-      providesTags: ["students"],
+      query: (params = {}) => {
+        const queryParams = new URLSearchParams();
+        const page = typeof params === "number" ? params : params.page;
+        if (page) queryParams.append("page", page);
+        if (params && typeof params !== "number") {
+          if (params.search) {
+            queryParams.append("search", params.search);
+          }
+        }
+        const q = queryParams.toString();
+        return `/student-profiles/${q ? `?${q}` : ""}`;
+      },
+      providesTags: ["teachers"],
     }),
 
     getStudentProfile: builder.query({
