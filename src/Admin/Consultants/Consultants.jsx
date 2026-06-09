@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 
 import {
   User,
@@ -28,8 +28,383 @@ import {
   useGetConsultationsQuery,
   useGetTeacherProfilesQuery,
   useGetRescheduleRequestsQuery,
+  useGetConsultationCalendarQuery,
+  useGetConsultationTimeslotsQuery,
 } from "../../Api/adminApi";
 import { toast } from "react-hot-toast";
+
+// Consultation Card Component with Calendar
+const ConsultationCard = ({
+  consultation,
+  calendarDates,
+  setCalendarDates,
+  selectedDates,
+  setSelectedDates,
+  timeslotPages,
+  setTimeslotPages,
+  setSelectedConsultation,
+  setIsDetailsModalOpen,
+  setIsManageRecurringModalOpen,
+  formatDate,
+  formatTime,
+}) => {
+  // Helper functions
+  const getMonthString = (date) => {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+  };
+
+  const getMonthLabel = (date) => {
+    return date.toLocaleDateString("en-US", {
+      month: "long",
+      year: "numeric",
+    });
+  };
+
+  const getCalendarCells = (date) => {
+    const startDay = date.getDay();
+    const daysInMonth = new Date(
+      date.getFullYear(),
+      date.getMonth() + 1,
+      0,
+    ).getDate();
+
+    const cells = [];
+    for (let i = 0; i < startDay; i += 1) {
+      cells.push(null);
+    }
+    for (let day = 1; day <= daysInMonth; day += 1) {
+      const yearStr = date.getFullYear();
+      const monthStr = String(date.getMonth() + 1).padStart(2, "0");
+      const dayStr = String(day).padStart(2, "0");
+      const iso = `${yearStr}-${monthStr}-${dayStr}`;
+      cells.push({ day, iso });
+    }
+    const trailing = (7 - (cells.length % 7)) % 7;
+    for (let i = 0; i < trailing; i += 1) {
+      cells.push(null);
+    }
+    return cells;
+  };
+
+  const getCellStatus = (iso, calendarData) => {
+    if (!calendarData || !calendarData[iso]) return "unavailable";
+    return calendarData[iso].status; // Can be "available" or "fully_booked"
+  };
+
+  // Get calendar state for this consultation
+  const calendarDate = calendarDates[consultation.id] || new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  const selectedDate = selectedDates[consultation.id] || null;
+  const timeslotPage = timeslotPages[consultation.id] || 1;
+  const monthString = getMonthString(calendarDate);
+  
+  // Fetch calendar and timeslots
+  const { data: calendarData, isLoading: isCalendarLoading } = useGetConsultationCalendarQuery(
+    { id: consultation.id, month: monthString }
+  );
+  
+  const { data: timeslotsData, isLoading: isTimeslotsLoading, isFetching: isTimeslotsFetching } = useGetConsultationTimeslotsQuery(
+    { id: consultation.id, date: selectedDate, page: timeslotPage },
+    { skip: !selectedDate }
+  );
+  
+  const slotsForSelectedDate = timeslotsData?.results || [];
+  
+  // Calendar handlers
+  const previousMonth = () => {
+    setCalendarDates({
+      ...calendarDates,
+      [consultation.id]: new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1, 1)
+    });
+  };
+  
+  const nextMonth = () => {
+    setCalendarDates({
+      ...calendarDates,
+      [consultation.id]: new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 1)
+    });
+  };
+  
+  const handleDateClick = (iso, status) => {
+    if (status !== "unavailable") {
+      setSelectedDates({
+        ...selectedDates,
+        [consultation.id]: iso
+      });
+      setTimeslotPages({
+        ...timeslotPages,
+        [consultation.id]: 1
+      });
+    }
+  };
+  
+  const calendarCells = getCalendarCells(calendarDate);
+  const monthLabel = getMonthLabel(calendarDate);
+
+  return (
+    <div key={consultation.id} className="space-y-8">
+      {/* Precise Plan Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-stone-100/50 pb-8 mt-12 first:mt-4">
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 bg-teal-50 rounded-2xl flex items-center justify-center text-teal-600 border border-teal-100/50 shadow-sm">
+            <Layout className="w-7 h-7" />
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-2xl font-black text-stone-900 arimo-font tracking-tight leading-none">
+              {consultation.title ||
+                `${consultation.teacher?.user?.first_name}'s Plan`}
+            </h3>
+            <div className="flex items-center gap-2 text-[10px] font-black text-stone-400 uppercase tracking-[0.1em]">
+              <span className="text-teal-600">
+                {consultation.teacher?.user?.first_name}{" "}
+                {consultation.teacher?.user?.last_name}
+              </span>
+              <span className="text-stone-300">•</span>
+              <span>ID: #{consultation.id}</span>
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 shrink-0">
+          <button
+            onClick={() => {
+              setSelectedConsultation(consultation);
+              setIsManageRecurringModalOpen(true);
+            }}
+            className="flex items-center gap-2 bg-stone-100 hover:bg-stone-200 text-stone-900 px-5 py-3.5 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all shadow-sm active:scale-95"
+          >
+            <Calendar className="w-4 h-4 opacity-50" />
+            <span>Reschedule</span>
+          </button>
+          <button
+            onClick={() => {
+              setSelectedConsultation(consultation);
+              setIsDetailsModalOpen(true);
+            }}
+            className="flex items-center gap-3 bg-stone-900 hover:bg-teal-700 text-white px-6 py-3.5 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all shadow-xl shadow-stone-900/10 active:scale-95"
+          >
+            <span>Manage Consultation</span>
+            <ChevronRight className="w-4 h-4 opacity-50" />
+          </button>
+        </div>
+      </div>
+      
+      <div className="flex flex-col lg:flex-row gap-8">
+        {/* Left: Timeslots */}
+        <div className="flex-1 space-y-6">
+          <div className="space-y-3">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <h4 className="text-sm font-bold text-stone-600 inter-font">
+                Available Time Slots
+              </h4>
+              <span className="text-xs text-stone-500 inter-font">
+                {selectedDate ? formatDate(selectedDate) : "Select a date"}
+              </span>
+            </div>
+            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+              {!selectedDate ? (
+                <div className="bg-white border border-stone-200 rounded-2xl p-8 flex flex-col items-center justify-center gap-4 text-center">
+                  <Clock className="w-10 h-10 text-stone-200" />
+                  <span className="text-sm font-medium text-stone-500 inter-font">
+                    Please select an available date from the calendar to view time slots.
+                  </span>
+                </div>
+              ) : isTimeslotsLoading || isTimeslotsFetching ? (
+                <div className="flex justify-center p-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></div>
+                </div>
+              ) : slotsForSelectedDate.length > 0 ? (
+                <>
+                  {slotsForSelectedDate.map((slot) => {
+                    const isUnavailable = slot.is_booked;
+
+                    return (
+                      <div
+                        key={slot.id}
+                        className={`w-full text-left bg-white border rounded-2xl p-4 flex items-center justify-between gap-4 transition-all ${
+                          isUnavailable
+                            ? "opacity-70 grayscale-[0.5] bg-stone-50 border-stone-100 cursor-not-allowed"
+                            : "border-stone-200 hover:border-teal-500 hover:bg-teal-50/30 cursor-pointer"
+                        }`}
+                      >
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-center gap-3">
+                            <Clock
+                              className={`w-4 h-4 ${
+                                isUnavailable
+                                  ? "text-stone-300"
+                                  : "text-teal-500"
+                              }`}
+                            />
+                            <span
+                              className={`text-sm font-bold inter-font ${
+                                isUnavailable
+                                  ? "text-stone-400"
+                                  : "text-stone-800"
+                              }`}
+                            >
+                              {formatTime(slot.scheduled_start)} - {formatTime(slot.scheduled_end)}
+                            </span>
+                          </div>
+
+                          {isUnavailable && slot.student && (
+                            <div className="ml-7 flex flex-col gap-1">
+                              <span className="text-[11px] font-bold text-stone-500 flex items-center gap-1.5">
+                                <User className="w-3 h-3" />
+                                Booked by: {slot.student.user?.first_name} {slot.student.user?.last_name}
+                              </span>
+                              {slot.meeting_link && (
+                                <a
+                                  href={slot.meeting_link}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-[10px] font-black text-teal-600 hover:text-teal-700 underline underline-offset-2 uppercase tracking-widest"
+                                >
+                                  Join Meeting
+                                </a>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        {isUnavailable && (
+                          <span className="text-[8px] font-black bg-rose-50 text-rose-500 px-2 py-1 rounded-full uppercase tracking-tighter">
+                            Booked
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {timeslotsData?.total_pages > 1 && (
+                    <div className="pt-2">
+                      <Pagination
+                        currentPage={timeslotPage}
+                        totalPages={timeslotsData.total_pages}
+                        onPageChange={(page) => {
+                          setTimeslotPages({
+                            ...timeslotPages,
+                            [consultation.id]: page
+                          });
+                        }}
+                      />
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="bg-white border border-stone-200 rounded-2xl p-8 flex items-center justify-center text-center">
+                  <span className="text-sm font-medium text-stone-500 inter-font">
+                    No time slots found for this date.
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        
+        {/* Right: Calendar */}
+        <div className="w-full lg:w-[320px] space-y-4">
+          <h4 className="text-sm font-bold text-stone-600 inter-font flex justify-between items-center">
+            Select Date
+            {isCalendarLoading && (
+              <div className="animate-spin h-3 w-3 border-b-2 border-stone-600 rounded-full"></div>
+            )}
+          </h4>
+          <div className="bg-white rounded-3xl border border-stone-200 p-4 shadow-sm relative">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-sm font-bold text-stone-800">
+                {monthLabel}
+              </span>
+              <div className="flex gap-1">
+                <button
+                  type="button"
+                  onClick={previousMonth}
+                  className="p-1 hover:bg-stone-100 rounded-md"
+                >
+                  <ChevronLeft className="w-4 h-4 text-stone-400" />
+                </button>
+                <button
+                  type="button"
+                  onClick={nextMonth}
+                  className="p-1 hover:bg-stone-100 rounded-md"
+                >
+                  <ChevronRight className="w-4 h-4 text-stone-400" />
+                </button>
+              </div>
+            </div>
+            <div className="grid grid-cols-7 gap-1 mb-2">
+              {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d) => (
+                <div
+                  key={d}
+                  className="text-[10px] font-bold text-stone-400 text-center"
+                >
+                  {d}
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-7 gap-1 relative">
+              {calendarCells.map((cell, index) => {
+                if (!cell) {
+                  return (
+                    <div
+                      key={`empty-${index}`}
+                      className="aspect-square rounded-lg"
+                    />
+                  );
+                }
+
+                const status = getCellStatus(cell.iso, calendarData);
+                const isAvailable = status === "available";
+                const isFullyBooked = status === "fully_booked";
+                const isSelected = selectedDate === cell.iso;
+
+                let cellClasses = "text-stone-300 cursor-not-allowed"; // default unavailable
+                if (isSelected) {
+                  cellClasses =
+                    "bg-teal-600 text-white shadow-md shadow-teal-900/10 cursor-pointer";
+                } else if (isAvailable) {
+                  cellClasses =
+                    "text-teal-700 bg-teal-50 hover:bg-teal-100 cursor-pointer border border-teal-100";
+                } else if (isFullyBooked) {
+                  cellClasses =
+                    "text-stone-500 bg-stone-100 border border-stone-200 cursor-pointer hover:bg-stone-200";
+                }
+
+                return (
+                  <button
+                    key={cell.iso}
+                    type="button"
+                    onClick={() => handleDateClick(cell.iso, status)}
+                    className={`aspect-square rounded-lg text-xs font-semibold transition-all flex items-center justify-center relative ${cellClasses}`}
+                  >
+                    {cell.day}
+                    {/* Show tiny dot indicator for fully booked slots that aren't selected */}
+                    {isFullyBooked && !isSelected && (
+                      <div className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-rose-400"></div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Legend */}
+            <div className="mt-4 pt-3 border-t border-stone-100 flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-teal-50 border border-teal-200"></div>
+                <span className="text-[10px] font-black text-stone-500 uppercase tracking-wider">
+                  Available
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-rose-400"></div>
+                <span className="text-[10px] font-black text-stone-500 uppercase tracking-wider">
+                  Full
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const Consultants = () => {
   const [activeTab, setActiveTab] = useState("Consultations"); // 'Consultations' or 'Reschedule Requests'
@@ -38,8 +413,12 @@ const Consultants = () => {
   const [isConsultationModalOpen, setIsConsultationModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isManageRecurringModalOpen, setIsManageRecurringModalOpen] = useState(false);
-  const [activeMonths, setActiveMonths] = useState({});
   const [selectedConsultation, setSelectedConsultation] = useState(null);
+  
+  // Calendar state per consultation
+  const [consultationCalendarDates, setConsultationCalendarDates] = useState({});
+  const [consultationSelectedDates, setConsultationSelectedDates] = useState({});
+  const [consultationTimeslotPages, setConsultationTimeslotPages] = useState({});
 
   // Reschedule state
   const [teacherPage, setTeacherPage] = useState(1);
@@ -112,12 +491,18 @@ const Consultants = () => {
 
   const formatDate = (dateString, includeTime = false) => {
     if (!dateString) return "N/A";
-    const date = new Date(dateString);
+    let date;
+    if (includeTime) {
+      date = new Date(dateString);
+    } else {
+      // We append noon so timezone drift doesn't accidentally shift the day back one step for calendar dates
+      date = new Date(dateString + "T12:00:00");
+    }
     if (Number.isNaN(date.getTime())) return "N/A";
 
     const options = {
       year: "numeric",
-      month: "short",
+      month: includeTime ? "short" : "long",
       day: "numeric",
     };
     if (includeTime) {
@@ -140,35 +525,6 @@ const Consultants = () => {
     return date.toLocaleTimeString("en-US", {
       hour: "numeric",
       minute: "2-digit",
-    });
-  };
-
-  const formatSlotDate = (slot) => {
-    if (!slot) return "N/A";
-    return formatDate(slot.day || slot.scheduled_start);
-  };
-
-  const buildSlotSummaries = (slots) => {
-    if (!slots?.length) return [];
-    const sortedSlots = [...slots].sort(
-      (a, b) => new Date(a.scheduled_start) - new Date(b.scheduled_start),
-    );
-
-    return sortedSlots.map((slot) => {
-      const date = new Date(slot.scheduled_start);
-      const monthYear = date.toLocaleDateString("en-US", {
-        month: "long",
-        year: "numeric",
-      });
-
-      return {
-        id: slot.id,
-        dateLabel: formatDate(slot.scheduled_start),
-        monthYear,
-        startTime: formatTime(slot.scheduled_start),
-        endTime: formatTime(slot.scheduled_end),
-        isBooked: slot.is_booked,
-      };
     });
   };
 
@@ -435,187 +791,23 @@ const Consultants = () => {
                         </p>
                       </div>
                     ) : consultations.length > 0 ? (
-                      consultations.map((consultation) => {
-                        const slotSummariesList = buildSlotSummaries(
-                          consultation.timeslots,
-                        );
-                        const uniqueMonths = [
-                          ...new Set(slotSummariesList.map((s) => s.monthYear)),
-                        ];
-                        const currentActiveMonth =
-                          activeMonths[consultation.id] || uniqueMonths[0];
-                        const filteredSlots = slotSummariesList.filter(
-                          (s) => s.monthYear === currentActiveMonth,
-                        );
-
-                        const currentIndex =
-                          uniqueMonths.indexOf(currentActiveMonth);
-                        const canGoPrev = currentIndex > 0;
-                        const canGoNext =
-                          currentIndex < uniqueMonths.length - 1;
-
-                        const goToPrev = () => {
-                          if (canGoPrev) {
-                            setActiveMonths({
-                              ...activeMonths,
-                              [consultation.id]: uniqueMonths[currentIndex - 1],
-                            });
-                          }
-                        };
-
-                        const goToNext = () => {
-                          if (canGoNext) {
-                            setActiveMonths({
-                              ...activeMonths,
-                              [consultation.id]: uniqueMonths[currentIndex + 1],
-                            });
-                          }
-                        };
-
-                        return (
-                          <div key={consultation.id} className="space-y-8">
-                            {/* Precise Plan Header */}
-                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-stone-100/50 pb-8 mt-12 first:mt-4">
-                              <div className="flex items-center gap-4">
-                                <div className="w-14 h-14 bg-teal-50 rounded-2xl flex items-center justify-center text-teal-600 border border-teal-100/50 shadow-sm">
-                                  <Layout className="w-7 h-7" />
-                                </div>
-                                <div className="space-y-1">
-                                  <h3 className="text-2xl font-black text-stone-900 arimo-font tracking-tight leading-none">
-                                    {consultation.title ||
-                                      `${consultation.teacher?.user?.first_name}'s Plan`}
-                                  </h3>
-                                  <div className="flex items-center gap-2 text-[10px] font-black text-stone-400 uppercase tracking-[0.1em]">
-                                    <span className="text-teal-600">
-                                      {consultation.teacher?.user?.first_name}{" "}
-                                      {consultation.teacher?.user?.last_name}
-                                    </span>
-                                    <span className="text-stone-300">•</span>
-                                    <span>ID: #{consultation.id}</span>
-                                    <span className="text-stone-300">•</span>
-                                    <span className="bg-stone-100 px-2 py-0.5 rounded text-stone-600">
-                                      {consultation.timeslots?.length || 0}{" "}
-                                      Slots
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-3 shrink-0">
-                                <button
-                                  onClick={() => {
-                                    setSelectedConsultation(consultation);
-                                    setIsManageRecurringModalOpen(true);
-                                  }}
-                                  className="flex items-center gap-2 bg-stone-100 hover:bg-stone-200 text-stone-900 px-5 py-3.5 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all shadow-sm active:scale-95"
-                                >
-                                  <Calendar className="w-4 h-4 opacity-50" />
-                                  <span>Recurring</span>
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    setSelectedConsultation(consultation);
-                                    setIsDetailsModalOpen(true);
-                                  }}
-                                  className="flex items-center gap-3 bg-stone-900 hover:bg-teal-700 text-white px-6 py-3.5 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all shadow-xl shadow-stone-900/10 active:scale-95"
-                                >
-                                  <span>Manage Consultation</span>
-                                  <ChevronRight className="w-4 h-4 opacity-50" />
-                                </button>
-                              </div>
-                            </div>
-
-                            {/* Precise Discrete Month Navigator */}
-                            {uniqueMonths.length > 1 && (
-                              <div className="flex items-center justify-between bg-stone-50/50 p-2.5 rounded-full border border-stone-100 w-full max-w-2xl mx-auto shadow-sm mb-10">
-                                <button
-                                  onClick={goToPrev}
-                                  disabled={!canGoPrev}
-                                  className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${
-                                    canGoPrev
-                                      ? "bg-white text-stone-900 shadow-xl shadow-stone-900/5 hover:bg-stone-900 hover:text-white active:scale-95"
-                                      : "bg-transparent text-stone-200 cursor-not-allowed"
-                                  }`}
-                                >
-                                  <ChevronLeft className="w-6 h-6" />
-                                </button>
-
-                                <div className="flex flex-col items-center justify-center text-center px-8 min-w-[200px]">
-                                  <span className="text-[10px] font-black text-stone-300 uppercase tracking-[0.4em] mb-2 block leading-none">
-                                    Navigation • {currentIndex + 1}/
-                                    {uniqueMonths.length}
-                                  </span>
-                                  <h4 className="text-xl font-black text-stone-900 uppercase tracking-[0.15em] arimo-font leading-none">
-                                    {currentActiveMonth}
-                                  </h4>
-                                </div>
-
-                                <button
-                                  onClick={goToNext}
-                                  disabled={!canGoNext}
-                                  className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${
-                                    canGoNext
-                                      ? "bg-white text-stone-900 shadow-xl shadow-stone-900/5 hover:bg-stone-900 hover:text-white active:scale-95"
-                                      : "bg-transparent text-stone-200 cursor-not-allowed"
-                                  }`}
-                                >
-                                  <ChevronRight className="w-6 h-6" />
-                                </button>
-                              </div>
-                            )}
-
-                            {/* Precise Slots Grid */}
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                              {filteredSlots.length > 0 ? (
-                                filteredSlots.map((slot) => (
-                                  <div
-                                    key={slot.id}
-                                    className={`group/slot bg-white rounded-[2rem] border p-6 flex flex-col gap-5 shadow-sm hover:shadow-2xl hover:shadow-stone-900/5 transition-all duration-500 border-t-2 border-t-transparent ${slot.isBooked ? "opacity-70 grayscale-[0.5] border-stone-100" : "hover:border-t-teal-500 border-stone-100"}`}
-                                  >
-                                    <div className="flex items-center justify-between">
-                                      <div className="space-y-1">
-                                        <span className="text-[10px] font-black text-stone-300 uppercase tracking-[0.2em] block leading-none">
-                                          Availability
-                                        </span>
-                                        <span className="text-[11px] font-black text-stone-900 uppercase tracking-wider block">
-                                          {slot.dateLabel}
-                                        </span>
-                                      </div>
-                                      {slot.isBooked && (
-                                        <span className="text-[8px] font-black bg-rose-50 text-rose-500 px-2 py-1 rounded-full uppercase tracking-tighter">
-                                          Booked
-                                        </span>
-                                      )}
-                                    </div>
-                                    <div
-                                      className={`flex items-center gap-3 border rounded-2xl px-4 py-3 font-bold text-xs transition-colors ${
-                                        slot.isBooked
-                                          ? "bg-stone-50 border-stone-100 text-stone-400"
-                                          : "bg-stone-50 border-stone-100 text-stone-600 group-hover/slot:bg-teal-50 group-hover/slot:border-teal-100 group-hover/slot:text-teal-700"
-                                      }`}
-                                    >
-                                      <Clock
-                                        className={`w-4 h-4 ${slot.isBooked ? "text-stone-300" : "text-stone-300 group-hover/slot:text-teal-500"}`}
-                                      />
-                                      <span className="font-black text-[11px] tracking-tight">
-                                        {slot.startTime} - {slot.endTime}
-                                      </span>
-                                    </div>
-                                  </div>
-                                ))
-                              ) : (
-                                <div className="col-span-full py-16 flex flex-col items-center justify-center text-center bg-stone-50/30 rounded-[3rem] border-2 border-dashed border-stone-100">
-                                  <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center shadow-sm mb-6">
-                                    <Calendar className="w-10 h-10 text-stone-100" />
-                                  </div>
-                                  <p className="text-stone-400 text-xs font-black uppercase tracking-[0.2em]">
-                                    No slots for {currentActiveMonth}
-                                  </p>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })
+                      consultations.map((consultation) => (
+                        <ConsultationCard
+                          key={consultation.id}
+                          consultation={consultation}
+                          calendarDates={consultationCalendarDates}
+                          setCalendarDates={setConsultationCalendarDates}
+                          selectedDates={consultationSelectedDates}
+                          setSelectedDates={setConsultationSelectedDates}
+                          timeslotPages={consultationTimeslotPages}
+                          setTimeslotPages={setConsultationTimeslotPages}
+                          setSelectedConsultation={setSelectedConsultation}
+                          setIsDetailsModalOpen={setIsDetailsModalOpen}
+                          setIsManageRecurringModalOpen={setIsManageRecurringModalOpen}
+                          formatDate={formatDate}
+                          formatTime={formatTime}
+                        />
+                      ))
                     ) : (
                       <div className="py-20 flex flex-col items-center justify-center text-center space-y-4">
                         <div className="w-20 h-20 bg-stone-50 rounded-full flex items-center justify-center border-2 border-dashed border-stone-200">
