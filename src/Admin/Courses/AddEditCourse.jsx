@@ -78,12 +78,15 @@ const AddEditCourse = ({ onSave }) => {
   const [addCourseCategory] = useAddCourseCategoryMutation();
   const [deleteCourseCategory] = useDeleteCourseCategoryMutation();
   const { data: teachersResponse } = useGetAllTeacherProfilesUnpaginatedQuery();
-  const { data: courseDetails, isLoading: isLoadingDetails } = useGetCourseDetailsQuery(id, {
-    skip: !id
-  });
+  const { data: courseDetails, isLoading: isLoadingDetails } =
+    useGetCourseDetailsQuery(id, {
+      skip: !id,
+    });
 
   const categories = categoriesResponse || [];
-  const teachers = Array.isArray(teachersResponse) ? teachersResponse : teachersResponse?.results || [];
+  const teachers = Array.isArray(teachersResponse)
+    ? teachersResponse
+    : teachersResponse?.results || [];
 
   useEffect(() => {
     const cleanHtml = (html) => {
@@ -128,12 +131,17 @@ const AddEditCourse = ({ onSave }) => {
         total_hours: courseDetails.total_hours || "",
         hours_per_session: courseDetails.hours_per_session || "",
         thumbnailPreview: courseDetails.thumbnail || null,
-        videoName: courseDetails.videoName || (courseDetails.preview_video ? "Preview Video Exists" : ""),
+        videoName:
+          courseDetails.videoName ||
+          (courseDetails.preview_video ? "Preview Video Exists" : ""),
         learningObjectives: courseDetails.learningObjectives || [],
         requirements: courseDetails.requirements || [],
         curriculum: courseDetails.curriculum || [],
         start_date: courseDetails.start_date || "",
-        is_active: courseDetails.is_active !== undefined ? courseDetails.is_active : true,
+        is_active:
+          courseDetails.is_active !== undefined
+            ? courseDetails.is_active
+            : true,
       }));
     }
   }, [courseDetails]);
@@ -270,7 +278,7 @@ const AddEditCourse = ({ onSave }) => {
           boxShadow:
             "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
         },
-      }
+      },
     );
   };
 
@@ -299,16 +307,20 @@ const AddEditCourse = ({ onSave }) => {
       const payload = new FormData();
       payload.append("title", formData.title);
       if (formData.subtitle) payload.append("subtitle", formData.subtitle);
-      if (formData.description) payload.append("description", formData.description);
+      if (formData.description)
+        payload.append("description", formData.description);
       payload.append("category_id", formData.category);
       payload.append("teacher_id", formData.teacher);
       payload.append("price", formData.price);
       payload.append("level", formData.level);
       payload.append("status", formData.status);
       payload.append("is_active", formData.is_active);
-      if (formData.duration_in_weeks) payload.append("duration_in_weeks", formData.duration_in_weeks);
-      if (formData.total_hours) payload.append("total_hours", formData.total_hours);
-      if (formData.hours_per_session) payload.append("hours_per_session", formData.hours_per_session);
+      if (formData.duration_in_weeks)
+        payload.append("duration_in_weeks", formData.duration_in_weeks);
+      if (formData.total_hours)
+        payload.append("total_hours", formData.total_hours);
+      if (formData.hours_per_session)
+        payload.append("hours_per_session", formData.hours_per_session);
       if (formData.status === "upcoming" && formData.start_date) {
         payload.append("start_date", formData.start_date);
       }
@@ -372,7 +384,9 @@ const AddEditCourse = ({ onSave }) => {
     } catch (err) {
       console.error("Failed to save course:", err);
       const errorMsg = err?.data
-        ? Object.entries(err.data).map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : v}`).join("\n")
+        ? Object.entries(err.data)
+            .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : v}`)
+            .join("\n")
         : "Failed to save course.";
       toast.error(errorMsg);
     }
@@ -416,12 +430,13 @@ const AddEditCourse = ({ onSave }) => {
                 }
                 setActiveTab(tab);
               }}
-              className={`px-6 py-4 text-sm font-bold transition-all border-b-2 whitespace-nowrap ${activeTab === tab
-                ? "border-teal-600 text-teal-700"
-                : isLocked
-                  ? "border-transparent text-stone-300 cursor-not-allowed"
-                  : "border-transparent text-stone-400 hover:text-stone-600"
-                }`}
+              className={`px-6 py-4 text-sm font-bold transition-all border-b-2 whitespace-nowrap ${
+                activeTab === tab
+                  ? "border-teal-600 text-teal-700"
+                  : isLocked
+                    ? "border-transparent text-stone-300 cursor-not-allowed"
+                    : "border-transparent text-stone-400 hover:text-stone-600"
+              }`}
             >
               {tab}
             </button>
@@ -432,7 +447,9 @@ const AddEditCourse = ({ onSave }) => {
       {isLoadingDetails ? (
         <div className="flex flex-col items-center justify-center py-40 gap-4">
           <Loader2 className="w-12 h-12 text-teal-600 animate-spin" />
-          <p className="text-stone-500 font-medium animate-pulse">Loading detailed course information...</p>
+          <p className="text-stone-500 font-medium animate-pulse">
+            Loading detailed course information...
+          </p>
         </div>
       ) : (
         <>
@@ -518,8 +535,11 @@ const AddEditCourse = ({ onSave }) => {
                           className="w-full h-10 px-4 bg-stone-50 border border-stone-100 rounded-xl flex items-center justify-between text-stone-800 font-medium hover:bg-stone-100 transition-all outline-none focus:ring-4 focus:ring-teal-500/5 focus:border-teal-300"
                         >
                           <span className="truncate">
-                            {categories.find((c) => c.id.toString() === formData.category.toString())
-                              ?.name || "Select Category"}
+                            {categories.find(
+                              (c) =>
+                                c.id.toString() ===
+                                formData.category.toString(),
+                            )?.name || "Select Category"}
                           </span>
                           <ChevronDown
                             className={`w-4 h-4 transition-transform duration-300 ${isCategoryOpen ? "rotate-180" : ""}`}
@@ -535,24 +555,35 @@ const AddEditCourse = ({ onSave }) => {
                             <div className="absolute top-12 left-0 mt-2 p-1 bg-white border border-stone-100 rounded-[1.5rem] shadow-2xl flex flex-col gap-1 min-w-[220px] z-50 animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden">
                               <div className="max-h-60 overflow-y-auto p-2 scrollbar-thin scrollbar-thumb-stone-200 scrollbar-track-transparent">
                                 {categories.length === 0 ? (
-                                  <p className="text-xs text-stone-400 p-4 text-center">No categories found</p>
+                                  <p className="text-xs text-stone-400 p-4 text-center">
+                                    No categories found
+                                  </p>
                                 ) : (
                                   categories.map((cat) => (
                                     <div
                                       key={cat.id}
-                                      className={`group flex items-center justify-between px-4 py-2.5 rounded-xl text-sm transition-all cursor-pointer ${formData.category.toString() === cat.id.toString()
-                                        ? "bg-teal-50 text-teal-700 font-bold"
-                                        : "text-stone-600 hover:bg-stone-50"
-                                        }`}
+                                      className={`group flex items-center justify-between px-4 py-2.5 rounded-xl text-sm transition-all cursor-pointer ${
+                                        formData.category.toString() ===
+                                        cat.id.toString()
+                                          ? "bg-teal-50 text-teal-700 font-bold"
+                                          : "text-stone-600 hover:bg-stone-50"
+                                      }`}
                                       onClick={() => {
-                                        setFormData((prev) => ({ ...prev, category: cat.id.toString() }));
+                                        setFormData((prev) => ({
+                                          ...prev,
+                                          category: cat.id.toString(),
+                                        }));
                                         setIsCategoryOpen(false);
                                       }}
                                     >
-                                      <span className="truncate">{cat.name}</span>
+                                      <span className="truncate">
+                                        {cat.name}
+                                      </span>
                                       <button
                                         type="button"
-                                        onClick={(e) => handleDeleteCategory(cat.id, e)}
+                                        onClick={(e) =>
+                                          handleDeleteCategory(cat.id, e)
+                                        }
                                         className="p-1.5 text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all ml-2"
                                       >
                                         <Trash2 className="w-4 h-4" />
@@ -567,8 +598,12 @@ const AddEditCourse = ({ onSave }) => {
                                   type="text"
                                   placeholder="Add category..."
                                   value={newCategoryName}
-                                  onChange={(e) => setNewCategoryName(e.target.value)}
-                                  onKeyPress={(e) => e.key === "Enter" && handleAddCategory()}
+                                  onChange={(e) =>
+                                    setNewCategoryName(e.target.value)
+                                  }
+                                  onKeyPress={(e) =>
+                                    e.key === "Enter" && handleAddCategory()
+                                  }
                                   className="flex-1 h-9 px-3 text-xs bg-white border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-600/20 transition-all shadow-sm"
                                 />
                                 <button
@@ -697,7 +732,9 @@ const AddEditCourse = ({ onSave }) => {
                   ) : (
                     <>
                       <Save className="w-5 h-5" />
-                      <span>{courseId ? "Update Course" : "Submit Course"}</span>
+                      <span>
+                        {courseId ? "Update Course" : "Submit Course"}
+                      </span>
                     </>
                   )}
                 </button>
@@ -792,9 +829,9 @@ const UploadCard = ({
           <h4 className="text-greenTeal font-bold inter-font">{title}</h4>
           <p className="text-stone-400 text-xs mt-1 inter-font max-w-[240px] line-clamp-1">
             {preview &&
-              typeof preview === "string" &&
-              !preview.includes("://") &&
-              !preview.startsWith("data:")
+            typeof preview === "string" &&
+            !preview.includes("://") &&
+            !preview.startsWith("data:")
               ? `Selected: ${preview}`
               : subtitle}
           </p>

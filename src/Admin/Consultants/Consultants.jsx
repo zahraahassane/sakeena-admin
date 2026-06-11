@@ -18,6 +18,8 @@ import {
   ArrowRight,
   Search,
   Layout,
+  LayoutGrid,
+  List,
 } from "lucide-react";
 import ScheduleConsultationModal from "./ScheduleConsultationModal";
 import ConsultationDetailsModal from "./ConsultationDetailsModal";
@@ -30,6 +32,7 @@ import {
   useGetRescheduleRequestsQuery,
   useGetConsultationCalendarQuery,
   useGetConsultationTimeslotsQuery,
+  useGetBookedConsultationsQuery,
 } from "../../Api/adminApi";
 import { toast } from "react-hot-toast";
 
@@ -407,8 +410,9 @@ const ConsultationCard = ({
 };
 
 const Consultants = () => {
-  const [activeTab, setActiveTab] = useState("Consultations"); // 'Consultations' or 'Reschedule Requests'
+  const [activeTab, setActiveTab] = useState("Consultations"); // 'Consultations' or 'Reschedule Requests' or 'Booked Consultations'
   const [activeView, setActiveView] = useState("teachers"); // 'teachers' or 'consultations' (for the teachers tab)
+  const [bookedConsultationsView, setBookedConsultationsView] = useState("cards"); // 'cards' or 'table'
   const [selectedTeacher, setSelectedTeacher] = useState(null);
   const [isConsultationModalOpen, setIsConsultationModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
@@ -424,6 +428,7 @@ const Consultants = () => {
   const [teacherPage, setTeacherPage] = useState(1);
   const [consultationPage, setConsultationPage] = useState(1);
   const [reschedulePage, setReschedulePage] = useState(1);
+  const [bookedConsultationsPage, setBookedConsultationsPage] = useState(1);
   const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
   const [selectedReschedule, setSelectedReschedule] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -433,6 +438,7 @@ const Consultants = () => {
     setTeacherPage(1);
     setConsultationPage(1);
     setReschedulePage(1);
+    setBookedConsultationsPage(1);
   }, [searchQuery]);
 
   // Fetch Teachers (Paginated)
@@ -488,6 +494,16 @@ const Consultants = () => {
 
   const rescheduleRequests = rescheduleData?.results || [];
   const totalReschedulePages = rescheduleData?.total_pages || 1;
+
+  const {
+    data: bookedConsultationsData,
+    isLoading: isLoadingBookedConsultations,
+  } = useGetBookedConsultationsQuery(bookedConsultationsPage, {
+    skip: activeTab !== "Booked Consultations",
+  });
+
+  const bookedConsultations = bookedConsultationsData?.results || [];
+  const totalBookedConsultationsPages = bookedConsultationsData?.total_pages || 1;
 
   const formatDate = (dateString, includeTime = false) => {
     if (!dateString) return "N/A";
@@ -566,11 +582,28 @@ const Consultants = () => {
             Rejected
           </span>
         );
+      case "completed":
+        return (
+          <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full text-[8px] font-bold uppercase tracking-wider">
+            Completed
+          </span>
+        );
+      case "pending":
+        return (
+          <span className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-600 px-3 py-1 rounded-full text-[8px] font-bold uppercase tracking-wider">
+            Pending
+          </span>
+        );
+      case "failed":
+        return (
+          <span className="inline-flex items-center gap-1.5 bg-rose-50 text-rose-600 px-3 py-1 rounded-full text-[8px] font-bold uppercase tracking-wider">
+            Failed
+          </span>
+        );
       default:
         return (
-          <span className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border border-amber-100">
-            <AlertCircle className="w-3 h-3" />
-            Pending
+          <span className="inline-flex items-center gap-1.5 bg-stone-50 text-stone-500 px-3 py-1 rounded-full text-[8px] font-bold uppercase tracking-wider">
+            {status}
           </span>
         );
     }
@@ -597,23 +630,53 @@ const Consultants = () => {
         {/* Logical Button Placement - Only show when managing consultations */}
         {/* Logical Button Placement - Only show when managing consultations */}
         <div className="flex flex-col sm:flex-row gap-3 md:gap-4 flex-1 md:justify-end">
-          {/* Search Field */}
-          <div className="flex-1 max-w-full md:max-w-md relative w-full">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-300 w-5 h-5" />
-            <input
-              type="text"
-              placeholder={
-                activeTab === "Consultations"
-                  ? activeView === "teachers"
-                    ? "Search teachers..."
-                    : "Search consultation plans..."
-                  : "Search reschedule requests..."
-              }
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-white border border-stone-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all placeholder:text-stone-300 shadow-sm"
-            />
-          </div>
+          {/* Search Field - Hide on Booked Consultations */}
+          {activeTab !== "Booked Consultations" && (
+            <div className="flex-1 max-w-full md:max-w-md relative w-full">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-300 w-5 h-5" />
+              <input
+                type="text"
+                placeholder={
+                  activeTab === "Consultations"
+                    ? activeView === "teachers"
+                      ? "Search teachers..."
+                      : "Search consultation plans..."
+                    : activeTab === "Reschedule Requests"
+                      ? "Search reschedule requests..."
+                      : "Search booked consultations..."
+                }
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-12 pr-4 py-3 bg-white border border-stone-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all placeholder:text-stone-300 shadow-sm"
+              />
+            </div>
+          )}
+
+          {/* Toggle Button for Booked Consultations View */}
+          {activeTab === "Booked Consultations" && (
+            <div className="flex items-center gap-2 bg-stone-100 rounded-2xl p-1">
+              <button
+                onClick={() => setBookedConsultationsView("cards")}
+                className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                  bookedConsultationsView === "cards"
+                    ? "bg-white text-teal-600 shadow-sm"
+                    : "text-stone-500 hover:text-stone-700"
+                }`}
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setBookedConsultationsView("table")}
+                className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                  bookedConsultationsView === "table"
+                    ? "bg-white text-teal-600 shadow-sm"
+                    : "text-stone-500 hover:text-stone-700"
+                }`}
+              >
+                <List className="w-4 h-4" />
+              </button>
+            </div>
+          )}
 
           {/* Logical Button Placement - Only show when managing consultations */}
           {activeTab === "Consultations" && (
@@ -632,7 +695,7 @@ const Consultants = () => {
       <div className="bg-white rounded-[1.5rem] md:rounded-[2rem] border border-stone-200 shadow-sm overflow-hidden flex flex-col min-h-[700px]">
         {/* Tab Switcher */}
         <div className="flex border-b border-stone-100 p-2 gap-2 bg-stone-50/30 overflow-x-auto no-scrollbar">
-          {["Consultations", "Reschedule Requests"].map((tab) => (
+          {["Consultations", "Reschedule Requests", "Booked Consultations"].map((tab) => (
             <button
               key={tab}
               onClick={() => handleTabChange(tab)}
@@ -655,7 +718,9 @@ const Consultants = () => {
                 ? activeView === "teachers"
                   ? "Select a Teacher"
                   : `Plans for ${selectedTeacher?.user?.first_name}`
-                : "Manage Reschedule Inquiries"}
+                : activeTab === "Reschedule Requests"
+                  ? "Manage Reschedule Inquiries"
+                  : "Booked Consultations"}
             </h2>
           </div>
 
@@ -835,7 +900,7 @@ const Consultants = () => {
                 </div>
               )}
             </>
-          ) : (
+          ) : activeTab === "Reschedule Requests" ? (
             /* Reschedule Requests Tab Content */
             <div className="flex-1 flex flex-col">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 content-start">
@@ -940,6 +1005,181 @@ const Consultants = () => {
                   onPageChange={setReschedulePage}
                 />
               </div>
+            </div>
+          ) : (
+            /* Booked Consultations Tab Content */
+            <div className="flex-1 flex flex-col">
+              {isLoadingBookedConsultations ? (
+                <div className="flex-1 py-20 flex flex-col items-center justify-center text-center space-y-4">
+                  <div className="w-20 h-20 bg-stone-50 rounded-full flex items-center justify-center border-2 border-dashed border-stone-200">
+                    <Calendar className="w-10 h-10 text-stone-300 animate-pulse" />
+                  </div>
+                  <h3 className="text-xl font-bold text-stone-900">
+                    Loading Booked Consultations...
+                  </h3>
+                </div>
+              ) : bookedConsultations.length > 0 ? (
+                <>
+                  {bookedConsultationsView === "cards" ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 content-start">
+                      {bookedConsultations.map((booking) => (
+                        <div
+                          key={booking.id}
+                          className="bg-white rounded-[1.5rem] md:rounded-[2rem] border border-stone-100 shadow-sm hover:shadow-xl hover:shadow-teal-900/5 hover:border-teal-200 transition-all duration-500 p-5 md:p-6 flex flex-col gap-6"
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="w-10 h-10 rounded-full bg-stone-50 flex items-center justify-center border border-stone-100 shrink-0">
+                                <User className="w-5 h-5 text-stone-400" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-sm font-bold text-stone-900 truncate">
+                                  {booking.customer.name}
+                                </p>
+                                <p className="text-[10px] text-stone-400 font-medium">
+                                  {booking.customer.email}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="shrink-0">
+                              {getStatusBadge(booking.status)}
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col gap-4 bg-stone-50/50 rounded-3xl p-5 border border-stone-100">
+                            <div className="flex items-center justify-between gap-4">
+                              <div className="flex-1 space-y-1">
+                                <span className="text-[9px] font-black text-stone-400 uppercase tracking-widest block">
+                                  Consultant
+                                </span>
+                                <p className="text-xs font-bold text-stone-600">
+                                  {booking.consultant.name}
+                                </p>
+                                <p className="text-[9px] text-stone-400">
+                                  {booking.consultant.consultation_title}
+                                </p>
+                              </div>
+                              <div className="text-right space-y-1">
+                                <span className="text-[9px] font-black text-teal-400 uppercase tracking-widest block">
+                                  Paid
+                                </span>
+                                <p className="text-sm font-black text-teal-700">
+                                  ${booking.total_price_paid}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="border-t border-stone-100 pt-4 space-y-2">
+                              <span className="text-[9px] font-black text-stone-400 uppercase tracking-widest block">
+                                Booked Slots ({booking.booked_slots.length})
+                              </span>
+                              <div className="space-y-2">
+                                {booking.booked_slots.map((slot) => (
+                                  <div
+                                    key={slot.id}
+                                    className="flex items-center justify-between text-xs px-3 py-2 bg-white rounded-xl border border-stone-100"
+                                  >
+                                    <span className="text-stone-600">
+                                      {formatDate(slot.scheduled_start, true)}
+                                    </span>
+                                    <span className="text-stone-400">
+                                      to {formatTime(slot.scheduled_end)}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] text-stone-400 font-medium">
+                              Booked on {formatDate(booking.created_at)}
+                            </span>
+                            <span className="text-[9px] font-black text-teal-600 uppercase tracking-wider">
+                              {booking.sessions_purchased} Session{booking.sessions_purchased !== 1 ? "s" : ""}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex-1 overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="border-b border-stone-200">
+                            <th className="px-4 py-3 text-[10px] font-black text-stone-500 uppercase tracking-wider">Customer</th>
+                            <th className="px-4 py-3 text-[10px] font-black text-stone-500 uppercase tracking-wider">Consultant</th>
+                            <th className="px-4 py-3 text-[10px] font-black text-stone-500 uppercase tracking-wider">Paid</th>
+                            <th className="px-4 py-3 text-[10px] font-black text-stone-500 uppercase tracking-wider">Sessions</th>
+                            <th className="px-4 py-3 text-[10px] font-black text-stone-500 uppercase tracking-wider">Status</th>
+                            {/* <th className="px-4 py-3 text-[10px] font-black text-stone-500 uppercase tracking-wider">Booked On</th> */}
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-stone-100">
+                          {bookedConsultations.map((booking) => (
+                            <tr key={booking.id} className="hover:bg-stone-50 transition-colors">
+                              <td className="px-4 py-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-10 h-10 rounded-full bg-stone-50 flex items-center justify-center border border-stone-100 shrink-0">
+                                    <User className="w-5 h-5 text-stone-400" />
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-bold text-stone-900">{booking.customer.name}</p>
+                                    <p className="text-[10px] text-stone-400">{booking.customer.email}</p>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-4 py-4">
+                                <div>
+                                  <p className="text-sm font-bold text-stone-900">{booking.consultant.name}</p>
+                                  <p className="text-[10px] text-stone-400">{booking.consultant.consultation_title}</p>
+                                </div>
+                              </td>
+                              <td className="px-4 py-4">
+                                <p className="text-sm font-black text-teal-700">${booking.total_price_paid}</p>
+                              </td>
+                              <td className="px-4 py-4">
+                                <p className="text-[10px] font-black text-teal-600 uppercase tracking-wider">
+                                  {booking.sessions_purchased} Session{booking.sessions_purchased !== 1 ? "s" : ""}
+                                </p>
+                              </td>
+                              <td className="px-4 py-4">
+                                {getStatusBadge(booking.status)}
+                              </td>
+                              {/* <td className="px-4 py-4">
+                                <p className="text-[10px] text-stone-400 font-medium">
+                                  {formatDate(booking.created_at)}
+                                </p>
+                              </td> */}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  {/* Pagination for Booked Consultations */}
+                  <div className="mt-auto pt-8 border-t border-stone-50">
+                    <Pagination
+                      currentPage={bookedConsultationsPage}
+                      totalPages={totalBookedConsultationsPages}
+                      onPageChange={setBookedConsultationsPage}
+                    />
+                  </div>
+                </>
+              ) : (
+                <div className="flex-1 py-20 flex flex-col items-center justify-center text-center space-y-4">
+                  <div className="w-20 h-20 bg-stone-50 rounded-full flex items-center justify-center border-2 border-dashed border-stone-200">
+                    <Calendar className="w-10 h-10 text-stone-300" />
+                  </div>
+                  <h3 className="text-xl font-bold text-stone-900">
+                    No booked consultations
+                  </h3>
+                  <p className="text-stone-500">
+                    No consultations have been booked yet!
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>
