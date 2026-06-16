@@ -20,6 +20,7 @@ import {
   Layout,
   LayoutGrid,
   List,
+  ExternalLink,
 } from "lucide-react";
 import ScheduleConsultationModal from "./ScheduleConsultationModal";
 import ConsultationDetailsModal from "./ConsultationDetailsModal";
@@ -1077,14 +1078,42 @@ const Consultants = () => {
                                 {booking.booked_slots.map((slot) => (
                                   <div
                                     key={slot.id}
-                                    className="flex items-center justify-between text-xs px-3 py-2 bg-white rounded-xl border border-stone-100"
+                                    className="flex flex-col gap-2 p-3 bg-white rounded-xl border border-stone-100"
                                   >
-                                    <span className="text-stone-600">
-                                      {formatDate(slot.scheduled_start, true)}
-                                    </span>
-                                    <span className="text-stone-400">
-                                      to {formatTime(slot.scheduled_end)}
-                                    </span>
+                                    <div className="flex items-center justify-between text-xs">
+                                      <span className="text-stone-600 font-bold">
+                                        {formatDate(slot.scheduled_start, true)}
+                                      </span>
+                                      <span className="text-stone-400">
+                                        to {formatTime(slot.scheduled_end)}
+                                      </span>
+                                    </div>
+                                    {(slot.zoom_start_url || slot.zoom_join_url) && (
+                                      <div className="flex flex-wrap gap-2 pt-1.5 border-t border-stone-50">
+                                        {slot.zoom_start_url && (
+                                          <a
+                                            href={slot.zoom_start_url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="px-2 py-1 bg-teal-50 text-teal-700 hover:bg-teal-100 rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors inline-flex items-center gap-1"
+                                          >
+                                            <Video className="w-3 h-3 text-teal-600" />
+                                            Start Meeting (Host)
+                                          </a>
+                                        )}
+                                        {slot.zoom_join_url && (
+                                          <a
+                                            href={slot.zoom_join_url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="px-2 py-1 bg-stone-50 text-stone-700 hover:bg-stone-100 rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors inline-flex items-center gap-1 border border-stone-200/50"
+                                          >
+                                            <ExternalLink className="w-3 h-3 text-stone-400" />
+                                            Join Meeting (Guest)
+                                          </a>
+                                        )}
+                                      </div>
+                                    )}
                                   </div>
                                 ))}
                               </div>
@@ -1109,6 +1138,7 @@ const Consultants = () => {
                           <tr className="border-b border-stone-200">
                             <th className="px-4 py-3 text-[10px] font-black text-stone-500 uppercase tracking-wider">Customer</th>
                             <th className="px-4 py-3 text-[10px] font-black text-stone-500 uppercase tracking-wider">Consultant</th>
+                            <th className="px-4 py-3 text-[10px] font-black text-stone-500 uppercase tracking-wider">Booked Slots & Zoom Links</th>
                             <th className="px-4 py-3 text-[10px] font-black text-stone-500 uppercase tracking-wider">Paid</th>
                             <th className="px-4 py-3 text-[10px] font-black text-stone-500 uppercase tracking-wider">Sessions</th>
                             <th className="px-4 py-3 text-[10px] font-black text-stone-500 uppercase tracking-wider">Status</th>
@@ -1133,6 +1163,48 @@ const Consultants = () => {
                                 <div>
                                   <p className="text-sm font-bold text-stone-900">{booking.consultant.name}</p>
                                   <p className="text-[10px] text-stone-400">{booking.consultant.consultation_title}</p>
+                                </div>
+                              </td>
+                              <td className="px-4 py-4 max-w-[280px]">
+                                <div className="flex flex-col gap-2 max-h-[160px] overflow-y-auto pr-1 custom-scrollbar">
+                                  {booking.booked_slots.map((slot) => (
+                                    <div
+                                      key={slot.id}
+                                      className="text-xs p-2.5 bg-stone-50 rounded-xl border border-stone-100 space-y-1.5"
+                                    >
+                                      <div className="flex flex-wrap items-center justify-between gap-1 text-[11px] text-stone-600 font-medium">
+                                        <span>{formatDate(slot.scheduled_start, true)}</span>
+                                        <span className="text-stone-300">to</span>
+                                        <span>{formatTime(slot.scheduled_end)}</span>
+                                      </div>
+                                      {(slot.zoom_start_url || slot.zoom_join_url) && (
+                                        <div className="flex flex-col gap-1.5 pt-1.5 border-t border-stone-200/50">
+                                          {slot.zoom_start_url && (
+                                            <a
+                                              href={slot.zoom_start_url}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              className="px-2 py-0.5 bg-teal-50 text-teal-700 hover:bg-teal-100 rounded-md text-[9px] font-black uppercase tracking-wider transition-colors inline-flex items-center gap-1 w-fit"
+                                            >
+                                              <Video className="w-2.5 h-2.5 text-teal-600" />
+                                              Start Meeting (Host)
+                                            </a>
+                                          )}
+                                          {slot.zoom_join_url && (
+                                            <a
+                                              href={slot.zoom_join_url}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              className="px-2 py-0.5 bg-stone-100 text-stone-700 hover:bg-stone-200 rounded-md text-[9px] font-black uppercase tracking-wider transition-colors inline-flex items-center gap-1 w-fit border border-stone-200/30"
+                                            >
+                                              <ExternalLink className="w-2.5 h-2.5 text-stone-400" />
+                                              Join Meeting (Guest)
+                                            </a>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+                                  ))}
                                 </div>
                               </td>
                               <td className="px-4 py-4">

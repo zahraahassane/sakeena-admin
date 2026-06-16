@@ -44,8 +44,7 @@ const AddEditCourse = ({ onSave }) => {
     hours_per_session: "",
     thumbnail: null,
     thumbnailPreview: null,
-    preview_video: null,
-    videoName: "",
+    preview_video: "",
     learningObjectives: [],
     requirements: [],
     curriculum: [
@@ -131,9 +130,7 @@ const AddEditCourse = ({ onSave }) => {
         total_hours: courseDetails.total_hours || "",
         hours_per_session: courseDetails.hours_per_session || "",
         thumbnailPreview: courseDetails.thumbnail || null,
-        videoName:
-          courseDetails.videoName ||
-          (courseDetails.preview_video ? "Preview Video Exists" : ""),
+        preview_video: courseDetails.preview_video || "",
         learningObjectives: courseDetails.learningObjectives || [],
         requirements: courseDetails.requirements || [],
         curriculum: courseDetails.curriculum || [],
@@ -167,17 +164,6 @@ const AddEditCourse = ({ onSave }) => {
         }));
       };
       reader.readAsDataURL(file);
-    }
-  };
-
-  const handleVideoUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setFormData((prev) => ({
-        ...prev,
-        preview_video: file,
-        videoName: file.name,
-      }));
     }
   };
 
@@ -328,7 +314,10 @@ const AddEditCourse = ({ onSave }) => {
         payload.append("thumbnail", formData.thumbnail);
       }
 
-      if (formData.preview_video instanceof File) {
+      if (
+        formData.preview_video !== null &&
+        formData.preview_video !== undefined
+      ) {
         payload.append("preview_video", formData.preview_video);
       }
 
@@ -358,8 +347,7 @@ const AddEditCourse = ({ onSave }) => {
         hours_per_session: "",
         thumbnail: null,
         thumbnailPreview: null,
-        preview_video: null,
-        videoName: "",
+        preview_video: "",
         learningObjectives: [],
         requirements: [],
         curriculum: [
@@ -705,15 +693,44 @@ const AddEditCourse = ({ onSave }) => {
                     accept="image/*.jpg,image/*.jpeg,image/*.png"
                     preview={formData.thumbnailPreview}
                   />
-                  <UploadCard
-                    title="Course Preview Video"
-                    subtitle="MP4, MOV"
-                    icon={<Play className="w-8 h-8 text-stone-400" />}
-                    btnText="Upload Video"
-                    onChange={handleVideoUpload}
-                    accept="video/*"
-                    preview={formData.videoName}
-                  />
+                  <div className="flex flex-col justify-between gap-2 py-4 px-5 border border-stone-200 rounded-3xl min-h-64 bg-stone-50/30">
+                    <div className="flex items-center justify-start gap-4">
+                      <div className="w-12 h-12 rounded-full bg-stone-50 flex items-center justify-center shadow-sm border border-stone-100 shrink-0">
+                        <Play className="w-6 h-6 text-stone-400" />
+                      </div>
+                      <div className="space-y-1">
+                        <h4 className="text-greenTeal font-bold inter-font">
+                          Course Preview Video
+                        </h4>
+                        <p className="text-stone-400 text-xs inter-font">
+                          Enter video link (e.g., YouTube, Vimeo, or MP4 URL)
+                        </p>
+                      </div>
+                    </div>
+                    <div className="w-full">
+                      <input
+                        type="text"
+                        name="preview_video"
+                        value={formData.preview_video || ""}
+                        onChange={handleChange}
+                        placeholder="https://example.com/video.mp4"
+                        className="w-full bg-white border border-stone-200 rounded-xl px-4 py-3 outline-none focus:ring-4 focus:ring-teal-500/5 focus:border-teal-300 transition-all font-medium text-stone-800 shadow-sm"
+                      />
+                    </div>
+                    {formData.preview_video && (
+                      <p className="text-xs text-teal-600 font-medium truncate px-1">
+                        Preview:{" "}
+                        <a
+                          href={formData.preview_video}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="underline hover:text-teal-700"
+                        >
+                          {formData.preview_video}
+                        </a>
+                      </p>
+                    )}
+                  </div>
                 </div>
               </section>
 

@@ -878,6 +878,23 @@ export const adminApi = api.injectEndpoints({
       invalidatesTags: ["consultations"],
     }),
 
+    updateConsultation: builder.mutation({
+      query: ({ id, body }) => ({
+        url: `/consultations/${id}/`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: ["consultations"],
+    }),
+
+    deleteConsultation: builder.mutation({
+      query: (id) => ({
+        url: `/consultations/${id}/`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["consultations"],
+    }),
+
     createConsultationRecurring: builder.mutation({
       query: ({ consultationId, body }) => ({
         url: `/consultations/${consultationId}/recurring/`,
@@ -1547,6 +1564,8 @@ export const {
   useGetConsultationsQuery,
   useGetConsultationQuery,
   useCreateConsultationMutation,
+  useUpdateConsultationMutation,
+  useDeleteConsultationMutation,
   useCreateConsultationRecurringMutation,
   useGetConsultationRecurringsQuery,
   useUpdateConsultationRecurringMutation,

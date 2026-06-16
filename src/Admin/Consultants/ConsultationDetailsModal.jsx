@@ -6,15 +6,80 @@ import {
   Package,
   ChevronLeft,
   ChevronRight,
+  Pencil,
+  Trash2,
+  Save,
+  Loader2,
 } from "lucide-react";
 import {
   useGetConsultationCalendarQuery,
   useGetConsultationTimeslotsQuery,
+  useUpdateConsultationMutation,
+  useDeleteConsultationMutation,
+  useGetConsultationQuery,
 } from "../../Api/adminApi";
 import Pagination from "../../components/Pagination";
+import { toast } from "react-hot-toast";
 
-const ConsultationDetailsModal = ({ isOpen, onClose, consultation }) => {
-  if (!isOpen || !consultation) return null;
+const ConsultationDetailsModal = ({ isOpen, onClose, consultation: initialConsultation }) => {
+  const { data: latestConsultation } = useGetConsultationQuery(initialConsultation?.id, {
+    skip: !isOpen || !initialConsultation?.id,
+  });
+
+  const consultation = latestConsultation || initialConsultation;
+
+  const [updateConsultation, { isLoading: isUpdating }] = useUpdateConsultationMutation();
+  const [deleteConsultation, { isLoading: isDeleting }] = useDeleteConsultationMutation();
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editPrice, setEditPrice] = useState("");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  useEffect(() => {
+    if (consultation) {
+      setEditTitle(consultation.title || "");
+      setEditPrice(consultation.standard_price || "");
+      setIsEditing(false);
+      setShowDeleteConfirm(false);
+    }
+  }, [consultation, isOpen]);
+
+  const rate = useMemo(() => {
+    return Number(consultation?.standard_price || consultation?.teacher?.consultation_rate || 0);
+  }, [consultation]);
+
+  const handleUpdate = async () => {
+    if (!editTitle.trim()) {
+      toast.error("Title is required.");
+      return;
+    }
+    try {
+      await updateConsultation({
+        id: consultation.id,
+        body: {
+          title: editTitle.trim(),
+          standard_price: editPrice ? String(editPrice) : null,
+        },
+      }).unwrap();
+      toast.success("Consultation plan updated successfully.");
+      setIsEditing(false);
+    } catch (err) {
+      console.error("Failed to update consultation plan:", err);
+      toast.error("Failed to update consultation plan.");
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      await deleteConsultation(consultation.id).unwrap();
+      toast.success("Consultation plan deleted successfully.");
+      onClose();
+    } catch (err) {
+      console.error("Failed to delete consultation plan:", err);
+      toast.error("Failed to delete consultation plan.");
+    }
+  };
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
@@ -53,7 +118,7 @@ const ConsultationDetailsModal = ({ isOpen, onClose, consultation }) => {
 
   const { data: calendarData, isLoading: isCalendarLoading } =
     useGetConsultationCalendarQuery(
-      { id: consultation.id, month: monthString },
+      { id: consultation?.id, month: monthString },
       { skip: !isOpen || !consultation },
     );
 
@@ -66,11 +131,9 @@ const ConsultationDetailsModal = ({ isOpen, onClose, consultation }) => {
     isLoading: isTimeslotsLoading,
     isFetching: isTimeslotsFetching,
   } = useGetConsultationTimeslotsQuery(
-    { id: consultation.id, date: selectedDate, page: currentPage },
+    { id: consultation?.id, date: selectedDate, page: currentPage },
     { skip: !isOpen || !consultation || !selectedDate },
   );
-
-  const slotsForSelectedDate = timeslotsPageData?.results || [];
 
   const monthLabel = useMemo(
     () =>
@@ -107,6 +170,10 @@ const ConsultationDetailsModal = ({ isOpen, onClose, consultation }) => {
     return cells;
   }, [calendarDate, daysInMonth, startDay]);
 
+  if (!isOpen || !consultation) return null;
+
+  const slotsForSelectedDate = timeslotsPageData?.results || [];
+
   const previousMonth = () =>
     setCalendarDate(
       (prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1),
@@ -133,24 +200,123 @@ const ConsultationDetailsModal = ({ isOpen, onClose, consultation }) => {
     <div className="fixed inset-0 z-[75] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
       <div className="w-full max-w-4xl bg-stone-50 rounded-[2rem] shadow-2xl overflow-hidden border border-stone-200 animate-in zoom-in-95 duration-300">
         {/* Modal Header */}
-        <div className="px-6 py-5 md:px-8 md:py-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="space-y-1">
-            <h2 className="text-xl font-bold text-zinc-900 arimo-font">
-              Consultation with{" "}
-              {`${consultation.teacher?.user?.first_name || ""} ${
-                consultation.teacher?.user?.last_name || ""
-              }`.trim() || "Teacher"}
-            </h2>
-            <p className="text-stone-500 text-sm inter-font">
-              Review schedule and consultation details
-            </p>
+        <div className="px-6 py-5 md:px-8 md:py-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between border-b border-stone-200 bg-white">
+          <div className="space-y-1 flex-1">
+            {isEditing ? (
+              <div className="space-y-3 w-full max-w-md">
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-bold text-stone-500 uppercase tracking-wider inter-font">
+                    Consultation Title
+                  </label>
+                  <input
+                    type="text"
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    className="w-full px-4 py-2 border border-stone-200 bg-stone-50 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all text-stone-800"
+                    placeholder="e.g. Weekly Quran Memorization"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-bold text-stone-500 uppercase tracking-wider inter-font">
+                    Standard Price ($)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={editPrice}
+                    onChange={(e) => setEditPrice(e.target.value)}
+                    className="w-full px-4 py-2 border border-stone-200 bg-stone-50 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all text-stone-800"
+                    placeholder="e.g. 45.00 (leave empty for teacher rate)"
+                  />
+                </div>
+              </div>
+            ) : (
+              <>
+                <h2 className="text-xl font-black text-zinc-900 arimo-font flex items-center gap-2">
+                  <span>
+                    {consultation.title ||
+                      `${consultation.teacher?.user?.first_name}'s Plan`}
+                  </span>
+                  <span className="text-stone-300 text-xs font-medium font-mono shrink-0">
+                    (ID: #{consultation.id})
+                  </span>
+                </h2>
+                <p className="text-stone-500 text-sm inter-font">
+                  Consultation with {`${consultation.teacher?.user?.first_name || ""} ${consultation.teacher?.user?.last_name || ""}`.trim() || "Teacher"}
+                </p>
+              </>
+            )}
           </div>
-          <button
-            onClick={onClose}
-            className="self-start p-2 hover:bg-stone-200/50 rounded-xl transition-all text-stone-400"
-          >
-            <X className="w-6 h-6" />
-          </button>
+          
+          <div className="flex items-center gap-2 shrink-0">
+            {isEditing ? (
+              <>
+                <button
+                  onClick={handleUpdate}
+                  disabled={isUpdating}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm disabled:opacity-50"
+                >
+                  {isUpdating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                  <span>Save</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setIsEditing(false);
+                    setEditTitle(consultation.title || "");
+                    setEditPrice(consultation.standard_price || "");
+                  }}
+                  disabled={isUpdating}
+                  className="px-3 py-2 bg-stone-100 hover:bg-stone-200 text-stone-500 rounded-xl text-xs font-medium transition-all border border-stone-200/50"
+                >
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl text-xs font-bold transition-all border border-stone-200/50"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                  <span>Edit</span>
+                </button>
+                {showDeleteConfirm ? (
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={handleDelete}
+                      disabled={isDeleting}
+                      className="flex items-center gap-1.5 px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition-all"
+                    >
+                      {isDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                      <span>Confirm Delete</span>
+                    </button>
+                    <button
+                      onClick={() => setShowDeleteConfirm(false)}
+                      className="px-3 py-2 bg-stone-100 hover:bg-stone-200 text-stone-500 rounded-xl text-xs font-medium transition-all"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-xs font-bold transition-all border border-red-100"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete</span>
+                  </button>
+                )}
+              </>
+            )}
+            <div className="h-6 w-px bg-stone-200 mx-1"></div>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-stone-200/50 rounded-xl transition-all text-stone-400"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
         </div>
 
         <div className="px-6 pb-8 md:px-8 flex flex-col gap-8 lg:flex-row">
@@ -190,7 +356,8 @@ const ConsultationDetailsModal = ({ isOpen, onClose, consultation }) => {
                 )}
               </div>
               <div className="text-stone-900 font-bold text-lg">
-                ${consultation.teacher?.consultation_rate ?? "N/A"}
+                ${rate || "N/A"}
+                {rate > 0 && "/hr"}
               </div>
             </div>
 
@@ -431,13 +598,13 @@ const ConsultationDetailsModal = ({ isOpen, onClose, consultation }) => {
                 <span className="text-4xl font-black text-amber-600 arimo-font tracking-tighter">
                   $
                   {(
-                    Number(consultation.teacher?.consultation_rate || 0) *
+                    rate *
                     consultation.bundle_sessions *
                     (1 - (parseFloat(consultation.discount_percentage) || 0) / 100)
                   ).toFixed(0)}
                 </span>
                 <span className="text-lg font-bold text-stone-300 line-through decoration-amber-200/50">
-                  ${(Number(consultation.teacher?.consultation_rate || 0) * consultation.bundle_sessions).toFixed(0)}
+                  ${(rate * consultation.bundle_sessions).toFixed(0)}
                 </span>
               </div>
             </div>
