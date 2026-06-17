@@ -23,6 +23,16 @@ import {
   useGetAllTeacherProfilesUnpaginatedQuery,
 } from "../../Api/adminApi";
 
+const extractYoutubeId = (urlOrId) => {
+  if (!urlOrId) return "";
+  if (urlOrId.length === 11 && !urlOrId.includes("/") && !urlOrId.includes(".")) {
+    return urlOrId;
+  }
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = urlOrId.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : urlOrId;
+};
+
 const AddEditCourse = ({ onSave }) => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -130,7 +140,7 @@ const AddEditCourse = ({ onSave }) => {
         total_hours: courseDetails.total_hours || "",
         hours_per_session: courseDetails.hours_per_session || "",
         thumbnailPreview: courseDetails.thumbnail || null,
-        preview_video: courseDetails.preview_video || "",
+        preview_video: extractYoutubeId(courseDetails.preview_video || ""),
         learningObjectives: courseDetails.learningObjectives || [],
         requirements: courseDetails.requirements || [],
         curriculum: courseDetails.curriculum || [],
@@ -145,7 +155,11 @@ const AddEditCourse = ({ onSave }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (name === "preview_video") {
+      setFormData((prev) => ({ ...prev, [name]: extractYoutubeId(value) }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleCurriculumChange = (newCurriculum) => {
@@ -703,7 +717,7 @@ const AddEditCourse = ({ onSave }) => {
                           Course Preview Video
                         </h4>
                         <p className="text-stone-400 text-xs inter-font">
-                          Enter video link (e.g., YouTube, Vimeo, or MP4 URL)
+                          Enter YouTube video ID
                         </p>
                       </div>
                     </div>
@@ -713,7 +727,7 @@ const AddEditCourse = ({ onSave }) => {
                         name="preview_video"
                         value={formData.preview_video || ""}
                         onChange={handleChange}
-                        placeholder="https://example.com/video.mp4"
+                        placeholder="AcjnLc4TH4M"
                         className="w-full bg-white border border-stone-200 rounded-xl px-4 py-3 outline-none focus:ring-4 focus:ring-teal-500/5 focus:border-teal-300 transition-all font-medium text-stone-800 shadow-sm"
                       />
                     </div>
@@ -721,12 +735,12 @@ const AddEditCourse = ({ onSave }) => {
                       <p className="text-xs text-teal-600 font-medium truncate px-1">
                         Preview:{" "}
                         <a
-                          href={formData.preview_video}
+                          href={`https://www.youtube.com/watch?v=${formData.preview_video}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="underline hover:text-teal-700"
+                          className="underline hover:text-teal-700 font-mono"
                         >
-                          {formData.preview_video}
+                          https://www.youtube.com/watch?v={formData.preview_video}
                         </a>
                       </p>
                     )}
