@@ -905,7 +905,7 @@ export const adminApi = api.injectEndpoints({
     }),
 
     getConsultationRecurrings: builder.query({
-      query: (consultationId) => `/consultations/${consultationId}/recurring/`,
+      query: (consultationId) => `/consultations/${consultationId}/recurring/?no_page=1`,
       providesTags: ["consultations"],
     }),
 
