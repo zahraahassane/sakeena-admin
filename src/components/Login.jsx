@@ -1,7 +1,7 @@
 "use client";
 import backgroundImage from "../assets/img/login.png";
 import logo from "../assets/img/logo.png";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
@@ -9,6 +9,9 @@ import { setAuth } from "@/Redux/features/auth/authSlice";
 import { useLoginMutation } from "../Api/api";
 import { useEffect } from "react";
 import toast from "react-hot-toast";
+import TurnstileWidget, {
+  TURNSTILE_FIELD,
+} from "@/components/TurnstileWidget";
 
 export default function Login() {
   const { role, accessToken } = useSelector((state) => state.auth);
@@ -18,6 +21,8 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const [login, { isLoading }] = useLoginMutation();
+  const [captchaToken, setCaptchaToken] = useState("");
+  const turnstileRef = useRef(null);
 
   useEffect(() => {
     if (accessToken && role) {
@@ -32,7 +37,11 @@ export default function Login() {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      const result = await login({ email, password }).unwrap();
+      const result = await login({
+        email,
+        password,
+        [TURNSTILE_FIELD]: captchaToken,
+      }).unwrap();
 
       // Fetch user profile to determine actual role
       const meRes = await fetch(`${import.meta.env.VITE_API_URL || "https://api.sakeenapress.org"}/auth/users/me/`, {
@@ -43,6 +52,8 @@ export default function Login() {
       const role = meData.role; // "admin" or "teacher" from the API
 
       if (role !== "admin" && role !== "teacher") {
+        // Token is spent — reset so a retry isn't blocked on a stale challenge.
+        turnstileRef.current?.reset();
         toast.error("Access denied. This portal is for admins and teachers only.");
         return;
       }
@@ -51,6 +62,8 @@ export default function Login() {
       toast.success("Login successful!");
     } catch (error) {
       console.error("Login failed:", error);
+      // Turnstile tokens are single-use — hand the user a fresh challenge.
+      turnstileRef.current?.reset();
 
       let errorMessage = "Login failed. Please try again.";
       if (error?.data?.detail) {
@@ -141,10 +154,14 @@ export default function Login() {
             </div>
           </div>
 
+          <div className="flex justify-center">
+            <TurnstileWidget ref={turnstileRef} onVerify={setCaptchaToken} />
+          </div>
+
           {/* Login Button */}
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || !captchaToken}
             className="w-full bg-gradient-to-b from-[#205A60] to-[#3B8F97] text-white font-semibold py-3 rounded-full transition duration-200 mt-8 disabled:opacity-50"
           >
             {isLoading ? "Logging in..." : "Login"}
