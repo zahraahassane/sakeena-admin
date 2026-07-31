@@ -112,13 +112,14 @@ const ConsultationDetailsModal = ({ isOpen, onClose, consultation: initialConsul
     return new Date(today.getFullYear(), today.getMonth(), 1);
   });
 
+  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const monthString = `${calendarDate.getFullYear()}-${String(
     calendarDate.getMonth() + 1,
   ).padStart(2, "0")}`;
 
   const { data: calendarData, isLoading: isCalendarLoading } =
     useGetConsultationCalendarQuery(
-      { id: consultation?.id, month: monthString },
+      { id: consultation?.id, month: monthString, timezone: timeZone },
       { skip: !isOpen || !consultation },
     );
 
@@ -131,7 +132,7 @@ const ConsultationDetailsModal = ({ isOpen, onClose, consultation: initialConsul
     isLoading: isTimeslotsLoading,
     isFetching: isTimeslotsFetching,
   } = useGetConsultationTimeslotsQuery(
-    { id: consultation?.id, date: selectedDate, page: currentPage },
+    { id: consultation?.id, date: selectedDate, page: currentPage, timezone: timeZone },
     { skip: !isOpen || !consultation || !selectedDate },
   );
 

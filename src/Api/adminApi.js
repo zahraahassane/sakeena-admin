@@ -611,6 +611,7 @@ export const adminApi = api.injectEndpoints({
         const queryParams = new URLSearchParams();
         const page = typeof params === "number" ? params : params.page;
         if (page) queryParams.append("page", page);
+        if (timezone) queryParams.append("timezone", timezone);
         if (params && typeof params !== "number") {
           if (params.offers_consultations !== undefined) {
             queryParams.append(
@@ -935,11 +936,12 @@ export const adminApi = api.injectEndpoints({
       invalidatesTags: ["consultations"],
     }),
     getConsultationCalendar: builder.query({
-      query: ({ id, month }) => `/consultations/${id}/calendar/?month=${month}`,
+      query: ({ id, month, timezone }) =>
+        `/consultations/${id}/calendar/?month=${month}&timezone=${timezone || ""}`,
       providesTags: ["consultations"],
     }),
     getConsultationTimeslots: builder.query({
-      query: ({ id, date, page }) => {
+      query: ({ id, date, page, timezone }) => {
         const queryParams = new URLSearchParams();
         if (date) queryParams.append("date", date);
         if (page) queryParams.append("page", page);

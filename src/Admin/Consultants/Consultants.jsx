@@ -100,14 +100,15 @@ const ConsultationCard = ({
   const selectedDate = selectedDates[consultation.id] || null;
   const timeslotPage = timeslotPages[consultation.id] || 1;
   const monthString = getMonthString(calendarDate);
+  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   
   // Fetch calendar and timeslots
   const { data: calendarData, isLoading: isCalendarLoading } = useGetConsultationCalendarQuery(
-    { id: consultation.id, month: monthString }
+    { id: consultation.id, month: monthString, timezone: timeZone }
   );
   
   const { data: timeslotsData, isLoading: isTimeslotsLoading, isFetching: isTimeslotsFetching } = useGetConsultationTimeslotsQuery(
-    { id: consultation.id, date: selectedDate, page: timeslotPage },
+    { id: consultation.id, date: selectedDate, page: timeslotPage, timezone: timeZone },
     { skip: !selectedDate }
   );
   

@@ -120,7 +120,7 @@ function AvailabilityCalendar({ consultationId }) {
   const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`;
 
   const { data: calendarData, isLoading, isError } = useGetConsultationCalendarQuery(
-    { id: consultationId, month: monthKey },
+    { id: consultationId, month: monthKey, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone },
     { skip: !consultationId }
   );
 
