@@ -955,6 +955,14 @@ export const adminApi = api.injectEndpoints({
       query: (page = 1) => `/consultation-purchases/booked/?page=${page}`,
       providesTags: ["consultations"],
     }),
+    manualBookConsultation: builder.mutation({
+      query: ({ id, body }) => ({
+        url: `/consultations/${id}/manual-book/`,
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["consultations"],
+    }),
     getRescheduleRequests: builder.query({
       query: (params = {}) => {
         const queryParams = new URLSearchParams();
@@ -1576,6 +1584,7 @@ export const {
   useGetConsultationCalendarQuery,
   useGetConsultationTimeslotsQuery,
   useGetBookedConsultationsQuery,
+  useManualBookConsultationMutation,
   useGetTeacherUpcomingSessionsQuery,
   useGetConsultationEarningsQuery,
   useGetTeacherLiveSessionsQuery,

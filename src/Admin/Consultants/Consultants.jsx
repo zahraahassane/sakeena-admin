@@ -26,6 +26,7 @@ import ScheduleConsultationModal from "./ScheduleConsultationModal";
 import ConsultationDetailsModal from "./ConsultationDetailsModal";
 import RescheduleDetailsModal from "./RescheduleDetailsModal";
 import ManageRecurringSchedulesModal from "./ManageRecurringSchedulesModal";
+import ManualBookingModal from "./ManualBookingModal";
 import Pagination from "../../components/Pagination";
 import {
   useGetConsultationsQuery,
@@ -419,6 +420,7 @@ const Consultants = () => {
   const [isConsultationModalOpen, setIsConsultationModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isManageRecurringModalOpen, setIsManageRecurringModalOpen] = useState(false);
+  const [isManualBookingModalOpen, setIsManualBookingModalOpen] = useState(false);
   const [selectedConsultation, setSelectedConsultation] = useState(null);
   
   // Calendar state per consultation
@@ -688,6 +690,16 @@ const Consultants = () => {
             >
               <Plus className="w-5 h-5" />
               <span>Add New</span>
+            </button>
+          )}
+
+          {activeTab === "Booked Consultations" && (
+            <button
+              onClick={() => setIsManualBookingModalOpen(true)}
+              className="flex items-center justify-center gap-2 bg-greenTeal hover:bg-teal-700 text-white px-6 py-3 rounded-2xl font-bold text-sm transition-all shadow-lg shadow-teal-900/10 inter-font w-full sm:w-fit active:scale-95 shrink-0"
+            >
+              <Plus className="w-5 h-5" />
+              <span>Book Manually</span>
             </button>
           )}
         </div>
@@ -1283,6 +1295,11 @@ const Consultants = () => {
         isOpen={isManageRecurringModalOpen}
         onClose={() => setIsManageRecurringModalOpen(false)}
         consultation={selectedConsultation}
+      />
+
+      <ManualBookingModal
+        isOpen={isManualBookingModalOpen}
+        onClose={() => setIsManualBookingModalOpen(false)}
       />
     </div>
   );
