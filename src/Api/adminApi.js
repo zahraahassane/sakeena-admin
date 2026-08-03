@@ -611,7 +611,6 @@ export const adminApi = api.injectEndpoints({
         const queryParams = new URLSearchParams();
         const page = typeof params === "number" ? params : params.page;
         if (page) queryParams.append("page", page);
-        if (timezone) queryParams.append("timezone", timezone);
         if (params && typeof params !== "number") {
           if (params.offers_consultations !== undefined) {
             queryParams.append(
