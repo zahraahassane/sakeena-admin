@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { X, Edit3, Save, ChevronDown, Eye, EyeOff, FileText, Upload, Plus, Trash2 } from "lucide-react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { X, Edit3, Save, ChevronDown, Eye, EyeOff, FileText, Upload, Plus, Trash2, CheckCircle2, AlertCircle, Loader2, Ruler } from "lucide-react";
 import TextEditor from "../../components/Editor";
 import {
   useUpdateBookMutation,
@@ -7,9 +7,32 @@ import {
   useGetBookDetailsQuery,
   useAddBookCategoryMutation,
   useDeleteBookCategoryMutation,
+  useGetLuluPackagesQuery,
+  useValidateLuluInteriorMutation,
+  useLazyGetLuluInteriorValidationResultQuery,
+  useGetLuluCoverDimensionsMutation,
+  useValidateLuluCoverMutation,
+  useLazyGetLuluCoverValidationResultQuery,
 } from "../../Api/adminApi";
 import toast from "react-hot-toast";
-import { useRef } from "react";
+
+const LULU_STATUS_STYLES = {
+  NOT_SUBMITTED: { label: "Not submitted", cls: "bg-gray-100 text-gray-500" },
+  VALIDATING: { label: "Validating…", cls: "bg-amber-50 text-amber-600" },
+  NORMALIZING: { label: "Validating…", cls: "bg-amber-50 text-amber-600" },
+  VALIDATED: { label: "Validated", cls: "bg-emerald-50 text-emerald-600" },
+  NORMALIZED: { label: "Validated", cls: "bg-emerald-50 text-emerald-600" },
+  ERROR: { label: "Failed", cls: "bg-rose-50 text-rose-600" },
+};
+
+const LuluStatusPill = ({ status }) => {
+  const s = LULU_STATUS_STYLES[status] || LULU_STATUS_STYLES.NOT_SUBMITTED;
+  return (
+    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide shrink-0 ${s.cls}`}>
+      {s.label}
+    </span>
+  );
+};
 
 const EditBookModal = ({ book, onClose, onSave }) => {
   const [activeTab, setActiveTab] = useState("Basic");
@@ -27,7 +50,7 @@ const EditBookModal = ({ book, onClose, onSave }) => {
     digital_isbn: "",
     publisher: "",
     published_date: "",
-    number_of_pages: "0",
+    page_count: "0",
     tags: "",
     stock_count: "0",
     video_url: "",
@@ -45,12 +68,79 @@ const EditBookModal = ({ book, onClose, onSave }) => {
   const { data: categoriesResponse } = useGetBookCategoriesQuery();
   const [addBookCategory] = useAddBookCategoryMutation();
   const [deleteBookCategory] = useDeleteBookCategoryMutation();
-  // const { data: luluPackages } = useGetLuluPackagesQuery();
+  const { data: luluPackages } = useGetLuluPackagesQuery();
 
   const categories = categoriesResponse || [];
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
-  const { data: detailedBook, isFetching: isDetailsLoading } = useGetBookDetailsQuery(book.slug, { skip: !book?.slug });
+  const { data: detailedBook, isFetching: isDetailsLoading, refetch: refetchBookDetails } = useGetBookDetailsQuery(book.slug, { skip: !book?.slug });
+
+  // --- Lulu print-readiness workflow ---
+  const [validateInterior] = useValidateLuluInteriorMutation();
+  const [pollInteriorResult] = useLazyGetLuluInteriorValidationResultQuery();
+  const [getCoverDimensions, { isLoading: isCalculatingDimensions }] = useGetLuluCoverDimensionsMutation();
+  const [validateCover] = useValidateLuluCoverMutation();
+  const [pollCoverResult] = useLazyGetLuluCoverValidationResultQuery();
+
+  const [interiorCheck, setInteriorCheck] = useState({ status: "NOT_SUBMITTED", errors: [], busy: false });
+  const [coverCheck, setCoverCheck] = useState({ status: "NOT_SUBMITTED", errors: [], busy: false });
+  const [coverDims, setCoverDims] = useState(null);
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
+
+  const pollUntilDone = useCallback(async (trigger, setState, terminalStates) => {
+    for (let attempt = 0; attempt < 20; attempt++) {
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+      if (!mountedRef.current) return;
+      let result;
+      try {
+        result = await trigger(book.slug).unwrap();
+      } catch (err) {
+        setState({ status: "ERROR", errors: [err?.data?.error || "Failed to check validation status."], busy: false });
+        return;
+      }
+      if (!mountedRef.current) return;
+      setState({ status: result.status, errors: result.errors || [], busy: !terminalStates.includes(result.status) });
+      if (terminalStates.includes(result.status)) {
+        refetchBookDetails();
+        return;
+      }
+    }
+    setState((prev) => ({ ...prev, busy: false }));
+  }, [book.slug, refetchBookDetails]);
+
+  const handleValidateInterior = async () => {
+    setInteriorCheck({ status: "VALIDATING", errors: [], busy: true });
+    try {
+      const res = await validateInterior(book.slug).unwrap();
+      setInteriorCheck({ status: res.status, errors: [], busy: true });
+    } catch (err) {
+      setInteriorCheck({ status: "ERROR", errors: [err?.data?.error || "Failed to submit for validation."], busy: false });
+      return;
+    }
+    pollUntilDone(pollInteriorResult, setInteriorCheck, ["VALIDATED", "ERROR"]);
+  };
+
+  const handleGetCoverDimensions = async () => {
+    try {
+      const res = await getCoverDimensions(book.slug).unwrap();
+      setCoverDims(res);
+    } catch (err) {
+      toast.error(err?.data?.error || "Failed to calculate cover dimensions.");
+    }
+  };
+
+  const handleValidateCover = async () => {
+    setCoverCheck({ status: "NORMALIZING", errors: [], busy: true });
+    try {
+      const res = await validateCover(book.slug).unwrap();
+      setCoverCheck({ status: res.status, errors: [], busy: true });
+    } catch (err) {
+      setCoverCheck({ status: "ERROR", errors: [err?.data?.error || "Failed to submit for validation."], busy: false });
+      return;
+    }
+    pollUntilDone(pollCoverResult, setCoverCheck, ["NORMALIZED", "ERROR"]);
+  };
 
   const fileInputRef = useRef(null);
   const physicalFileInputRef = useRef(null);
@@ -82,7 +172,7 @@ const EditBookModal = ({ book, onClose, onSave }) => {
         digital_isbn: activeBook.digital_isbn || "",
         publisher: activeBook.publisher || "",
         published_date: activeBook.published_date || "",
-        number_of_pages: activeBook.number_of_pages?.toString() || "0",
+        page_count: activeBook.page_count?.toString() || "0",
         tags: Array.isArray(activeBook.tags) ? activeBook.tags.join(", ") : activeBook.tags || "",
         stock_count: activeBook.stock_count?.toString() || "0",
         video_url: activeBook.video_url || "",
@@ -94,6 +184,23 @@ const EditBookModal = ({ book, onClose, onSave }) => {
         luluCoverPdf: null,
         coverImage: null,
       });
+      setInteriorCheck({
+        status: activeBook.lulu_interior_validation_status || "NOT_SUBMITTED",
+        errors: activeBook.lulu_interior_validation_errors || [],
+        busy: false,
+      });
+      setCoverCheck({
+        status: activeBook.lulu_cover_validation_status || "NOT_SUBMITTED",
+        errors: activeBook.lulu_cover_validation_errors || [],
+        busy: false,
+      });
+      if (activeBook.lulu_cover_required_width) {
+        setCoverDims({
+          width: activeBook.lulu_cover_required_width,
+          height: activeBook.lulu_cover_required_height,
+          unit: activeBook.lulu_cover_dimension_unit,
+        });
+      }
     }
   }, [detailedBook, book]);
 
@@ -204,7 +311,7 @@ const EditBookModal = ({ book, onClose, onSave }) => {
     data.append("language", formData.language);
     data.append("publisher", formData.publisher);
     data.append("published_date", formData.published_date);
-    data.append("number_of_pages", formData.number_of_pages);
+    data.append("page_count", formData.page_count);
     data.append("video_url", formData.video_url || "");
     data.append("has_physical", has_physical);
     data.append("physical_price", has_physical ? formData.physicalPrice : "0");
@@ -285,7 +392,7 @@ const EditBookModal = ({ book, onClose, onSave }) => {
           </div>
 
           <div className="w-full bg-gray-100 p-1.5 rounded-2xl flex gap-1 mb-8">
-            {["Basic", "Details", "Files"].map((tab) => (
+            {["Basic", "Details", "Files", "Print Setup"].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -591,14 +698,20 @@ const EditBookModal = ({ book, onClose, onSave }) => {
                     <label className="text-neutral-950 text-sm font-bold ml-1">
                       Lulu POD Package
                     </label>
-                    <input
-                      type="text"
-                      name="lulu_pod_package_id"
-                      placeholder="[Trim].[Ink].[Quality].[Binding].[Paper].[Finish]"
-                      value={formData.lulu_pod_package_id}
-                      onChange={handleChange}
-                      className="w-full h-12 px-4 bg-zinc-50 border border-black/5 rounded-2xl outline-none text-sm placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-teal-600/10 transition-all"
-                    />
+                    <div className="relative">
+                      <select
+                        name="lulu_pod_package_id"
+                        value={formData.lulu_pod_package_id}
+                        onChange={handleChange}
+                        className="w-full h-12 px-4 bg-zinc-50 border border-black/5 rounded-2xl outline-none appearance-none text-sm text-neutral-950 focus:bg-white focus:ring-2 focus:ring-teal-600/10 transition-all"
+                      >
+                        <option value="">Select a print format…</option>
+                        {(luluPackages || []).map((pkg) => (
+                          <option key={pkg.id} value={pkg.id}>{pkg.description}</option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    </div>
                   </div>
                 </div>
 
@@ -621,11 +734,12 @@ const EditBookModal = ({ book, onClose, onSave }) => {
                     </label>
                     <input
                       type="number"
-                      name="number_of_pages"
-                      value={formData.number_of_pages}
+                      name="page_count"
+                      value={formData.page_count}
                       onChange={handleChange}
                       className="w-full h-12 px-4 bg-zinc-50 border border-black/5 rounded-2xl outline-none text-sm focus:bg-white focus:ring-2 focus:ring-teal-600/10 transition-all"
                     />
+                    <p className="text-[10px] text-gray-400 ml-1">Auto-corrected to Lulu's detected count after interior validation.</p>
                   </div>
                 </div>
 
@@ -862,6 +976,115 @@ const EditBookModal = ({ book, onClose, onSave }) => {
                       </>
                     )}
                   </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === "Print Setup" && (
+              <div className="space-y-5">
+                <div className="p-4 bg-zinc-50 border border-black/5 rounded-2xl flex items-center gap-3">
+                  {activeBook.is_lulu_print_ready ? (
+                    <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" />
+                  ) : (
+                    <AlertCircle className="w-6 h-6 text-amber-500 shrink-0" />
+                  )}
+                  <div>
+                    <p className="text-sm font-bold text-neutral-900">
+                      {activeBook.is_lulu_print_ready ? "Print-ready" : "Not yet validated by Lulu"}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {activeBook.is_lulu_print_ready
+                        ? "Interior and cover both passed Lulu's checks."
+                        : "Run interior and cover validation below before selling the physical edition."}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Step 1 — Interior */}
+                <div className="p-4 border border-black/5 rounded-2xl space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-bold text-neutral-900">1. Interior PDF</p>
+                      <p className="text-xs text-gray-500">Validates the physical file and detects the real page count.</p>
+                    </div>
+                    <LuluStatusPill status={interiorCheck.status} />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleValidateInterior}
+                    disabled={!activeBook.physical_file || interiorCheck.busy}
+                    className="px-4 h-10 bg-teal-600 hover:bg-teal-700 disabled:opacity-40 text-white rounded-xl text-xs font-bold flex items-center gap-2 transition-colors"
+                  >
+                    {interiorCheck.busy && <Loader2 className="w-4 h-4 animate-spin" />}
+                    {interiorCheck.busy ? "Validating…" : "Validate Interior PDF"}
+                  </button>
+                  {!activeBook.physical_file && (
+                    <p className="text-[11px] text-amber-600">Upload the physical file in the Files tab first.</p>
+                  )}
+                  {interiorCheck.errors.length > 0 && (
+                    <ul className="text-[11px] text-rose-600 list-disc pl-4 space-y-0.5">
+                      {interiorCheck.errors.map((e, i) => <li key={i}>{e}</li>)}
+                    </ul>
+                  )}
+                </div>
+
+                {/* Step 2 — Required cover size */}
+                <div className="p-4 border border-black/5 rounded-2xl space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-bold text-neutral-900">2. Required cover size</p>
+                      <p className="text-xs text-gray-500">From the selected package + page count. Design the cover to this exact size.</p>
+                    </div>
+                    <Ruler className="w-5 h-5 text-gray-300 shrink-0" />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleGetCoverDimensions}
+                    disabled={!formData.lulu_pod_package_id || !Number(formData.page_count) || isCalculatingDimensions}
+                    className="px-4 h-10 bg-white border border-black/10 hover:bg-gray-50 disabled:opacity-40 text-neutral-900 rounded-xl text-xs font-bold flex items-center gap-2 transition-colors"
+                  >
+                    {isCalculatingDimensions && <Loader2 className="w-4 h-4 animate-spin" />}
+                    Get Required Cover Size
+                  </button>
+                  {(!formData.lulu_pod_package_id || !Number(formData.page_count)) && (
+                    <p className="text-[11px] text-amber-600">Select a Lulu POD package and set page count in the Details tab first.</p>
+                  )}
+                  {coverDims && (
+                    <p className="text-sm font-bold text-teal-700">
+                      {coverDims.width} × {coverDims.height} {coverDims.unit}
+                      <span className="block text-[11px] font-normal text-gray-500 mt-0.5">
+                        Includes bleed and spine — front + spine + back in one file.
+                      </span>
+                    </p>
+                  )}
+                </div>
+
+                {/* Step 3 — Cover */}
+                <div className="p-4 border border-black/5 rounded-2xl space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-bold text-neutral-900">3. Cover PDF</p>
+                      <p className="text-xs text-gray-500">Validates the Lulu cover PDF against the package + page count above.</p>
+                    </div>
+                    <LuluStatusPill status={coverCheck.status} />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleValidateCover}
+                    disabled={!activeBook.lulu_cover_pdf || coverCheck.busy}
+                    className="px-4 h-10 bg-teal-600 hover:bg-teal-700 disabled:opacity-40 text-white rounded-xl text-xs font-bold flex items-center gap-2 transition-colors"
+                  >
+                    {coverCheck.busy && <Loader2 className="w-4 h-4 animate-spin" />}
+                    {coverCheck.busy ? "Validating…" : "Validate Cover PDF"}
+                  </button>
+                  {!activeBook.lulu_cover_pdf && (
+                    <p className="text-[11px] text-amber-600">Upload the Lulu cover PDF in the Files tab first.</p>
+                  )}
+                  {coverCheck.errors.length > 0 && (
+                    <ul className="text-[11px] text-rose-600 list-disc pl-4 space-y-0.5">
+                      {coverCheck.errors.map((e, i) => <li key={i}>{e}</li>)}
+                    </ul>
+                  )}
                 </div>
               </div>
             )}

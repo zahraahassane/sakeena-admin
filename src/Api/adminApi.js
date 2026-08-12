@@ -103,6 +103,22 @@ export const adminApi = api.injectEndpoints({
       query: () => "/books/lulu-packages/",
       providesTags: ["books"],
     }),
+    validateLuluInterior: builder.mutation({
+      query: (slug) => ({ url: `/books/${slug}/lulu-validate-interior/`, method: "POST" }),
+    }),
+    getLuluInteriorValidationResult: builder.query({
+      query: (slug) => `/books/${slug}/lulu-validate-interior-result/`,
+    }),
+    getLuluCoverDimensions: builder.mutation({
+      query: (slug) => ({ url: `/books/${slug}/lulu-cover-dimensions/`, method: "POST" }),
+      invalidatesTags: ["books"],
+    }),
+    validateLuluCover: builder.mutation({
+      query: (slug) => ({ url: `/books/${slug}/lulu-validate-cover/`, method: "POST" }),
+    }),
+    getLuluCoverValidationResult: builder.query({
+      query: (slug) => `/books/${slug}/lulu-validate-cover-result/`,
+    }),
     addBookCategory: builder.mutation({
       query: (name) => ({
         url: "/book-categories/",
@@ -1652,6 +1668,11 @@ export const {
   useCreateLessonAssignmentMutation,
   useUpdateLessonAssignmentMutation,
   useGetLuluPackagesQuery,
+  useValidateLuluInteriorMutation,
+  useLazyGetLuluInteriorValidationResultQuery,
+  useGetLuluCoverDimensionsMutation,
+  useValidateLuluCoverMutation,
+  useLazyGetLuluCoverValidationResultQuery,
   useGetCourseDiscussionsQuery,
   useGetCourseDiscussionDetailsQuery,
   useCreateCourseDiscussionMutation,
