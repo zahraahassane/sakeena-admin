@@ -1,12 +1,25 @@
 "use client";
 
-import { X, Download, FileText } from "lucide-react";
+import { X, Download, FileText, History } from "lucide-react";
+import { useGetAssignmentSubmissionHistoryQuery } from "../../Api/adminApi";
+
+const HISTORY_BADGE = {
+  approved: "bg-green-100 text-green-700",
+  rejected: "bg-red-100 text-red-700",
+  pending: "bg-yellow-100 text-yellow-700",
+  superseded: "bg-gray-100 text-gray-500",
+};
 
 export default function AssignmentDetailsModal({
   submission,
   onClose,
   onGrade,
 }) {
+  const { data: historyData } = useGetAssignmentSubmissionHistoryQuery(submission?.id, {
+    skip: !submission?.id,
+  });
+  const pastAttempts = (historyData || []).filter((row) => row.id !== submission?.id);
+
   if (!submission) return null;
 
   const handleDownload = (file) => {
@@ -135,6 +148,45 @@ export default function AssignmentDetailsModal({
               )}
             </div>
           </div>
+
+          {/* Previous Attempts */}
+          {pastAttempts.length > 0 && (
+            <div>
+              <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <History className="w-5 h-5 text-teal-600" />
+                Previous Attempts ({pastAttempts.length})
+              </h3>
+              <div className="space-y-3">
+                {pastAttempts.map((attempt) => (
+                  <div
+                    key={attempt.id}
+                    className="flex items-center justify-between p-4 border border-gray-200 rounded-lg"
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">
+                        {attempt.created_at
+                          ? new Date(attempt.created_at).toLocaleString()
+                          : "—"}
+                      </p>
+                      {attempt.teacher_feedback && (
+                        <p className="text-xs text-gray-500 mt-1">{attempt.teacher_feedback}</p>
+                      )}
+                      {attempt.mark != null && (
+                        <p className="text-xs text-gray-500 mt-1">Mark: {attempt.mark}</p>
+                      )}
+                    </div>
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                        HISTORY_BADGE[attempt.status] || HISTORY_BADGE.pending
+                      }`}
+                    >
+                      {attempt.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Footer */}

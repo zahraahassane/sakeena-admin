@@ -1392,6 +1392,12 @@ export const adminApi = api.injectEndpoints({
       invalidatesTags: ["assignmentSubmissions"],
     }),
 
+    getAssignmentSubmissionHistory: builder.query({
+      query: (id) => `/assignment-submissions/${id}/history/`,
+      transformResponse: normalizeListResponse,
+      providesTags: ["assignmentSubmissions"],
+    }),
+
     getQuizAttempts: builder.query({
       query: ({ courseId, page = 1 } = {}) => {
         const params = new URLSearchParams({ page });
@@ -1570,6 +1576,7 @@ export const {
   useGetAssignmentSubmissionsQuery,
   useGetAssignmentSubmissionQuery,
   useReviewAssignmentSubmissionMutation,
+  useGetAssignmentSubmissionHistoryQuery,
   useGetConsultationsQuery,
   useGetConsultationQuery,
   useCreateConsultationMutation,

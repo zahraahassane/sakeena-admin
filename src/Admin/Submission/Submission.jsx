@@ -65,6 +65,7 @@ const Submission = () => {
 
     return {
       id: submission.id,
+      userId: submission.user_detail?.id ?? null,
       studentName: studentName || email,
       email,
       date: formatDate(createdAt),

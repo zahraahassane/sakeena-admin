@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect, useRef } from "react";
 import { Eye, FileText, AlertCircle, Loader2 } from "lucide-react";
+import toast from "react-hot-toast";
 import SubmissionsHeader from "../components/SubmissionsHeader";
 import AssignmentDetailsModal from "../components/Modal/AssignmentDetailsModal";
 import GradeAssignmentModal from "../components/Modal/GradeAssignmentModal";
@@ -16,9 +17,10 @@ const STATUS_MAP = {
   pending: { label: "Pending Review", color: "bg-yellow-100 text-yellow-700" },
   approved: { label: "Approved", color: "bg-green-100 text-green-700" },
   rejected: { label: "Rejected", color: "bg-red-100 text-red-700" },
+  superseded: { label: "Superseded", color: "bg-gray-100 text-gray-500" },
 };
 
-function toModalShape(sub) {
+function toModalShape(sub, historyCount = 0) {
   const { label, color } = STATUS_MAP[sub.status] || STATUS_MAP.pending;
   return {
     id: sub.id,
@@ -47,6 +49,7 @@ function toModalShape(sub) {
         })
       : "",
     points: sub.mark != null ? `${sub.mark} pts` : "—",
+    historyCount,
   };
 }
 
@@ -86,22 +89,35 @@ export default function Submissions() {
   const [reviewSubmission, { isLoading: isSaving }] =
     useReviewAssignmentSubmissionMutation();
 
-  // Group submissions by assignment_title
+  // Group submissions by assignment_title, then by student — only the
+  // latest attempt per student is shown as a row; older attempts (from
+  // resubmission while pending) are reachable via "View history" instead
+  // of showing as separate, confusingly-duplicate-looking rows.
   const groupedAssignments = useMemo(() => {
     const results = submissionsData?.results ?? submissionsData ?? [];
 
-    const grouped = {};
+    const byTitle = {};
     results.forEach((sub) => {
       const title = sub.assignment_title || "Untitled Assignment";
-      if (!grouped[title]) grouped[title] = [];
-      grouped[title].push(toModalShape(sub));
+      if (!byTitle[title]) byTitle[title] = [];
+      byTitle[title].push(sub);
     });
-    return Object.entries(grouped).map(([title, submissions], i) => ({
-      id: i,
-      number: String(i + 1).padStart(2, "0"),
-      title,
-      submissions,
-    }));
+
+    return Object.entries(byTitle).map(([title, subs], i) => {
+      const byStudent = {};
+      subs.forEach((sub) => {
+        const key = sub.user_detail?.id ?? sub.user_detail?.email ?? sub.id;
+        if (!byStudent[key]) byStudent[key] = [];
+        byStudent[key].push(sub);
+      });
+      const submissions = Object.values(byStudent).map((attempts) => {
+        const sorted = [...attempts].sort(
+          (a, b) => new Date(b.created_at) - new Date(a.created_at)
+        );
+        return toModalShape(sorted[0], sorted.length - 1);
+      });
+      return { id: i, number: String(i + 1).padStart(2, "0"), title, submissions };
+    });
   }, [submissionsData]);
 
   // --- Quiz data (kept as mock for now) ---
@@ -156,9 +172,11 @@ export default function Submissions() {
         mark,
         teacher_feedback,
       }).unwrap();
+      toast.success(status === "approved" ? "Assignment approved and graded" : "Assignment rejected");
       closeModal();
     } catch (err) {
       console.error("Failed to save grade:", err);
+      toast.error("Failed to save review");
     }
   };
 
@@ -305,6 +323,15 @@ export default function Submissions() {
                           <Eye className="w-4 h-4" />
                           View Details
                         </button>
+
+                        {submission.historyCount > 0 && (
+                          <button
+                            onClick={() => openDetails(submission)}
+                            className="flex items-center gap-2 px-3 py-2 text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+                          >
+                            View history ({submission.historyCount})
+                          </button>
+                        )}
 
                         {submissionType === "assignment" && (
                           <button
