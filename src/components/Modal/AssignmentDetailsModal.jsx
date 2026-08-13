@@ -160,28 +160,51 @@ export default function AssignmentDetailsModal({
                 {pastAttempts.map((attempt) => (
                   <div
                     key={attempt.id}
-                    className="flex items-center justify-between p-4 border border-gray-200 rounded-lg"
+                    className="p-4 border border-gray-200 rounded-lg space-y-3"
                   >
-                    <div>
+                    <div className="flex items-center justify-between">
                       <p className="text-sm font-medium text-gray-900">
                         {attempt.created_at
                           ? new Date(attempt.created_at).toLocaleString()
                           : "—"}
                       </p>
-                      {attempt.teacher_feedback && (
-                        <p className="text-xs text-gray-500 mt-1">{attempt.teacher_feedback}</p>
-                      )}
-                      {attempt.mark != null && (
-                        <p className="text-xs text-gray-500 mt-1">Mark: {attempt.mark}</p>
-                      )}
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                          HISTORY_BADGE[attempt.status] || HISTORY_BADGE.pending
+                        }`}
+                      >
+                        {attempt.status}
+                      </span>
                     </div>
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                        HISTORY_BADGE[attempt.status] || HISTORY_BADGE.pending
-                      }`}
-                    >
-                      {attempt.status}
-                    </span>
+                    {attempt.submission_text && (
+                      <p className="text-sm text-gray-700 leading-relaxed">
+                        {attempt.submission_text}
+                      </p>
+                    )}
+                    {attempt.submission_file ? (
+                      <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <FileText className="w-4 h-4 text-gray-400 shrink-0" />
+                          <p className="text-xs text-gray-600 truncate">
+                            {attempt.submission_file.split("/").pop()}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => handleDownload({ name: attempt.submission_file.split("/").pop(), url: attempt.submission_file })}
+                          className="shrink-0 p-1.5 hover:bg-gray-200 rounded-lg transition-colors text-teal-600"
+                        >
+                          <Download className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-gray-400">No file submitted</p>
+                    )}
+                    {attempt.teacher_feedback && (
+                      <p className="text-xs text-gray-500">{attempt.teacher_feedback}</p>
+                    )}
+                    {attempt.mark != null && (
+                      <p className="text-xs text-gray-500">Mark: {attempt.mark}</p>
+                    )}
                   </div>
                 ))}
               </div>

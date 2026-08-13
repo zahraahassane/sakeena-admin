@@ -158,28 +158,54 @@ const AssignmentDetailsModal = ({ isOpen, onClose, submission, onGrade }) => {
                 {pastAttempts.map((attempt) => (
                   <div
                     key={attempt.id}
-                    className="flex items-center justify-between p-4 bg-white border border-neutral-200 rounded-xl"
+                    className="p-4 bg-white border border-neutral-200 rounded-xl space-y-3"
                   >
-                    <div>
+                    <div className="flex items-center justify-between">
                       <p className="text-sm font-medium text-neutral-800 font-['Arimo']">
                         {attempt.created_at
                           ? new Date(attempt.created_at).toLocaleString()
                           : "—"}
                       </p>
-                      {attempt.teacher_feedback && (
-                        <p className="text-xs text-neutral-500 mt-1">{attempt.teacher_feedback}</p>
-                      )}
-                      {attempt.mark != null && (
-                        <p className="text-xs text-neutral-500 mt-1">Mark: {attempt.mark}</p>
-                      )}
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-bold border ${
+                          HISTORY_BADGE[attempt.status] || HISTORY_BADGE.pending
+                        }`}
+                      >
+                        {attempt.status}
+                      </span>
                     </div>
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-bold border ${
-                        HISTORY_BADGE[attempt.status] || HISTORY_BADGE.pending
-                      }`}
-                    >
-                      {attempt.status}
-                    </span>
+                    {attempt.submission_text && (
+                      <p className="text-sm text-neutral-700 leading-relaxed">
+                        {attempt.submission_text}
+                      </p>
+                    )}
+                    {attempt.submission_file ? (
+                      <div className="flex items-center justify-between p-3 bg-neutral-50 border border-neutral-200 rounded-lg">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <FileText className="w-4 h-4 text-[#7AA4A5] shrink-0" />
+                          <p className="text-xs text-neutral-600 truncate">
+                            {attempt.submission_file.split("/").pop()}
+                          </p>
+                        </div>
+                        <a
+                          href={attempt.submission_file}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="shrink-0 px-3 py-1.5 rounded-lg bg-[#7AA4A5] text-white text-xs font-medium hover:bg-[#6b9192] transition-colors flex items-center gap-1.5"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          Download
+                        </a>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-neutral-400">No file submitted</p>
+                    )}
+                    {attempt.teacher_feedback && (
+                      <p className="text-xs text-neutral-500">{attempt.teacher_feedback}</p>
+                    )}
+                    {attempt.mark != null && (
+                      <p className="text-xs text-neutral-500">Mark: {attempt.mark}</p>
+                    )}
                   </div>
                 ))}
               </div>
