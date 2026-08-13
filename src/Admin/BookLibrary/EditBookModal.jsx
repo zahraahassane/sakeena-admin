@@ -82,7 +82,7 @@ const EditBookModal = ({ book, onClose, onSave }) => {
   const [validateCover] = useValidateLuluCoverMutation();
   const [pollCoverResult] = useLazyGetLuluCoverValidationResultQuery();
 
-  const [interiorCheck, setInteriorCheck] = useState({ status: "NOT_SUBMITTED", errors: [], busy: false });
+  const [interiorCheck, setInteriorCheck] = useState({ status: "NOT_SUBMITTED", errors: [], validPackageIds: [], busy: false });
   const [coverCheck, setCoverCheck] = useState({ status: "NOT_SUBMITTED", errors: [], busy: false });
   const [coverDims, setCoverDims] = useState(null);
   const mountedRef = useRef(true);
@@ -100,7 +100,12 @@ const EditBookModal = ({ book, onClose, onSave }) => {
         return;
       }
       if (!mountedRef.current) return;
-      setState({ status: result.status, errors: result.errors || [], busy: !terminalStates.includes(result.status) });
+      setState({
+        status: result.status,
+        errors: result.errors || [],
+        validPackageIds: result.valid_pod_package_ids || [],
+        busy: !terminalStates.includes(result.status),
+      });
       if (terminalStates.includes(result.status)) {
         refetchBookDetails();
         return;
@@ -110,12 +115,17 @@ const EditBookModal = ({ book, onClose, onSave }) => {
   }, [book.slug, refetchBookDetails]);
 
   const handleValidateInterior = async () => {
-    setInteriorCheck({ status: "VALIDATING", errors: [], busy: true });
+    setInteriorCheck({ status: "VALIDATING", errors: [], validPackageIds: [], busy: true });
     try {
       const res = await validateInterior(book.slug).unwrap();
-      setInteriorCheck({ status: res.status, errors: [], busy: true });
+      setInteriorCheck({ status: res.status, errors: [], validPackageIds: res.valid_pod_package_ids || [], busy: true });
     } catch (err) {
-      setInteriorCheck({ status: "ERROR", errors: [err?.data?.error || "Failed to submit for validation."], busy: false });
+      setInteriorCheck({
+        status: "ERROR",
+        errors: [err?.data?.error || "Failed to submit for validation."],
+        validPackageIds: [],
+        busy: false,
+      });
       return;
     }
     pollUntilDone(pollInteriorResult, setInteriorCheck, ["VALIDATED", "ERROR"]);
@@ -187,6 +197,7 @@ const EditBookModal = ({ book, onClose, onSave }) => {
       setInteriorCheck({
         status: activeBook.lulu_interior_validation_status || "NOT_SUBMITTED",
         errors: activeBook.lulu_interior_validation_errors || [],
+        validPackageIds: activeBook.lulu_interior_valid_package_ids || [],
         busy: false,
       });
       setCoverCheck({
@@ -1025,6 +1036,34 @@ const EditBookModal = ({ book, onClose, onSave }) => {
                     <ul className="text-[11px] text-rose-600 list-disc pl-4 space-y-0.5">
                       {interiorCheck.errors.map((e, i) => <li key={i}>{e}</li>)}
                     </ul>
+                  )}
+                  {interiorCheck.validPackageIds.length > 0 && (
+                    <div className="pt-1">
+                      <p className="text-[11px] font-bold text-neutral-700 mb-1.5">
+                        Lulu says these package(s) match this file&apos;s actual size — click to select:
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {interiorCheck.validPackageIds.map((pkgId) => {
+                          const match = luluPackages?.find((p) => p.id === pkgId);
+                          const isSelected = formData.lulu_pod_package_id === pkgId;
+                          return (
+                            <button
+                              key={pkgId}
+                              type="button"
+                              onClick={() => setFormData((prev) => ({ ...prev, lulu_pod_package_id: pkgId }))}
+                              title={pkgId}
+                              className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-colors ${
+                                isSelected
+                                  ? "bg-teal-600 border-teal-600 text-white"
+                                  : "bg-white border-black/10 text-neutral-700 hover:border-teal-400"
+                              }`}
+                            >
+                              {match?.description || pkgId}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
                   )}
                 </div>
 
