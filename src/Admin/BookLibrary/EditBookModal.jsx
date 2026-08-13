@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { X, Edit3, Save, ChevronDown, Eye, EyeOff, FileText, Upload, Plus, Trash2, CheckCircle2, AlertCircle, Loader2, Ruler } from "lucide-react";
 import TextEditor from "../../components/Editor";
 import {
@@ -24,6 +24,11 @@ const LULU_STATUS_STYLES = {
   NORMALIZED: { label: "Validated", cls: "bg-emerald-50 text-emerald-600" },
   ERROR: { label: "Failed", cls: "bg-rose-50 text-rose-600" },
 };
+
+// pod_package_id format: {trim}.{color}.{quality}.{binding}.{paper}.{finish}
+// https://developers.lulu.com/pages/docs/misc/pod-package-id
+const LULU_BINDING_LABELS = { PB: "Paperback", CW: "Hardcover", CO: "Coil Bound", SS: "Saddle Stitch", LW: "Linen Wrap" };
+const LULU_COLOR_LABELS = { BW: "B&W", FC: "Full Color" };
 
 const LuluStatusPill = ({ status }) => {
   const s = LULU_STATUS_STYLES[status] || LULU_STATUS_STYLES.NOT_SUBMITTED;
@@ -83,6 +88,40 @@ const EditBookModal = ({ book, onClose, onSave }) => {
   const [pollCoverResult] = useLazyGetLuluCoverValidationResultQuery();
 
   const [interiorCheck, setInteriorCheck] = useState({ status: "NOT_SUBMITTED", errors: [], validPackageIds: [], busy: false });
+  const [pkgFilters, setPkgFilters] = useState({ binding: "", color: "", search: "" });
+
+  // Lulu returns every valid combo for the file's trim size (can be hundreds) —
+  // default to Paperback/Full Color if present so the list isn't overwhelming.
+  useEffect(() => {
+    const ids = interiorCheck.validPackageIds;
+    if (!ids.length) return;
+    const bindings = new Set(ids.map((id) => id.split(".")[3]));
+    const colors = new Set(ids.map((id) => id.split(".")[1]));
+    setPkgFilters((prev) => ({
+      binding: prev.binding || (bindings.has("PB") ? "PB" : ""),
+      color: prev.color || (colors.has("FC") ? "FC" : ""),
+      search: prev.search,
+    }));
+  }, [interiorCheck.validPackageIds]);
+
+  const availablePkgBindings = useMemo(
+    () => Array.from(new Set(interiorCheck.validPackageIds.map((id) => id.split(".")[3]))).sort(),
+    [interiorCheck.validPackageIds]
+  );
+  const availablePkgColors = useMemo(
+    () => Array.from(new Set(interiorCheck.validPackageIds.map((id) => id.split(".")[1]))).sort(),
+    [interiorCheck.validPackageIds]
+  );
+  const filteredPackageIds = useMemo(
+    () => interiorCheck.validPackageIds.filter((id) => {
+      const parts = id.split(".");
+      if (pkgFilters.binding && parts[3] !== pkgFilters.binding) return false;
+      if (pkgFilters.color && parts[1] !== pkgFilters.color) return false;
+      if (pkgFilters.search && !id.toLowerCase().includes(pkgFilters.search.toLowerCase())) return false;
+      return true;
+    }),
+    [interiorCheck.validPackageIds, pkgFilters]
+  );
   const [coverCheck, setCoverCheck] = useState({ status: "NOT_SUBMITTED", errors: [], busy: false });
   const [coverDims, setCoverDims] = useState(null);
   const mountedRef = useRef(true);
@@ -1038,12 +1077,45 @@ const EditBookModal = ({ book, onClose, onSave }) => {
                     </ul>
                   )}
                   {interiorCheck.validPackageIds.length > 0 && (
-                    <div className="pt-1">
-                      <p className="text-[11px] font-bold text-neutral-700 mb-1.5">
-                        Lulu says these package(s) match this file&apos;s actual size — click to select:
+                    <div className="pt-1 space-y-2">
+                      <p className="text-[11px] font-bold text-neutral-700">
+                        Lulu found {interiorCheck.validPackageIds.length} matching package(s) for this file&apos;s size. Narrow down, then click to select:
                       </p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {interiorCheck.validPackageIds.map((pkgId) => {
+                      <div className="flex flex-wrap gap-2 items-center">
+                        <select
+                          value={pkgFilters.binding}
+                          onChange={(e) => setPkgFilters((prev) => ({ ...prev, binding: e.target.value }))}
+                          className="text-[11px] border border-black/10 rounded-lg px-2 py-1 bg-white"
+                        >
+                          <option value="">All bindings</option>
+                          {availablePkgBindings.map((b) => (
+                            <option key={b} value={b}>{LULU_BINDING_LABELS[b] || b}</option>
+                          ))}
+                        </select>
+                        <select
+                          value={pkgFilters.color}
+                          onChange={(e) => setPkgFilters((prev) => ({ ...prev, color: e.target.value }))}
+                          className="text-[11px] border border-black/10 rounded-lg px-2 py-1 bg-white"
+                        >
+                          <option value="">All colors</option>
+                          {availablePkgColors.map((c) => (
+                            <option key={c} value={c}>{LULU_COLOR_LABELS[c] || c}</option>
+                          ))}
+                        </select>
+                        <input
+                          type="text"
+                          placeholder="Filter e.g. 080CW, GXX…"
+                          value={pkgFilters.search}
+                          onChange={(e) => setPkgFilters((prev) => ({ ...prev, search: e.target.value }))}
+                          className="text-[11px] border border-black/10 rounded-lg px-2 py-1 bg-white flex-1 min-w-[140px]"
+                        />
+                      </div>
+                      <p className="text-[10px] text-gray-400">
+                        Paper codes look like 080CW444 (80# White Coated) or 060UW444 (60# White Uncoated) — finish ends in GXX (Gloss) or MXX (Matte).
+                        Showing {Math.min(filteredPackageIds.length, 60)} of {filteredPackageIds.length} filtered.
+                      </p>
+                      <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto pr-1">
+                        {filteredPackageIds.slice(0, 60).map((pkgId) => {
                           const match = luluPackages?.find((p) => p.id === pkgId);
                           const isSelected = formData.lulu_pod_package_id === pkgId;
                           return (
