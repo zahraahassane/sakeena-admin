@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { Search, Filter, BookOpen, FileText } from "lucide-react";
 import AssignmentSection from "./AssignmentSection";
 import QuizSection from "./QuizSection";
-import { 
+import Pagination from "../../components/Pagination";
+import {
   useGetAssignmentSubmissionsQuery,
   useGetQuizAttemptsQuery,
   useGetCoursesDataQuery
@@ -13,6 +14,7 @@ const Submission = () => {
   const [selectedCourseId, setSelectedCourseId] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
+  const [assignmentPage, setAssignmentPage] = useState(1);
 
   const formatDate = (isoString) => {
     if (!isoString) return "N/A";
@@ -33,10 +35,14 @@ const Submission = () => {
     });
   };
 
-  const queryParams = selectedStatus ? { status: selectedStatus } : {};
+  const queryParams = {
+    page: assignmentPage,
+    ...(selectedStatus ? { status: selectedStatus } : {}),
+    ...(searchTerm ? { search: searchTerm } : {}),
+  };
 
   const {
-    data: assignmentSubmissionsData = [],
+    data: assignmentSubmissionsData,
     isLoading: isAssignmentsLoading,
     isError: assignmentError,
   } = useGetAssignmentSubmissionsQuery(queryParams, { skip: activeTab !== "assignment" });
@@ -49,7 +55,7 @@ const Submission = () => {
     isLoading: isQuizLoading,
     isError: quizError,
   } = useGetQuizAttemptsQuery({ courseId: selectedCourseId, page: 1 }, { skip: activeTab !== "quiz" });
-  const assignmentSubmissions = assignmentSubmissionsData.map((submission) => {
+  const assignmentSubmissions = (assignmentSubmissionsData?.results || []).map((submission) => {
     const studentName =
       `${submission.user_detail?.first_name || ""} ${submission.user_detail?.last_name || ""}`.trim();
     const email = submission.user_detail?.email || "Unknown email";
@@ -172,7 +178,10 @@ const Submission = () => {
             placeholder="Search by student name or content title..."
             className="w-full pl-12 pr-4 py-2.5 rounded-[10px] border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 text-base"
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setAssignmentPage(1);
+            }}
           />
         </div>
 
@@ -206,7 +215,10 @@ const Submission = () => {
               <select
                 className="px-4 py-2.5 w-[180px] rounded-[10px] border border-neutral-300 bg-white text-base focus:outline-none focus:ring-2 focus:ring-orange-500/20 appearance-none pr-10 text-neutral-950/50"
                 value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
+                onChange={(e) => {
+                  setSelectedStatus(e.target.value);
+                  setAssignmentPage(1);
+                }}
               >
                 <option value="">All statuses</option>
                 <option value="pending">Pending</option>
@@ -248,10 +260,17 @@ const Submission = () => {
 
       {/* Conditional Rendering of Sections */}
       {activeTab === "assignment" && (
-        <AssignmentSection
-          categories={assignmentCategories}
-          submissions={filteredAssignments}
-        />
+        <>
+          <AssignmentSection
+            categories={assignmentCategories}
+            submissions={filteredAssignments}
+          />
+          <Pagination
+            currentPage={assignmentPage}
+            totalPages={assignmentSubmissionsData?.total_pages || 1}
+            onPageChange={setAssignmentPage}
+          />
+        </>
       )}
       
       {activeTab === "quiz" && (

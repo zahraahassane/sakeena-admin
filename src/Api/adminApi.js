@@ -711,25 +711,6 @@ export const adminApi = api.injectEndpoints({
       providesTags: ["dashboard"],
     }),
 
-    getAssignmentSubmissions: builder.query({
-      query: (params = {}) => {
-        const queryParams = new URLSearchParams();
-        const page = typeof params === "number" ? params : params.page;
-        if (page) queryParams.append("page", page);
-        if (params.assignment)
-          queryParams.append("assignment", params.assignment);
-        if (params.status) queryParams.append("status", params.status);
-        if (params.user) queryParams.append("user", params.user);
-        const queryString = queryParams.toString();
-        return {
-          url: `/assignment-submissions/${queryString ? `?${queryString}` : ""}`,
-          method: "GET",
-        };
-      },
-      transformResponse: (response) => response?.results || [],
-      providesTags: ["assignmentSubmissions"],
-    }),
-
     getAssignmentSubmission: builder.query({
       query: (id) => `/assignment-submissions/${id}/`,
       providesTags: ["assignmentSubmissions"],
@@ -1395,7 +1376,6 @@ export const adminApi = api.injectEndpoints({
         if (search) params.append("search", search);
         return `/assignment-submissions/?${params.toString()}`;
       },
-      transformResponse: normalizeListResponse,
       providesTags: ["assignmentSubmissions"],
     }),
 
