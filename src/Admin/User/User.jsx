@@ -40,6 +40,7 @@ const User = () => {
             `${student.user.first_name || ""} ${student.user.last_name || ""}`.trim() ||
             student.user.email.split("@")[0],
           email: student.user.email,
+          phone: student.phone_number || "N/A",
           courses: 0,
           joined: student.user.joined_at
             ? new Date(student.user.joined_at).toLocaleDateString()
@@ -58,6 +59,7 @@ const User = () => {
             `${teacher.user.first_name || ""} ${teacher.user.last_name || ""}`.trim() ||
             teacher.user.email.split("@")[0],
           email: teacher.user.email,
+          phone: teacher.phone_number || "N/A",
           department: teacher.professional_title || "N/A",
           courses: teacher.courses
             ? teacher.courses || teacher.courses.length

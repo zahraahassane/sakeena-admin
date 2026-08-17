@@ -8,6 +8,7 @@ const TeacherTable = ({ data, onView, onDelete }) => {
           <tr className="text-neutral-950">
             <th className="py-3 px-2 font-normal w-40 text-left">Name</th>
             <th className="py-3 px-2 font-normal w-48 text-left">Email</th>
+            <th className="py-3 px-2 font-normal w-32 text-left">Phone</th>
             <th className="py-3 px-2 font-normal w-28 text-left">Department</th>
             <th className="py-3 px-2 font-normal w-20">Courses</th>
             {/* <th className="py-3 px-2 font-normal w-20">Students</th> */}
@@ -25,6 +26,9 @@ const TeacherTable = ({ data, onView, onDelete }) => {
               </td>
               <td className="py-4 px-2 text-neutral-950 whitespace-nowrap text-left">
                 {user?.email}
+              </td>
+              <td className="py-4 px-2 text-neutral-950 whitespace-nowrap text-left">
+                {user.phone}
               </td>
               <td className="py-4 px-2 text-neutral-950 whitespace-nowrap text-left">
                 {user.department}
