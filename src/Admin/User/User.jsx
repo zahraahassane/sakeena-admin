@@ -20,14 +20,28 @@ const User = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [studentPage, setStudentPage] = useState(1);
   const [teacherPage, setTeacherPage] = useState(1);
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 400);
+    return () => clearTimeout(timeout);
+  }, [searchQuery]);
 
   const [deleteStudentProfile] = useDeleteStudentProfileMutation();
   const [deleteTeacherProfile] = useDeleteTeacherProfileMutation();
 
   const { data: studentProfiles, isLoading: isStudentsLoading } =
-    useGetStudentProfilesQuery({ page: studentPage, search: searchQuery });
+    useGetStudentProfilesQuery({
+      page: studentPage,
+      search: debouncedSearchQuery,
+    });
   const { data: teacherProfiles, isLoading: isTeachersLoading } =
-    useGetTeacherProfilesQuery({ page: teacherPage, search: searchQuery });
+    useGetTeacherProfilesQuery({
+      page: teacherPage,
+      search: debouncedSearchQuery,
+    });
 
   const [students, setStudents] = useState([]);
   const [teachers, setTeachers] = useState([]);
@@ -71,16 +85,10 @@ const User = () => {
     }
   }, [teacherProfiles]);
 
-  const currentData = activeTab === "students" ? students : teachers;
-
-  console.log(currentData);
-  const filteredData = currentData.filter(
-    (user) =>
-      (user.name &&
-        user.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (user.email &&
-        user.email.toLowerCase().includes(searchQuery.toLowerCase())),
-  );
+  // Search and pagination are both handled server-side (see useGetStudentProfilesQuery
+  // / useGetTeacherProfilesQuery above, which send `page` and `search` to the API), so
+  // `currentData` is already the correctly filtered page — no client-side re-filtering.
+  const filteredData = activeTab === "students" ? students : teachers;
 
   const handleTeacherView = (teacher) => {
     setSelectedTeacher(teacher);
