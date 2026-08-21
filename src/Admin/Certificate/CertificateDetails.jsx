@@ -105,17 +105,18 @@ const CertificateDetails = ({ selectedCourse, onBack }) => {
   const [previewHtml, setPreviewHtml] = useState("");
   const [isFetchingPreview, setIsFetchingPreview] = useState(false);
 
-  // Scaling state
+  // Scaling state — sized to match the backend's US Letter landscape
+  // (11in x 8.5in) render in certificates/utils.py, not A4.
   const containerRef = useRef(null);
   const [scale, setScale] = useState(0.65);
-  const A4_W = 1122;
-  const A4_H = 793;
+  const PAGE_W = 1056;
+  const PAGE_H = 816;
 
   useEffect(() => {
     if (!containerRef.current) return;
     const observer = new ResizeObserver(([entry]) => {
       const available = entry.contentRect.width - 64; // subtract padding
-      setScale(Math.min(available / A4_W, 1));
+      setScale(Math.min(available / PAGE_W, 1));
     });
     observer.observe(containerRef.current);
     return () => observer.disconnect();
@@ -193,12 +194,19 @@ const CertificateDetails = ({ selectedCourse, onBack }) => {
     }
 
     try {
-      await issueCertificates({
+      const result = await issueCertificates({
         enrollment_ids: selectedEnrollments,
         template_id: selectedTemplateId
       }).unwrap();
 
-      toast.success(`Successfully issued certificates to ${selectedEnrollments.length} student(s)! Email dispatch has begun.`);
+      const emailFailed = result?.email_failed || [];
+      if (emailFailed.length > 0) {
+        toast.error(
+          `Certificates issued, but the email failed to send for: ${emailFailed.join(", ")}. Check the email template configuration.`
+        );
+      } else {
+        toast.success(`Successfully issued certificates to ${selectedEnrollments.length} student(s)! Email dispatch has begun.`);
+      }
       setSelectedEnrollments([]);
     } catch (err) {
       toast.error(err?.data?.detail || err?.data?.error || "Failed to issue certificates online.");
@@ -296,12 +304,12 @@ const CertificateDetails = ({ selectedCourse, onBack }) => {
                   <p className="font-bold tracking-wider uppercase text-xs">Loading Template...</p>
                 </div>
               ) : (
-                <div style={{ width: A4_W * scale, height: A4_H * scale, flexShrink: 0 }}>
+                <div style={{ width: PAGE_W * scale, height: PAGE_H * scale, flexShrink: 0 }}>
                   <div
                     className="shadow-2xl bg-white overflow-hidden"
                     style={{
-                      width: A4_W,
-                      height: A4_H,
+                      width: PAGE_W,
+                      height: PAGE_H,
                       transform: `scale(${scale})`,
                       transformOrigin: "top left",
                     }}
@@ -309,7 +317,7 @@ const CertificateDetails = ({ selectedCourse, onBack }) => {
                     <iframe
                       title="Certificate Preview"
                       srcDoc={`<style>body,html{margin:0!important;padding:0!important;box-sizing:border-box;overflow:hidden!important;}</style>\n${previewHtml}`}
-                      style={{ width: A4_W, height: A4_H }}
+                      style={{ width: PAGE_W, height: PAGE_H }}
                       className="border-none bg-white block"
                       scrolling="no"
                       sandbox="allow-same-origin"
