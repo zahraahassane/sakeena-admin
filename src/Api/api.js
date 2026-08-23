@@ -1,4 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { setAuth, clearAuth } from "../Redux/features/auth/authSlice";
 
 const normalizeBaseUrl = (value) => {
   if (!value) return null;
@@ -15,22 +16,25 @@ export const normalizeListResponse = (response) => {
   return [];
 };
 
-const baseQuery = fetchBaseQuery({
+// Endpoints that must be called without an access token — hitting them with
+// a stale/expired token shouldn't trigger a refresh attempt or a logout.
+const PUBLIC_ENDPOINTS = [
+  "signup",
+  "universitySignup",
+  "login",
+  "forgetPass",
+  "verifyOtp",
+  "resetPassword",
+];
+
+const rawBaseQuery = fetchBaseQuery({
   baseUrl: API_BASE_URL,
   prepareHeaders: (headers, { getState, endpoint }) => {
     // Skip ngrok browser warning
     // headers.set("ngrok-skip-browser-warning", "true");
 
     // Skip auth token for public endpoints
-    const publicEndpoints = [
-      "signup",
-      "universitySignup",
-      "login",
-      "forgetPass",
-      "verifyOtp",
-      "resetPassword",
-    ];
-    if (publicEndpoints.includes(endpoint)) {
+    if (PUBLIC_ENDPOINTS.includes(endpoint)) {
       return headers;
     }
 
@@ -57,9 +61,70 @@ const baseQuery = fetchBaseQuery({
   },
 });
 
+// Serializes concurrent refresh attempts so a burst of 401s from several
+// in-flight queries only triggers a single call to /auth/jwt/refresh/.
+let refreshPromise = null;
+
+const baseQueryWithReauth = async (args, api, extraOptions) => {
+  let result = await rawBaseQuery(args, api, extraOptions);
+
+  if (result.error?.status === 401 && !PUBLIC_ENDPOINTS.includes(api.endpoint)) {
+    const state = api.getState();
+    let refreshToken = state.auth?.refreshToken;
+    if (!refreshToken) {
+      try {
+        refreshToken = JSON.parse(localStorage.getItem("auth") || "null")?.refresh;
+      } catch {
+        refreshToken = null;
+      }
+    }
+
+    if (!refreshToken) {
+      api.dispatch(clearAuth());
+      return result;
+    }
+
+    if (!refreshPromise) {
+      refreshPromise = rawBaseQuery(
+        {
+          url: "auth/jwt/refresh/",
+          method: "POST",
+          body: { refresh: refreshToken },
+        },
+        api,
+        extraOptions,
+      ).finally(() => {
+        refreshPromise = null;
+      });
+    }
+
+    const refreshResult = await refreshPromise;
+
+    if (refreshResult.data?.access) {
+      api.dispatch(
+        setAuth({
+          access: refreshResult.data.access,
+          // ROTATE_REFRESH_TOKENS is on server-side, so a new refresh token
+          // comes back with every refresh — fall back to the old one only if
+          // the response didn't include a rotated one.
+          refresh: refreshResult.data.refresh || refreshToken,
+          role: state.auth?.role,
+        }),
+      );
+      result = await rawBaseQuery(args, api, extraOptions);
+    } else {
+      // Refresh token itself is expired/invalid — force a real logout so
+      // ProtectedRoute redirects instead of leaving a dead session on screen.
+      api.dispatch(clearAuth());
+    }
+  }
+
+  return result;
+};
+
 export const api = createApi({
   reducerPath: "baseApi",
-  baseQuery: baseQuery,
+  baseQuery: baseQueryWithReauth,
   tagTypes: [
     "uni_users",
     "user_profile",
