@@ -61,7 +61,7 @@ const Submission = () => {
     const email = submission.user_detail?.email || "Unknown email";
     const createdAt = submission.created_at;
     const markValue = submission.mark != null ? Number(submission.mark) : null;
-    const totalPoints = 50;
+    const totalPoints = submission.assignment_max_points ?? 100;
 
     const isGraded =
       markValue != null ||
@@ -93,6 +93,7 @@ const Submission = () => {
               ? "Rejected"
               : submission.status,
       type: "Assignment",
+      maxPoints: totalPoints,
       assignmentTitle: submission.assignment_title || "Untitled Assignment",
       submissionText: submission.submission_text,
       submissionFile: submission.submission_file,

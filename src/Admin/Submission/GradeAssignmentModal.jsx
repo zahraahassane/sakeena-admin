@@ -8,7 +8,6 @@ const GradeAssignmentModal = ({ isOpen, onClose, submission }) => {
   const [feedback, setFeedback] = useState("");
   const [reviewAssignmentSubmission, { isLoading: isSaving }] =
     useReviewAssignmentSubmissionMutation();
-  const totalPoints = 50;
 
   useEffect(() => {
     if (submission) {
@@ -29,6 +28,8 @@ const GradeAssignmentModal = ({ isOpen, onClose, submission }) => {
   }, [submission, isOpen]);
 
   if (!isOpen || !submission) return null;
+
+  const totalPoints = submission.maxPoints ?? 100;
 
   const percentage = score
     ? Math.round((Number(score) / totalPoints) * 100)
