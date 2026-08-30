@@ -29,6 +29,8 @@ import {
   useCreateLessonQuizQuestionMutation,
   useCreateLessonAssignmentMutation,
   useUpdateLessonAssignmentMutation,
+  useCreateAssignmentReferenceFileMutation,
+  useDeleteAssignmentReferenceFileMutation,
 } from "../../Api/adminApi";
 
 const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
@@ -53,8 +55,7 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
     maxPoints: 100,
     maxFileSize: 10,
     allowedFileTypes: "pdf, docx",
-    referenceFile: null,
-    existingReferenceFileUrl: null,
+    referenceFiles: [],
   });
   const [isDownloadable, setIsDownloadable] = useState(false);
   const [quizData, setQuizData] = useState({
@@ -87,6 +88,8 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
   const [createQuizQuestion] = useCreateLessonQuizQuestionMutation();
   const [createAssignment] = useCreateLessonAssignmentMutation();
   const [updateAssignment] = useUpdateLessonAssignmentMutation();
+  const [createAssignmentReferenceFile] = useCreateAssignmentReferenceFileMutation();
+  const [deleteAssignmentReferenceFile] = useDeleteAssignmentReferenceFileMutation();
 
   const pollingIntervalRef = useRef(null);
 
@@ -123,8 +126,12 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
           maxPoints: ad.max_points || 100,
           maxFileSize: ad.max_file_size || 10,
           allowedFileTypes: ad.allowed_file_types || "pdf, docx",
-          referenceFile: null,
-          existingReferenceFileUrl: ad.reference_file || null,
+          referenceFiles: (ad.reference_files || []).map((f) => ({
+            id: f.id,
+            file: null,
+            url: f.file,
+            name: f.file.split('/').pop(),
+          })),
         });
       }
 
@@ -281,10 +288,30 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
     payload.append("max_points", parseInt(data.maxPoints) || 100);
     payload.append("allowed_file_types", data.allowedFileTypes || "pdf, docx");
     payload.append("max_file_size", parseInt(data.maxFileSize) || 10);
-    if (data.referenceFile) {
-      payload.append("reference_file", data.referenceFile);
-    }
     return payload;
+  };
+
+  const handleRemoveReferenceFile = async (row) => {
+    const isExistingRow = lessonId && lessonDetails?.assignment_details && !row.file;
+    if (isExistingRow) {
+      try {
+        await deleteAssignmentReferenceFile({
+          course_pk: courseId,
+          module_pk: moduleId,
+          lesson_pk: lessonId,
+          assignment_pk: lessonDetails.assignment_details.id,
+          id: row.id,
+        }).unwrap();
+      } catch (err) {
+        console.error("Error deleting reference file:", err);
+        toast.error("Could not delete that file. Please try again.");
+        return;
+      }
+    }
+    setAssignmentData((prev) => ({
+      ...prev,
+      referenceFiles: prev.referenceFiles.filter((f) => f.id !== row.id),
+    }));
   };
 
   const handleSubmit = async () => {
@@ -393,20 +420,38 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
         }
       } else if (contentType === "assignment") {
         const assignmentPayload = buildAssignmentFormData(assignmentData);
+        let assignmentPk;
         if (lessonId && lessonDetails?.assignment_details) {
+          assignmentPk = lessonDetails.assignment_details.id;
           await updateAssignment({
             course_pk: courseId,
             module_pk: moduleId,
             lesson_pk: activeLessonId,
-            id: lessonDetails.assignment_details.id,
+            id: assignmentPk,
             body: assignmentPayload
           }).unwrap();
         } else {
-          await createAssignment({
+          const resAssignment = await createAssignment({
             course_pk: courseId,
             module_pk: moduleId,
             lesson_pk: activeLessonId,
             body: assignmentPayload
+          }).unwrap();
+          assignmentPk = resAssignment.id;
+        }
+
+        // Only the rows added in this session carry a raw File — existing
+        // rows (already on the server) have url set and file null.
+        const newFiles = assignmentData.referenceFiles.filter((f) => f.file);
+        for (const row of newFiles) {
+          const fileFormData = new FormData();
+          fileFormData.append("file", row.file);
+          await createAssignmentReferenceFile({
+            course_pk: courseId,
+            module_pk: moduleId,
+            lesson_pk: activeLessonId,
+            assignment_pk: assignmentPk,
+            body: fileFormData
           }).unwrap();
         }
       } else if (contentType === "video" && file) {
@@ -478,8 +523,7 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
       maxPoints: 100,
       maxFileSize: 10,
       allowedFileTypes: "pdf, docx",
-      referenceFile: null,
-      existingReferenceFileUrl: null,
+      referenceFiles: [],
     });
     setQuizData({
       timeLimit: 30,
@@ -722,6 +766,7 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
                 <AssignmentForm
                   data={assignmentData}
                   onChange={setAssignmentData}
+                  onRemoveFile={handleRemoveReferenceFile}
                 />
               ) : contentType === "quiz" ? (
                 <QuizForm data={quizData} onChange={setQuizData} />

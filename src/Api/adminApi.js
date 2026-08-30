@@ -548,6 +548,27 @@ export const adminApi = api.injectEndpoints({
         { type: "lesson", id: lesson_pk },
       ],
     }),
+    createAssignmentReferenceFile: builder.mutation({
+      query: ({ course_pk, module_pk, lesson_pk, assignment_pk, body }) => ({
+        url: `/courses/${course_pk}/modules/${module_pk}/lessons/${lesson_pk}/assignments/${assignment_pk}/reference-files/`,
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: (result, error, { module_pk, lesson_pk }) => [
+        { type: "moduleLessons", id: module_pk },
+        { type: "lesson", id: lesson_pk },
+      ],
+    }),
+    deleteAssignmentReferenceFile: builder.mutation({
+      query: ({ course_pk, module_pk, lesson_pk, assignment_pk, id }) => ({
+        url: `/courses/${course_pk}/modules/${module_pk}/lessons/${lesson_pk}/assignments/${assignment_pk}/reference-files/${id}/`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (result, error, { module_pk, lesson_pk }) => [
+        { type: "moduleLessons", id: module_pk },
+        { type: "lesson", id: lesson_pk },
+      ],
+    }),
     // Course Categories
     getCourseCategories: builder.query({
       query: () => "/course-categories/",
@@ -1647,6 +1668,8 @@ export const {
   useCreateLessonQuizQuestionMutation,
   useCreateLessonAssignmentMutation,
   useUpdateLessonAssignmentMutation,
+  useCreateAssignmentReferenceFileMutation,
+  useDeleteAssignmentReferenceFileMutation,
   useGetLuluPackagesQuery,
   useValidateLuluInteriorMutation,
   useLazyGetLuluInteriorValidationResultQuery,

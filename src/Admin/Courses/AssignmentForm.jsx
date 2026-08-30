@@ -1,22 +1,29 @@
-import { Calendar, ExternalLink, FileText, UploadCloud, X } from "lucide-react";
+import { Calendar, ExternalLink, FileText, Plus, UploadCloud, X } from "lucide-react";
 import { useRef, useState } from "react";
 import TextEditor from "../../components/Editor";
 
-const AssignmentForm = ({ data, onChange }) => {
+const AssignmentForm = ({ data, onChange, onRemoveFile }) => {
   const handleChange = (field, value) => {
     onChange({ ...data, [field]: value });
   };
 
   const fileInputRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
+  const referenceFiles = data.referenceFiles || [];
 
-  const handleReferenceFile = (fileOrEvent) => {
-    const selectedFile =
-      fileOrEvent?.target?.files?.[0] || fileOrEvent?.dataTransfer?.files?.[0];
-    if (selectedFile) {
-      handleChange("referenceFile", selectedFile);
+  const addReferenceFiles = (fileList) => {
+    const newRows = Array.from(fileList || []).map((file) => ({
+      id: Date.now() + Math.random(),
+      file,
+      url: null,
+      name: file.name,
+    }));
+    if (newRows.length) {
+      handleChange("referenceFiles", [...referenceFiles, ...newRows]);
     }
   };
+
+  const handleFileInputChange = (e) => addReferenceFiles(e.target.files);
 
   const handleDragOver = (e) => {
     e.preventDefault();
@@ -31,7 +38,15 @@ const AssignmentForm = ({ data, onChange }) => {
   const handleDrop = (e) => {
     e.preventDefault();
     setIsDragging(false);
-    handleReferenceFile(e);
+    addReferenceFiles(e.dataTransfer?.files);
+  };
+
+  const handleRemove = (row) => {
+    if (onRemoveFile) {
+      onRemoveFile(row);
+    } else {
+      handleChange("referenceFiles", referenceFiles.filter((f) => f.id !== row.id));
+    }
   };
 
   return (
@@ -60,84 +75,101 @@ const AssignmentForm = ({ data, onChange }) => {
         />
       </div>
 
-      {/* Reference File */}
+      {/* Reference Files */}
       <div className="space-y-2">
         <label className="text-sm font-bold text-stone-700 ml-1 inter-font">
-          Reference File (optional)
+          Reference Files (optional)
         </label>
         <p className="text-xs text-stone-400 ml-1 -mt-1 inter-font">
-          A worksheet or instructions file for students to download. PDF, DOCX, PPTX supported.
+          Worksheets or instructions files for students to download. PDF, DOCX, PPTX supported.
         </p>
 
-        {data.existingReferenceFileUrl && !data.referenceFile ? (
-          <div className="flex items-center justify-between p-6 bg-teal-50/30 border border-teal-100 rounded-[2rem] animate-in fade-in zoom-in-95 duration-300">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-teal-100 flex items-center justify-center text-teal-600">
-                <FileText className="w-6 h-6" />
-              </div>
-              <div>
-                <h4 className="text-sm font-bold text-teal-900 line-clamp-1 max-w-[250px]">
-                  {data.existingReferenceFileUrl.split("/").pop()}
-                </h4>
-                <a
-                  href={data.existingReferenceFileUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[10px] text-teal-600 font-bold uppercase tracking-wider hover:underline flex items-center gap-1 mt-1"
+        {referenceFiles.length > 0 && (
+          <div className="space-y-2">
+            {referenceFiles.map((row) => (
+              <div
+                key={row.id}
+                className="flex items-center justify-between p-4 bg-teal-50/30 border border-teal-100 rounded-2xl animate-in fade-in zoom-in-95 duration-300"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-teal-100 flex items-center justify-center text-teal-600 shrink-0">
+                    <FileText className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-teal-900 line-clamp-1 max-w-[250px]">
+                      {row.name}
+                    </h4>
+                    {row.url && (
+                      <a
+                        href={row.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[10px] text-teal-600 font-bold uppercase tracking-wider hover:underline flex items-center gap-1 mt-1"
+                      >
+                        View File <ExternalLink className="w-2 h-2" />
+                      </a>
+                    )}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleRemove(row)}
+                  className="flex items-center gap-1 px-3 py-2 bg-white border border-teal-200 text-teal-600 rounded-xl text-xs font-bold hover:bg-teal-50 transition-all shadow-sm active:scale-95 shrink-0"
                 >
-                  View Current File <ExternalLink className="w-2 h-2" />
-                </a>
+                  <X className="w-4 h-4" />
+                </button>
               </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => handleChange("existingReferenceFileUrl", null)}
-              className="flex items-center gap-2 px-5 py-2.5 bg-white border border-teal-200 text-teal-600 rounded-xl text-xs font-bold hover:bg-teal-50 transition-all shadow-sm active:scale-95"
-            >
-              <X className="w-4 h-4" />
-              <span>Replace File</span>
-            </button>
+            ))}
           </div>
-        ) : (
+        )}
+
+        <div
+          onClick={() => fileInputRef.current.click()}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          className={`flex flex-col items-center justify-center gap-3 p-8 border-2 border-dashed rounded-[2rem] transition-all group cursor-pointer relative ${
+            isDragging
+              ? "border-teal-500 bg-teal-50/20 scale-[1.02]"
+              : "border-stone-200 hover:border-teal-400 hover:bg-teal-50/10"
+          }`}
+        >
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileInputChange}
+            accept=".pdf,.doc,.docx,.ppt,.pptx,.odp,.key"
+            multiple
+            className="hidden"
+          />
           <div
-            onClick={() => fileInputRef.current.click()}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            className={`flex flex-col items-center justify-center gap-4 p-10 border-2 border-dashed rounded-[2rem] transition-all group cursor-pointer relative ${
+            className={`w-12 h-12 rounded-full flex items-center justify-center transition-transform shadow-sm border ${
               isDragging
-                ? "border-teal-500 bg-teal-50/20 scale-[1.02]"
-                : "border-stone-200 hover:border-teal-400 hover:bg-teal-50/10"
+                ? "bg-white border-teal-200 scale-110"
+                : "bg-stone-50 border-stone-100 group-hover:scale-110"
             }`}
           >
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleReferenceFile}
-              accept=".pdf,.doc,.docx,.ppt,.pptx,.odp,.key"
-              className="hidden"
-            />
-            <div
-              className={`w-14 h-14 rounded-full flex items-center justify-center transition-transform shadow-sm border ${
-                isDragging
-                  ? "bg-white border-teal-200 scale-110"
-                  : "bg-stone-50 border-stone-100 group-hover:scale-110"
-              }`}
-            >
-              <UploadCloud
-                className={`w-7 h-7 transition-colors ${
+            {referenceFiles.length > 0 ? (
+              <Plus
+                className={`w-6 h-6 transition-colors ${
                   isDragging ? "text-teal-500" : "text-stone-400 group-hover:text-teal-500"
                 }`}
               />
-            </div>
-            <div className="text-center">
-              <h4 className="text-stone-900 font-bold arimo-font">
-                {data.referenceFile ? data.referenceFile.name : "Click to upload or drag and drop"}
-              </h4>
-              <p className="text-stone-400 text-sm font-medium inter-font">PDF, DOCX, PPTX</p>
-            </div>
+            ) : (
+              <UploadCloud
+                className={`w-6 h-6 transition-colors ${
+                  isDragging ? "text-teal-500" : "text-stone-400 group-hover:text-teal-500"
+                }`}
+              />
+            )}
           </div>
-        )}
+          <div className="text-center">
+            <h4 className="text-stone-900 font-bold arimo-font text-sm">
+              {referenceFiles.length > 0 ? "Add another file" : "Click to upload or drag and drop"}
+            </h4>
+            <p className="text-stone-400 text-sm font-medium inter-font">PDF, DOCX, PPTX</p>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
