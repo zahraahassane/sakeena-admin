@@ -53,6 +53,8 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
     maxPoints: 100,
     maxFileSize: 10,
     allowedFileTypes: "pdf, docx",
+    referenceFile: null,
+    existingReferenceFileUrl: null,
   });
   const [isDownloadable, setIsDownloadable] = useState(false);
   const [quizData, setQuizData] = useState({
@@ -121,6 +123,8 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
           maxPoints: ad.max_points || 100,
           maxFileSize: ad.max_file_size || 10,
           allowedFileTypes: ad.allowed_file_types || "pdf, docx",
+          referenceFile: null,
+          existingReferenceFileUrl: ad.reference_file || null,
         });
       }
 
@@ -269,15 +273,18 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
     };
   };
 
-  const mapAssignmentDataToBackend = (data) => {
-    return {
-      description: data.description || "",
-      instructions: data.instructions || "",
-      due_date: data.dueDate ? `${data.dueDate}T23:59:00Z` : null,
-      max_points: parseInt(data.maxPoints) || 100,
-      allowed_file_types: data.allowedFileTypes || "pdf, docx",
-      max_file_size: parseInt(data.maxFileSize) || 10
-    };
+  const buildAssignmentFormData = (data) => {
+    const payload = new FormData();
+    payload.append("description", data.description || "");
+    payload.append("instructions", data.instructions || "");
+    payload.append("due_date", data.dueDate ? `${data.dueDate}T23:59:00Z` : "");
+    payload.append("max_points", parseInt(data.maxPoints) || 100);
+    payload.append("allowed_file_types", data.allowedFileTypes || "pdf, docx");
+    payload.append("max_file_size", parseInt(data.maxFileSize) || 10);
+    if (data.referenceFile) {
+      payload.append("reference_file", data.referenceFile);
+    }
+    return payload;
   };
 
   const handleSubmit = async () => {
@@ -385,7 +392,7 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
           }).unwrap();
         }
       } else if (contentType === "assignment") {
-        const assignmentPayload = mapAssignmentDataToBackend(assignmentData);
+        const assignmentPayload = buildAssignmentFormData(assignmentData);
         if (lessonId && lessonDetails?.assignment_details) {
           await updateAssignment({
             course_pk: courseId,
@@ -471,6 +478,8 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
       maxPoints: 100,
       maxFileSize: 10,
       allowedFileTypes: "pdf, docx",
+      referenceFile: null,
+      existingReferenceFileUrl: null,
     });
     setQuizData({
       timeLimit: 30,
