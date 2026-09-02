@@ -33,6 +33,20 @@ import {
   useDeleteAssignmentReferenceFileMutation,
 } from "../../Api/adminApi";
 
+// DRF field-validation errors come back as {field: ["msg", ...]}, not
+// {detail: "msg"} — surface those instead of falling through to a generic
+// error and hiding what actually failed.
+const getErrorMessage = (err) => {
+  const data = err?.data;
+  if (!data) return null;
+  if (typeof data === "string") return data;
+  if (data.detail) return data.detail;
+  const fieldErrors = Object.entries(data)
+    .filter(([, v]) => Array.isArray(v) && v.length)
+    .map(([field, messages]) => `${field}: ${messages[0]}`);
+  return fieldErrors.length ? fieldErrors.join("; ") : null;
+};
+
 const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
   const [title, setTitle] = useState("");
   const [contentType, setContentType] = useState("video");
@@ -314,11 +328,24 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
     }));
   };
 
+  const isRichTextEmpty = (html) =>
+    !html || !html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, "").trim();
+
   const handleSubmit = async () => {
     if (isUploading) return;
     if (!title.trim()) {
       toast.error("Please enter a lesson title");
       return;
+    }
+    if (contentType === "assignment") {
+      if (isRichTextEmpty(assignmentData.description)) {
+        toast.error("Please add a description for the assignment");
+        return;
+      }
+      if (isRichTextEmpty(assignmentData.instructions)) {
+        toast.error("Please add instructions for the assignment");
+        return;
+      }
     }
 
     setIsUploading(true);
@@ -500,7 +527,7 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
       onClose();
     } catch (err) {
       console.error(err);
-      toast.error(err?.data?.detail || "Failed to save lesson");
+      toast.error(getErrorMessage(err) || "Failed to save lesson");
     } finally {
       setIsUploading(false);
     }
