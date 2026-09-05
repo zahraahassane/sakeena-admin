@@ -15,6 +15,7 @@ import {
   ChevronUp,
   Edit2,
   Check,
+  RefreshCw,
 } from "lucide-react";
 
 import AddContentModal from "./AddLesson";
@@ -27,6 +28,7 @@ import {
   useGetModuleLessonsQuery,
   useDeleteModuleLessonMutation,
   useReorderModuleLessonsMutation,
+  useLazyGetVideoStatusQuery,
 } from "../../Api/adminApi";
 import Pagination from "../../components/Pagination";
 import toast from "react-hot-toast";
@@ -47,7 +49,19 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-const SortableLessonItem = ({ lesson, mod, onLessonDetails, onEditLesson, handleRemoveLesson }) => {
+const SortableLessonItem = ({ lesson, mod, onLessonDetails, onEditLesson, handleRemoveLesson, onRefreshVideoStatus }) => {
+  const [isRefreshingStatus, setIsRefreshingStatus] = useState(false);
+
+  const handleRefreshClick = async (e) => {
+    e.stopPropagation();
+    setIsRefreshingStatus(true);
+    try {
+      await onRefreshVideoStatus(lesson.id);
+    } finally {
+      setIsRefreshingStatus(false);
+    }
+  };
+
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: lesson.id });
 
   const style = {
@@ -122,6 +136,18 @@ const SortableLessonItem = ({ lesson, mod, onLessonDetails, onEditLesson, handle
                 {lesson.bunny_video_status}
               </span>
             )}
+          {lesson.content_type === "video" &&
+            lesson.bunny_video_status &&
+            lesson.bunny_video_status !== "ready" && (
+              <button
+                onClick={handleRefreshClick}
+                disabled={isRefreshingStatus}
+                title="Check current status on Bunny"
+                className="p-1 text-stone-400 hover:text-teal-600 disabled:opacity-50 transition-colors"
+              >
+                <RefreshCw className={`w-3 h-3 ${isRefreshingStatus ? "animate-spin" : ""}`} />
+              </button>
+            )}
         </div>
       </div>
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
@@ -178,6 +204,37 @@ const ModuleItem = ({
   const [updateModule, { isLoading: isUpdatingModule }] =
     useUpdateCourseModuleMutation();
   const [reorderLessons] = useReorderModuleLessonsMutation();
+  const [getVideoStatus] = useLazyGetVideoStatusQuery();
+
+  const handleRefreshVideoStatus = async (lessonId) => {
+    try {
+      const data = await getVideoStatus({
+        course_pk: courseId,
+        module_pk: mod.id,
+        id: lessonId,
+      }).unwrap();
+      setLocalLessons((prev) =>
+        prev.map((l) =>
+          l.id === lessonId
+            ? {
+                ...l,
+                bunny_video_status: data?.status ?? l.bunny_video_status,
+                video_content: data?.embed_url ?? l.video_content,
+              }
+            : l,
+        ),
+      );
+      if (data?.status === "ready") {
+        toast.success("Video is ready!");
+      } else if (data?.status === "error" || data?.status === "upload_failed") {
+        toast.error("Video processing failed on Bunny.");
+      } else {
+        toast(`Still ${data?.status || "processing"}...`);
+      }
+    } catch (err) {
+      toast.error("Failed to check video status.");
+    }
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -421,6 +478,7 @@ const ModuleItem = ({
                     onLessonDetails={onLessonDetails}
                     onEditLesson={onEditLesson}
                     handleRemoveLesson={handleRemoveLesson}
+                    onRefreshVideoStatus={handleRefreshVideoStatus}
                   />
                 ))}
               </SortableContext>
