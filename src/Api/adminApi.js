@@ -490,10 +490,12 @@ export const adminApi = api.injectEndpoints({
         `/courses/${course_pk}/modules/${module_pk}/lessons/${id}/video/`,
     }),
     initLessonVideoUpload: builder.mutation({
-      query: ({ course_pk, module_pk, id }) => ({
+      query: ({ course_pk, module_pk, id, force }) => ({
         url: `/courses/${course_pk}/modules/${module_pk}/lessons/${id}/video/`,
         method: "POST",
+        body: force ? { force: true } : undefined,
       }),
+      invalidatesTags: (result, error, { id }) => [{ type: "lesson", id }],
     }),
     createLessonQuiz: builder.mutation({
       query: ({ course_pk, module_pk, lesson_pk, body }) => ({

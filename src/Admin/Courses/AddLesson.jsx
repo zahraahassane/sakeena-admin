@@ -255,11 +255,11 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
           module_pk: moduleId,
           id: lessonId
         });
-        if (data?.bunny_video_status === "ready") {
+        if (data?.status === "ready") {
           setVideoStatus('ready');
           clearInterval(pollingIntervalRef.current);
           toast.success("Video is ready!");
-        } else if (data?.bunny_video_status === "failed") {
+        } else if (data?.status === "error" || data?.status === "upload_failed") {
           setVideoStatus('error');
           clearInterval(pollingIntervalRef.current);
           toast.error("Video processing failed.");
@@ -326,6 +326,32 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
       ...prev,
       referenceFiles: prev.referenceFiles.filter((f) => f.id !== row.id),
     }));
+  };
+
+  const handleStartOver = async () => {
+    if (
+      !window.confirm(
+        "This will permanently discard the current video upload on Bunny. You'll need to upload the file again from the start. Continue?"
+      )
+    ) {
+      return;
+    }
+    try {
+      await initVideoUpload({
+        course_pk: courseId,
+        module_pk: moduleId,
+        id: lessonId,
+        force: true,
+      }).unwrap();
+      setExistingFileUrl(null);
+      setFile(null);
+      setVideoStatus(null);
+      setUploadProgress(0);
+      toast.success("Previous upload discarded. Select a new file to upload.");
+    } catch (err) {
+      console.error(err);
+      toast.error(getErrorMessage(err) || "Could not discard the previous upload.");
+    }
   };
 
   const isRichTextEmpty = (html) =>
@@ -492,9 +518,15 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
         setVideoStatus("uploading");
         setUploadProgress(0);
 
+        // Resume works on this same browser/device only: tus-js-client keeps
+        // the in-progress upload's fingerprint + URL in localStorage, so a
+        // network drop or a crash can pick back up here as long as the admin
+        // reselects the same file later. A different computer/browser won't
+        // see it — use "Start Over" there instead.
         await new Promise((resolve, reject) => {
           const upload = new tus.Upload(file, {
             endpoint: tusData.tus_endpoint,
+            retryDelays: [0, 3000, 5000, 10000, 20000, 60000, 60000],
             headers: {
               AuthorizationSignature: tusData.tus_signature,
               AuthorizationExpire: String(tusData.tus_expiration_time),
@@ -513,7 +545,13 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
               reject(err);
             },
           });
-          upload.start();
+
+          upload.findPreviousUploads().then((previousUploads) => {
+            if (previousUploads.length) {
+              upload.resumeFromPreviousUpload(previousUploads[0]);
+            }
+            upload.start();
+          });
         });
 
         toast.success("Video uploaded! Processing in background…");
@@ -820,13 +858,26 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
                           </a>
                         </div>
                       </div>
-                      <button
-                        onClick={() => setExistingFileUrl(null)}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-white border border-teal-200 text-teal-600 rounded-xl text-xs font-bold hover:bg-teal-50 transition-all shadow-sm active:scale-95"
-                      >
-                        <X className="w-4 h-4" />
-                        <span>Update File</span>
-                      </button>
+                      <div className="flex items-center gap-2">
+                        {contentType === "video" &&
+                          lessonId &&
+                          lessonDetails?.bunny_video_status &&
+                          lessonDetails.bunny_video_status !== "ready" && (
+                            <button
+                              onClick={handleStartOver}
+                              className="flex items-center gap-2 px-5 py-2.5 bg-white border border-red-200 text-red-600 rounded-xl text-xs font-bold hover:bg-red-50 transition-all shadow-sm active:scale-95"
+                            >
+                              <span>Start Over</span>
+                            </button>
+                          )}
+                        <button
+                          onClick={() => setExistingFileUrl(null)}
+                          className="flex items-center gap-2 px-5 py-2.5 bg-white border border-teal-200 text-teal-600 rounded-xl text-xs font-bold hover:bg-teal-50 transition-all shadow-sm active:scale-95"
+                        >
+                          <X className="w-4 h-4" />
+                          <span>Update File</span>
+                        </button>
+                      </div>
                     </div>
                   ) : (
                     <div
