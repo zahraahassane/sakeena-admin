@@ -107,6 +107,13 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
   const [deleteAssignmentReferenceFile] = useDeleteAssignmentReferenceFileMutation();
 
   const pollingIntervalRef = useRef(null);
+  // The parent keeps this modal mounted permanently (toggling isOpen rather
+  // than mounting/unmounting), so a video upload that's still finishing in
+  // the background after the modal was closed shares this same component
+  // instance — and its state — with whatever lesson is open next. This
+  // token lets a backgrounded upload's completion recognize it's no longer
+  // the active session and skip touching shared UI state.
+  const uploadSessionRef = useRef(0);
 
   useEffect(() => {
     if (lessonDetails && lessonId) {
@@ -247,28 +254,39 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
     handleFileUpload(e);
   };
 
-  const startPolling = (lessonId) => {
-    setVideoStatus('processing');
-    pollingIntervalRef.current = setInterval(async () => {
+  // `session` identifies which upload this polling belongs to. If a newer
+  // upload has since taken over this modal instance, we keep syncing status
+  // to the server (still useful) but stop touching the displayed videoStatus
+  // and stop claiming a toast that belongs to whatever is on screen now.
+  const startPolling = (lessonId, session) => {
+    if (uploadSessionRef.current === session) setVideoStatus('processing');
+    // Use a locally-closed-over id to clear this specific interval, rather
+    // than the shared ref — two overlapping uploads (an older one finishing
+    // in the background while a newer one starts) would otherwise have their
+    // second startPolling call overwrite the ref, leaving the first interval
+    // with no way to ever clear itself.
+    const intervalId = setInterval(async () => {
       try {
         const { data } = await getVideoStatus({
           course_pk: courseId,
           module_pk: moduleId,
           id: lessonId
         });
+        const isCurrent = uploadSessionRef.current === session;
         if (data?.status === "ready") {
-          setVideoStatus('ready');
-          clearInterval(pollingIntervalRef.current);
+          if (isCurrent) setVideoStatus('ready');
+          clearInterval(intervalId);
           toast.success("Video is ready!");
         } else if (data?.status === "error" || data?.status === "upload_failed") {
-          setVideoStatus('error');
-          clearInterval(pollingIntervalRef.current);
+          if (isCurrent) setVideoStatus('error');
+          clearInterval(intervalId);
           toast.error("Video processing failed.");
         }
       } catch (error) {
         console.error("Polling error:", error);
       }
     }, 10000); // 10 seconds
+    pollingIntervalRef.current = intervalId;
   };
 
   const mapQuizDataToBackend = (data, lessonTitle) => {
@@ -387,6 +405,11 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
 
     setIsUploading(true);
     setUploadProgress(0);
+    // Bumped on every submit (not just video), so an older video upload
+    // still finishing in the background — this modal is reused across every
+    // lesson, never remounted — can tell it's been superseded by whatever
+    // is open now, video or not, and skip touching shared UI state.
+    const mySession = ++uploadSessionRef.current;
 
     try {
       const payload = new FormData();
@@ -547,11 +570,13 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
             },
             metadata: { filetype: file.type, title: file.name },
             onProgress: (uploaded, total) => {
-              setUploadProgress(Math.round((uploaded / total) * 100));
+              if (uploadSessionRef.current === mySession) {
+                setUploadProgress(Math.round((uploaded / total) * 100));
+              }
             },
             onSuccess: () => {
               markUploadEnd();
-              startPolling(activeLessonId);
+              startPolling(activeLessonId, mySession);
               resolve();
             },
             onError: (err) => {
@@ -568,9 +593,17 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
           });
         });
 
-        toast.success("Video uploaded! Processing in background…");
-        resetForm();
-        onClose();
+        // If a newer upload has since taken over this modal (it's shown
+        // reused across every lesson, never remounted), don't reset its
+        // form or close it out from under whatever is now on screen —
+        // this upload already finished safely, just say so quietly.
+        if (uploadSessionRef.current === mySession) {
+          toast.success("Video uploaded! Processing in background…");
+          resetForm();
+          onClose();
+        } else {
+          toast.success("A previously started video finished uploading.");
+        }
         return;
       }
 
@@ -579,9 +612,15 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
       onClose();
     } catch (err) {
       console.error(err);
-      toast.error(getErrorMessage(err) || "Failed to save lesson");
+      // A backgrounded upload's own failure shouldn't surface as an error on
+      // whatever lesson is currently open in this modal.
+      if (uploadSessionRef.current === mySession) {
+        toast.error(getErrorMessage(err) || "Failed to save lesson");
+      }
     } finally {
-      setIsUploading(false);
+      if (uploadSessionRef.current === mySession) {
+        setIsUploading(false);
+      }
     }
   };
 
