@@ -15,6 +15,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { markUploadStart, markUploadEnd } from "../../lib/uploadActivity";
 
 import AssignmentForm from "./AssignmentForm";
 import QuizForm from "./QuizForm";
@@ -328,6 +329,16 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
     }));
   };
 
+  const handleRequestClose = () => {
+    if (videoStatus === "uploading") {
+      const proceed = window.confirm(
+        "A video is still uploading. Closing this will let it keep uploading in the background, but you won't see its progress until you reopen this lesson. Close anyway?"
+      );
+      if (!proceed) return;
+    }
+    onClose();
+  };
+
   const handleStartOver = async () => {
     if (
       !window.confirm(
@@ -517,6 +528,7 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
 
         setVideoStatus("uploading");
         setUploadProgress(0);
+        markUploadStart();
 
         // Resume works on this same browser/device only: tus-js-client keeps
         // the in-progress upload's fingerprint + URL in localStorage, so a
@@ -538,10 +550,12 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
               setUploadProgress(Math.round((uploaded / total) * 100));
             },
             onSuccess: () => {
+              markUploadEnd();
               startPolling(activeLessonId);
               resolve();
             },
             onError: (err) => {
+              markUploadEnd();
               reject(err);
             },
           });
@@ -616,7 +630,7 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
               </p>
             </div>
             <button
-              onClick={onClose}
+              onClick={handleRequestClose}
               className="p-2 hover:bg-white/10 rounded-xl transition-all"
             >
               <X className="w-6 h-6" />
@@ -925,7 +939,7 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
         {/* Footer */}
         <div className="px-8 py-6 bg-stone-50 border-t border-stone-100 flex justify-end gap-3">
           <button
-            onClick={onClose}
+            onClick={handleRequestClose}
             className="px-8 py-3 rounded-xl text-stone-600 font-bold hover:bg-stone-200 transition-all arimo-font"
           >
             Cancel
