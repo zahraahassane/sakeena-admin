@@ -12,6 +12,7 @@ import {
 const Submission = () => {
   const [activeTab, setActiveTab] = useState("assignment");
   const [selectedCourseId, setSelectedCourseId] = useState("");
+  const [selectedAssignmentCourseId, setSelectedAssignmentCourseId] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
   const [assignmentPage, setAssignmentPage] = useState(1);
@@ -39,6 +40,7 @@ const Submission = () => {
     page: assignmentPage,
     ...(selectedStatus ? { status: selectedStatus } : {}),
     ...(searchTerm ? { search: searchTerm } : {}),
+    ...(selectedAssignmentCourseId ? { courseId: selectedAssignmentCourseId } : {}),
   };
 
   const {
@@ -47,7 +49,7 @@ const Submission = () => {
     isError: assignmentError,
   } = useGetAssignmentSubmissionsQuery(queryParams, { skip: activeTab !== "assignment" });
 
-  const { data: coursesData } = useGetCoursesDataQuery({ page: 1 }, { skip: activeTab !== "quiz" });
+  const { data: coursesData } = useGetCoursesDataQuery({ page: 1 });
   const courses = coursesData?.results || coursesData || [];
 
   const {
@@ -95,6 +97,8 @@ const Submission = () => {
       type: "Assignment",
       maxPoints: totalPoints,
       assignmentTitle: submission.assignment_title || "Untitled Assignment",
+      courseId: submission.course_id ?? null,
+      courseTitle: submission.course_title || "Untitled Course",
       submissionText: submission.submission_text,
       submissionFile: submission.submission_file,
       teacherFeedback: submission.teacher_feedback,
@@ -136,10 +140,22 @@ const Submission = () => {
       s.assignmentTitle.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
-  // Grouping titles for UI categories based on filtered data
-  const assignmentCategories = [
-    ...new Set(filteredAssignments.map((s) => s.assignmentTitle)),
-  ];
+  // Group assignment submissions by course so grading can focus on one course at a time
+  const courseGroups = Object.values(
+    filteredAssignments.reduce((acc, submission) => {
+      const key = submission.courseId ?? submission.courseTitle;
+      if (!acc[key]) {
+        acc[key] = {
+          courseId: submission.courseId,
+          courseTitle: submission.courseTitle,
+          submissions: [],
+        };
+      }
+      acc[key].submissions.push(submission);
+      return acc;
+    }, {}),
+  ).sort((a, b) => a.courseTitle.localeCompare(b.courseTitle));
+
   const quizCategories = [
     ...new Set(filteredQuizzes.map((s) => s.assignmentTitle)),
   ];
@@ -212,36 +228,61 @@ const Submission = () => {
           </button>
 
           {activeTab === "assignment" && (
-            <div className="relative">
-              <select
-                className="px-4 py-2.5 w-[180px] rounded-[10px] border border-neutral-300 bg-white text-base focus:outline-none focus:ring-2 focus:ring-orange-500/20 appearance-none pr-10 text-neutral-950/50"
-                value={selectedStatus}
-                onChange={(e) => {
-                  setSelectedStatus(e.target.value);
-                  setAssignmentPage(1);
-                }}
-              >
-                <option value="">All statuses</option>
-                <option value="pending">Pending</option>
-                <option value="approved">Approved</option>
-                <option value="rejected">Rejected</option>
-              </select>
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-400">
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+            <>
+              <div className="relative">
+                <select
+                  className="px-4 py-2.5 w-[220px] rounded-[10px] border border-neutral-300 bg-white text-base focus:outline-none focus:ring-2 focus:ring-orange-500/20 appearance-none pr-10 text-neutral-950/50"
+                  value={selectedAssignmentCourseId}
+                  onChange={(e) => {
+                    setSelectedAssignmentCourseId(e.target.value);
+                    setAssignmentPage(1);
+                  }}
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
+                  <option value="">All courses</option>
+                  {courses.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.title}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-400">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
               </div>
-            </div>
+
+              <div className="relative">
+                <select
+                  className="px-4 py-2.5 w-[180px] rounded-[10px] border border-neutral-300 bg-white text-base focus:outline-none focus:ring-2 focus:ring-orange-500/20 appearance-none pr-10 text-neutral-950/50"
+                  value={selectedStatus}
+                  onChange={(e) => {
+                    setSelectedStatus(e.target.value);
+                    setAssignmentPage(1);
+                  }}
+                >
+                  <option value="">All statuses</option>
+                  <option value="pending">Pending</option>
+                  <option value="approved">Approved</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-400">
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </div>
+              </div>
+            </>
           )}
         </div>
       </div>
@@ -262,10 +303,17 @@ const Submission = () => {
       {/* Conditional Rendering of Sections */}
       {activeTab === "assignment" && (
         <>
-          <AssignmentSection
-            categories={assignmentCategories}
-            submissions={filteredAssignments}
-          />
+          {courseGroups.length > 0 ? (
+            <AssignmentSection courseGroups={courseGroups} />
+          ) : (
+            !isAssignmentsLoading && (
+              <div className="py-20 text-center border-2 border-dashed border-stone-200 rounded-[2rem] bg-white">
+                <BookOpen className="w-12 h-12 text-stone-300 mx-auto mb-4" />
+                <h3 className="text-lg font-bold text-stone-700">No submissions found</h3>
+                <p className="text-stone-500 mt-2">There are no assignment submissions matching your search criteria.</p>
+              </div>
+            )
+          )}
           <Pagination
             currentPage={assignmentPage}
             totalPages={assignmentSubmissionsData?.total_pages || 1}
