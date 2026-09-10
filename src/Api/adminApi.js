@@ -1418,9 +1418,10 @@ export const adminApi = api.injectEndpoints({
     }),
 
     getQuizAttempts: builder.query({
-      query: ({ courseId, page = 1 } = {}) => {
+      query: ({ courseId, search, page = 1 } = {}) => {
         const params = new URLSearchParams({ page });
         if (courseId) params.append("quiz__lesson__module__course", courseId);
+        if (search) params.append("search", search);
         return `/quiz-attempts/?${params.toString()}`;
       },
       transformResponse: normalizeListResponse,

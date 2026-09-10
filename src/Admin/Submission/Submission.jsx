@@ -56,7 +56,10 @@ const Submission = () => {
     data: quizAttemptsData = [],
     isLoading: isQuizLoading,
     isError: quizError,
-  } = useGetQuizAttemptsQuery({ courseId: selectedCourseId, page: 1 }, { skip: activeTab !== "quiz" });
+  } = useGetQuizAttemptsQuery(
+    { courseId: selectedCourseId, search: searchTerm, page: 1 },
+    { skip: activeTab !== "quiz" },
+  );
   const assignmentSubmissions = (assignmentSubmissionsData?.results || []).map((submission) => {
     const studentName =
       `${submission.user_detail?.first_name || ""} ${submission.user_detail?.last_name || ""}`.trim();
