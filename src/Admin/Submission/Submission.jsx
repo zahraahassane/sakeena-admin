@@ -130,18 +130,12 @@ const Submission = () => {
     };
   });
 
-  // Filter submissions based on search term
-  const filteredAssignments = assignmentSubmissions.filter(
-    (s) =>
-      s.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      s.assignmentTitle.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
-
-  const filteredQuizzes = quizSubmissions.filter(
-    (s) =>
-      s.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      s.assignmentTitle.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+  // The backend already applies `search` (student name/email, assignment or
+  // quiz title) server-side, so these lists don't need re-filtering here —
+  // doing so previously dropped valid matches (e.g. an email match) because
+  // it only checked studentName/assignmentTitle.
+  const filteredAssignments = assignmentSubmissions;
+  const filteredQuizzes = quizSubmissions;
 
   // Group assignment submissions by course so grading can focus on one course at a time
   const courseGroups = Object.values(
