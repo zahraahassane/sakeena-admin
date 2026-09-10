@@ -99,6 +99,7 @@ const Submission = () => {
               : submission.status,
       type: "Assignment",
       maxPoints: totalPoints,
+      assignmentId: submission.assignment,
       assignmentTitle: submission.assignment_title || "Untitled Assignment",
       courseId: submission.course_id ?? null,
       courseTitle: submission.course_title || "Untitled Course",

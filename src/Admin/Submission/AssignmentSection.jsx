@@ -34,9 +34,13 @@ function groupByStudent(forTitle) {
 }
 
 function buildRows(submissions) {
-  const titles = [...new Set(submissions.map((s) => s.assignmentTitle))];
-  return titles.flatMap((title) =>
-    groupByStudent(submissions.filter((s) => s.assignmentTitle === title))
+  // Bucket by the real assignment id, not the title — two different
+  // Assignment records can coincidentally share a title (e.g. a duplicated
+  // lesson), and grouping by title alone would wrongly treat those as the
+  // same assignment's resubmission history.
+  const assignmentIds = [...new Set(submissions.map((s) => s.assignmentId ?? s.assignmentTitle))];
+  return assignmentIds.flatMap((id) =>
+    groupByStudent(submissions.filter((s) => (s.assignmentId ?? s.assignmentTitle) === id))
   );
 }
 
