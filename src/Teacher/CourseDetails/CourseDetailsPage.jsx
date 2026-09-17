@@ -1,123 +1,39 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import CourseOverview from "./Overview";
 import CourseCurriculum from "./Curriculum";
 import CourseReviews from "./Reviews";
 import CourseCommunity from "./Community";
-import { ChevronLeft, Play, Share2, Twitter, Facebook } from "lucide-react";
+import { ChevronLeft, Share2, Twitter, Facebook } from "lucide-react";
+import { useGetCourseByIdQuery, useGetCourseEnrollmentsQuery } from "../../Api/adminApi";
 
-function LiveChat() {
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      role: "Teacher",
-      name: "Teacher",
-      time: "10:00 AM",
-      text: "Welcome everyone! Feel free to ask questions anytime.",
-    },
-    {
-      id: 2,
-      role: "Student",
-      name: "Student",
-      time: "10:05 AM",
-      text: "Thank you! Looking forward to the session.",
-    },
-  ]);
-  const [input, setInput] = useState("");
-  const containerRef = useRef(null);
-
-  useEffect(() => {
-    if (containerRef.current) {
-      containerRef.current.scrollTop = containerRef.current.scrollHeight;
-    }
-  }, [messages]);
-
-  const handleSend = () => {
-    const text = input.trim();
-    if (!text) return;
-    const msg = {
-      id: Date.now(),
-      role: "Teacher",
-      name: "You",
-      time: new Date().toLocaleTimeString(),
-      text,
-    };
-    setMessages((s) => [...s, msg]);
-    setInput("");
-  };
-
-  return (
-    <div>
-      <div ref={containerRef} className="max-h-80 overflow-auto space-y-3 mb-4">
-        {messages.map((m) => (
-          <div
-            key={m.id}
-            className={`flex gap-3 items-start ${m.role === "Teacher" ? "justify-start" : "justify-start"}`}
-          >
-            <div className="text-xs font-semibold text-teal-700 mb-1">
-              {m.role}
-            </div>
-            <div>
-              <div className="px-4 py-2 rounded-lg bg-green-50 text-gray-800">
-                {m.text}
-              </div>
-              <div className="text-xs text-gray-400 mt-1">
-                {m.name} · {m.time}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="flex gap-3">
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSend()}
-          className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-          placeholder="Type your message..."
-        />
-        <button
-          onClick={handleSend}
-          className="px-4 py-2 bg-teal-600 text-white rounded-lg"
-        >
-          Send
-        </button>
-      </div>
-    </div>
-  );
+function statusBadgeClass(status) {
+  const s = status?.toLowerCase() || "upcoming";
+  if (s === "upcoming") return "bg-[#5BB814] text-white";
+  if (s === "running") return "bg-[#D3130C] text-white";
+  if (s === "recorded") return "bg-[#2E9BDF] text-white";
+  return "bg-gray-400 text-white";
 }
 
 export default function CourseDetailsPage() {
   const { courseId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const [activeTab, setActiveTab] = useState(() =>
-    location.state?.course?.status === "Live" ? "community" : "overview",
+  const [activeTab, setActiveTab] = useState("overview");
+
+  const { data: courseDetail, isLoading: courseLoading } = useGetCourseByIdQuery(courseId, {
+    skip: !courseId,
+  });
+  const { data: enrollmentsData, isLoading: enrollmentsLoading } = useGetCourseEnrollmentsQuery(
+    { courseId },
+    { skip: !courseId }
   );
 
-  // Mock course data - in production, fetch from API based on courseId
-  const passedCourse = location.state?.course;
-
-  const mockCourse = {
-    id: courseId,
-    title: "Tafair Al-Quran: Understanding Divine Guidance",
-    instructor: "Dr. Ahmed Hassan",
-    category: "Spiritual Growth",
-    status: "Recorded",
-    lessons: 24,
-    weeks: 12,
-    totalHours: 12,
-    price: "$99",
-    image: "/images/image.png",
-    description:
-      "Learn the fundamentals of Quranic interpretation with expert guidance from Dr. Ahmed Hassan. This comprehensive course covers essential concepts and methodologies.",
-    level: "Intermediate",
-    startDate: "Jan 10, 2026",
-  };
-
-  const course = passedCourse ? { ...mockCourse, ...passedCourse } : mockCourse;
+  // location.state.course paints instantly on click-through; live data always wins once it arrives,
+  // and on refresh/direct visit (no router state) this just starts empty and fills in from the API.
+  const course = { ...location.state?.course, ...courseDetail };
+  const totalEnrolled = enrollmentsData?.count ?? 0;
 
   const tabs = [
     { id: "overview", label: "Overview" },
@@ -162,13 +78,12 @@ export default function CourseDetailsPage() {
                 <img
                   src={course.thumbnail || course.image}
                 />
-                {/* play overlay for any course (visual) */}
-                {/* <button className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-teal-600 text-white p-4 rounded-full shadow-lg">
-                  <Play size={20} />
-                </button> */}
                 <div className="mt-4">
-                  <h1 className="text-3xl text-[#7AA4A5] font-semibold">Course Builder</h1>
-                  <p className="">Create comprehensive course content for students</p>
+                  <p className="text-[#7AA4A5] font-semibold">
+                    {course.category?.name || course.category || "Uncategorized"}
+                    {course.level &&
+                      ` • ${course.level.charAt(0).toUpperCase()}${course.level.slice(1)}`}
+                  </p>
                 </div>
               </div>
 
@@ -188,32 +103,39 @@ export default function CourseDetailsPage() {
                     <div className="flex-1 px-4 pt-4">
 
                       <div className="mb-2 flex items-center gap-2">
-                        <span className="inline-block px-3 py-1 rounded-full text-sm font-medium bg-red-500 text-white">
-                          {course.status}
+                        <span
+                          className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${statusBadgeClass(course.status)}`}
+                        >
+                          {course.status
+                            ? `${course.status.charAt(0).toUpperCase()}${course.status.slice(1)}`
+                            : "Upcoming"}
                         </span>
                       </div>
                       <h2 className="text-lg font-semibold">
-                        {course.title}
+                        {course.title || (
+                          courseLoading && (
+                            <span className="inline-block h-5 w-40 bg-gray-100 animate-pulse rounded align-middle" />
+                          )
+                        )}
                       </h2>
                     </div>
 
                     <div className="px-4 pb-4">
                       <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-2xl font-semibold text-[#3A6E73]">
-                            {course.price}
-                          </p>
-                        </div>
-                        <div className="px-3 py-1 text-sm border text-gray-500 rounded-full font-medium">
-                          Enrolled
-                        </div>
+                        <p className="text-2xl font-semibold text-[#3A6E73]">
+                          {course.price}
+                        </p>
                       </div>
                       <div className="flex items-center text-gray-500 justify-between mt-3">
                         <p className="text-sm">
                           Total Enrolled
                         </p>
                         <p className="text-sm font-semibold">
-                          245 Students
+                          {enrollmentsLoading ? (
+                            <span className="inline-block h-4 w-16 bg-gray-100 animate-pulse rounded align-middle" />
+                          ) : (
+                            `${totalEnrolled} student${totalEnrolled !== 1 ? "s" : ""}`
+                          )}
                         </p>
                       </div>
                       <div className="mt-4 border-t p-3 border rounded-xl items-center justify-between">
@@ -245,7 +167,7 @@ export default function CourseDetailsPage() {
                   : "border-transparent text-gray-600 hover:text-gray-900"
                   }`}
               >
-                {tab.label === "community"
+                {tab.id === "community"
                   ? "Community Chat"
                   : `Course ${tab.label}`}
               </button>
@@ -255,27 +177,7 @@ export default function CourseDetailsPage() {
 
         {/* Tab Content */}
         <div className="rounded-b-lg p-8">
-          {activeTab === "community" && course.status === "Live" ? (
-            <div>
-              {/* Live Community Chat UI */}
-              <div className="mb-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-teal-600 font-semibold">
-                    Chat
-                  </div>
-                  <div>
-                    <p className="font-semibold">Community Chat</p>
-                    <p className="text-sm text-gray-500">24 online</p>
-                  </div>
-                </div>
-                <div className="text-sm text-gray-500">Live now</div>
-              </div>
-
-              <LiveChat />
-            </div>
-          ) : (
-            renderTabContent()
-          )}
+          {renderTabContent()}
         </div>
       </div>
     </div>
