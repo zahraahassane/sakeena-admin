@@ -1,9 +1,10 @@
 import {
   ChevronDown,
+  ChevronRight,
   FileText,
   HelpCircle,
   Video,
-  Radio,
+  PlayCircle,
   Link,
   BookOpen,
   AlertCircle,
@@ -22,12 +23,12 @@ function formatDuration(minutes) {
 }
 
 const CONTENT_TYPE_STYLE = {
-  video: { icon: Video, tile: "bg-blue-50 text-blue-600" },
+  video: { icon: PlayCircle, tile: "bg-blue-50 text-blue-600" },
   document: { icon: FileText, tile: "bg-amber-50 text-amber-600" },
   quiz: { icon: HelpCircle, tile: "bg-purple-50 text-purple-600" },
   assignment: { icon: BookOpen, tile: "bg-orange-50 text-orange-600" },
   external_link: { icon: Link, tile: "bg-teal-50 text-teal-600" },
-  live: { icon: Radio, tile: "bg-red-50 text-red-600" },
+  live: { icon: Video, tile: "bg-red-50 text-red-600" },
 };
 
 const CONTENT_TYPE_LABEL = {
@@ -102,9 +103,6 @@ export default function CourseCurriculum({ course }) {
                     className={`w-full flex items-center justify-between p-5 hover:bg-stone-50/50 transition-colors text-left ${isOpen ? "bg-stone-50/60" : ""}`}
                   >
                     <div>
-                      <p className="text-xs font-semibold text-teal-600 uppercase tracking-wide mb-1">
-                        Module {idx + 1}
-                      </p>
                       <h4 className="font-bold text-stone-900 text-lg mb-1">{module.title}</h4>
                       <p className="text-sm text-stone-500">
                         {module.total_lessons} lesson{module.total_lessons !== 1 ? "s" : ""}
@@ -119,7 +117,7 @@ export default function CourseCurriculum({ course }) {
 
                   {isOpen && module.lessons?.length > 0 && (
                     <div className="border-t border-stone-100 divide-y divide-stone-100">
-                      {module.lessons.map((lesson, li) => {
+                      {module.lessons.map((lesson) => {
                         const style = CONTENT_TYPE_STYLE[lesson.content_type] || {
                           icon: FileText,
                           tile: "bg-stone-100 text-stone-500",
@@ -130,18 +128,15 @@ export default function CourseCurriculum({ course }) {
                         return (
                           <div
                             key={lesson.id}
-                            className="flex items-center justify-between p-5 hover:bg-stone-50/60 transition-colors cursor-pointer"
+                            className="group flex items-center justify-between p-5 hover:bg-stone-50/60 transition-colors cursor-pointer"
                             onClick={() => setSelectedLesson(lesson)}
                           >
                             <div className="flex items-center gap-4">
-                              <span className="text-xs font-semibold text-stone-400 w-5 shrink-0 text-center">
-                                {li + 1}
-                              </span>
                               <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${style.tile}`}>
                                 <Icon size={18} />
                               </div>
                               <div>
-                                <span className="text-base font-medium text-stone-800">
+                                <span className="text-base font-medium text-stone-800 group-hover:text-teal-700 transition-colors">
                                   {lesson.title}
                                 </span>
                                 {lesson.content_type === "live" && lesson.scheduled_at && (
@@ -162,6 +157,10 @@ export default function CourseCurriculum({ course }) {
                               ) : (
                                 <span className="text-xs text-stone-400">{CONTENT_TYPE_LABEL[lesson.content_type] || lesson.content_type}</span>
                               )}
+                              <ChevronRight
+                                size={16}
+                                className="text-stone-300 group-hover:text-teal-500 group-hover:translate-x-0.5 transition-all shrink-0"
+                              />
                             </div>
                           </div>
                         );

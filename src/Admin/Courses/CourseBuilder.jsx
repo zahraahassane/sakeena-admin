@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { ChevronLeft, Save } from "lucide-react";
-import CommunityChat from "./CommunityChat";
+import CommunityChat from "../../components/CommunityChat";
 import CourseReviews from "./CourseReviews";
 import CourseDetailsContent from "./CourseDetailsContent";
 import CourseCurriculum from "./CourseCurriculum";

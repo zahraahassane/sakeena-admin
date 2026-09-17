@@ -27,7 +27,7 @@ import {
   useCreateDiscussionReplyMutation,
   usePatchDiscussionReplyMutation,
   useDeleteDiscussionReplyMutation,
-} from "../../Api/adminApi";
+} from "../Api/adminApi";
 import toast from "react-hot-toast";
 
 // Decode JWT payload without a library — tries all common claim names
@@ -92,6 +92,7 @@ const ReplyItem = ({ reply, courseId, discussionId, currentUserId, currentUserRo
   //  - you are an admin and the reply was posted by an admin
   const isOwnReply = currentUserId && reply.author === currentUserId;
   const canEdit = isOwnReply || (currentUserRole === "admin" && reply.author_role === "admin");
+  const canDelete = isOwnReply || currentUserRole === "admin";
 
   // Use the stable discussionId prop — NOT reply.post.
   // reply.post can be unreliable for nested/child replies.
@@ -183,14 +184,16 @@ const ReplyItem = ({ reply, courseId, discussionId, currentUserId, currentUserRo
                   <Edit2 className="w-3.5 h-3.5" />
                 </button>
               )}
-              {/* Delete — always visible for moderation */}
-              <button
-                onClick={handleDelete}
-                className="p-1.5 rounded-lg text-stone-300 hover:text-red-500 hover:bg-red-50 transition-all"
-                title="Delete reply"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
+              {/* Delete — own reply, or an admin moderating */}
+              {canDelete && (
+                <button
+                  onClick={handleDelete}
+                  className="p-1.5 rounded-lg text-stone-300 hover:text-red-500 hover:bg-red-50 transition-all"
+                  title="Delete reply"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
           </div>
 
@@ -457,34 +460,36 @@ const CommunityChat = ({ courseTitle, courseId }) => {
                           </div>
                        </div>
 
-                       {/* Right: Actions (Hidden until hover) */}
-                       <div className="absolute right-6 top-1/2 -translate-y-1/2 flex flex-col gap-2 translate-x-4 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-500 ease-out">
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); pinDiscussion({course_pk: courseId, id: topic.id}); }} 
-                            className={`p-3 rounded-2xl border backdrop-blur-md shadow-lg transition-all active:scale-90
-                              ${topic.is_pinned ? 'bg-amber-500 border-amber-400 text-white shadow-amber-200' : 'bg-white/80 border-stone-100 text-stone-400 hover:text-amber-500 hover:border-amber-100'}`}
-                            title="Pin Post"
-                          >
-                            <Pin className="w-4 h-4" />
-                          </button>
-                          
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); closeDiscussion({course_pk: courseId, id: topic.id}); }} 
-                            className={`p-3 rounded-2xl border backdrop-blur-md shadow-lg transition-all active:scale-90
-                              ${topic.is_closed ? 'bg-stone-900 border-stone-800 text-white shadow-stone-200' : 'bg-white/80 border-stone-100 text-stone-400 hover:text-teal-600 hover:border-teal-100'}`}
-                            title="Close Thread"
-                          >
-                            <Lock className="w-4 h-4" />
-                          </button>
-                          
-                          <button 
-                            onClick={(e) => handleDeletePost(e, topic.id)} 
-                            className="p-3 bg-white/80 border border-stone-100 text-stone-400 hover:text-red-500 hover:border-red-100 rounded-2xl backdrop-blur-md shadow-lg transition-all active:scale-90"
-                            title="Delete Topic"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                       </div>
+                       {/* Right: Actions (Hidden until hover) — admin-only moderation */}
+                       {currentUserRole === "admin" && (
+                         <div className="absolute right-6 top-1/2 -translate-y-1/2 flex flex-col gap-2 translate-x-4 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-500 ease-out">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); pinDiscussion({course_pk: courseId, id: topic.id}); }}
+                              className={`p-3 rounded-2xl border backdrop-blur-md shadow-lg transition-all active:scale-90
+                                ${topic.is_pinned ? 'bg-amber-500 border-amber-400 text-white shadow-amber-200' : 'bg-white/80 border-stone-100 text-stone-400 hover:text-amber-500 hover:border-amber-100'}`}
+                              title="Pin Post"
+                            >
+                              <Pin className="w-4 h-4" />
+                            </button>
+
+                            <button
+                              onClick={(e) => { e.stopPropagation(); closeDiscussion({course_pk: courseId, id: topic.id}); }}
+                              className={`p-3 rounded-2xl border backdrop-blur-md shadow-lg transition-all active:scale-90
+                                ${topic.is_closed ? 'bg-stone-900 border-stone-800 text-white shadow-stone-200' : 'bg-white/80 border-stone-100 text-stone-400 hover:text-teal-600 hover:border-teal-100'}`}
+                              title="Close Thread"
+                            >
+                              <Lock className="w-4 h-4" />
+                            </button>
+
+                            <button
+                              onClick={(e) => handleDeletePost(e, topic.id)}
+                              className="p-3 bg-white/80 border border-stone-100 text-stone-400 hover:text-red-500 hover:border-red-100 rounded-2xl backdrop-blur-md shadow-lg transition-all active:scale-90"
+                              title="Delete Topic"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                         </div>
+                       )}
                      </div>
                    </div>
                 </div>
