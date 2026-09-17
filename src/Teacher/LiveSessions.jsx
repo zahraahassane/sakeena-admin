@@ -16,7 +16,8 @@ function isWithin30Min(scheduledAt) {
 }
 
 const STATUS_CONFIG = {
-  upcoming: { label: 'Upcoming', bg: 'bg-blue-100', text: 'text-blue-700', icon: Clock },
+  scheduled: { label: 'Scheduled', bg: 'bg-gray-100', text: 'text-gray-600', icon: Calendar },
+  upcoming: { label: 'Starting Soon', bg: 'bg-amber-100', text: 'text-amber-700', icon: Clock },
   live:     { label: 'Live Now', bg: 'bg-red-100',  text: 'text-red-700',  icon: Radio },
   completed:{ label: 'Completed', bg: 'bg-gray-100', text: 'text-gray-600', icon: CheckCircle },
 };

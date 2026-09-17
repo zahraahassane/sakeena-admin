@@ -1460,7 +1460,10 @@ export const adminApi = api.injectEndpoints({
     }),
 
     getTeacherDashboard: builder.query({
-      query: () => "/teacher/dashboard/",
+      query: () => ({
+        url: "/teacher/dashboard/",
+        params: { timezone: Intl.DateTimeFormat().resolvedOptions().timeZone },
+      }),
       providesTags: ["dashboard"],
     }),
 

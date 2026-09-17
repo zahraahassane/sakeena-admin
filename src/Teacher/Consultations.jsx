@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import { Calendar, Clock, Video, ChevronLeft, ChevronRight, X, Loader2, AlertCircle, DollarSign } from 'lucide-react';
 import {
-  useGetConsultationsQuery,
   useGetConsultationCalendarQuery,
   useGetConsultationTimeslotsQuery,
   useGetTeacherUpcomingSessionsQuery,
@@ -446,10 +446,8 @@ function SessionsCalendar({ sessions, isLoading, isError }) {
 export default function Consultations() {
   const [activeTab, setActiveTab] = useState('booked');
 
-  const { data: consultations } = useGetConsultationsQuery();
-  const consultation = consultations?.results?.[0] ?? consultations?.[0] ?? null;
-
-  const { data: teacherProfileMe } = useGetTeacherProfileMeQuery();
+  const { data: teacherProfileMe, isLoading: profileLoading } = useGetTeacherProfileMeQuery();
+  const consultation = teacherProfileMe?.consultations?.[0] ?? null;
   const { data: earningsData, isLoading: earningsLoading } = useGetConsultationEarningsQuery();
 
   const {
@@ -458,6 +456,10 @@ export default function Consultations() {
     isError: sessionsError,
   } = useGetTeacherUpcomingSessionsQuery();
   const sessions = upcomingSessions?.results ?? upcomingSessions ?? [];
+
+  if (!profileLoading && teacherProfileMe && !teacherProfileMe.offers_consultations) {
+    return <Navigate to="/teacher" replace />;
+  }
 
   return (
     <div className="w-full min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
@@ -497,8 +499,8 @@ export default function Consultations() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-600 text-sm font-medium">Consultation</p>
-              <p className="text-lg font-bold text-gray-900 mt-2 truncate max-w-[140px]" title={teacherProfileMe?.consultations?.[0]?.title ?? consultation?.title}>
-                {teacherProfileMe?.consultations?.[0]?.title ?? consultation?.title ?? '—'}
+              <p className="text-lg font-bold text-gray-900 mt-2 truncate max-w-[140px]" title={consultation?.title}>
+                {consultation?.title ?? '—'}
               </p>
               <p className="text-xs text-gray-500 mt-1">Read-only</p>
             </div>
@@ -563,7 +565,7 @@ export default function Consultations() {
 
           {/* Availability Calendar */}
           {activeTab === 'availability' && (
-            !(teacherProfileMe?.consultations?.[0] ?? consultation) ? (
+            !consultation ? (
               <div className="text-center py-16 text-gray-400">
                 <Calendar className="w-12 h-12 mx-auto mb-3 opacity-30" />
                 <p className="font-medium">No consultation profile found</p>
@@ -572,7 +574,7 @@ export default function Consultations() {
                 </p>
               </div>
             ) : (
-              <AvailabilityCalendar consultationId={(teacherProfileMe?.consultations?.[0] ?? consultation).id} />
+              <AvailabilityCalendar consultationId={consultation.id} />
             )
           )}
         </div>

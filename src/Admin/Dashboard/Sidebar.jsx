@@ -27,9 +27,13 @@ import {
   X,
 } from "lucide-react";
 import logo from "../../assets/img/logo.png";
+import { useGetTeacherProfileMeQuery } from "../../Api/adminApi";
 
 export const Sidebar = ({ onClose }) => {
   const role = useSelector((state) => state.auth.role);
+  const { data: teacherProfile } = useGetTeacherProfileMeQuery(undefined, {
+    skip: role !== "teacher",
+  });
   let menuItems = [];
 
   if (role === "admin") {
@@ -79,12 +83,16 @@ export const Sidebar = ({ onClose }) => {
         active: false,
         slug: "teacher/submissions",
       },
-      {
-        icon: MessageSquare,
-        label: "Consultations",
-        active: false,
-        slug: "teacher/consultations",
-      },
+      ...(teacherProfile?.offers_consultations
+        ? [
+            {
+              icon: MessageSquare,
+              label: "Consultations",
+              active: false,
+              slug: "teacher/consultations",
+            },
+          ]
+        : []),
       {
         icon: Video,
         label: "Live Sessions",

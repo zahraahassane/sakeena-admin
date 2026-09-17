@@ -1,23 +1,33 @@
-import { BookOpen, Video, Upload, Loader2, Calendar, Users, FileText, CheckCircle2, Clock } from "lucide-react";
+import { BookOpen, Video, Upload, Loader2, Calendar, Users, FileText, CheckCircle2, Clock, Radio } from "lucide-react";
 import { useGetTeacherDashboardQuery } from "../Api/adminApi";
+
+const isSameLocalDay = (a, b) =>
+  a.getFullYear() === b.getFullYear() &&
+  a.getMonth() === b.getMonth() &&
+  a.getDate() === b.getDate();
+
+const formatDateTime = (dateString) => {
+  const date = new Date(dateString);
+  const time = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+  const today = new Date();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
+
+  if (isSameLocalDay(date, today)) return `Today · ${time}`;
+  if (isSameLocalDay(date, tomorrow)) return `Tomorrow · ${time}`;
+
+  const day = date.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
+  return `${day} · ${time}`;
+};
+
+const URGENT_STATUS = {
+  live: { label: "Live now", bg: "bg-red-100", text: "text-red-700", icon: Radio },
+  upcoming: { label: "Starting soon", bg: "bg-amber-100", text: "text-amber-700", icon: Clock },
+};
 
 export default function TeacherDashboard() {
   const { data: dashboardData, isLoading, isError } = useGetTeacherDashboardQuery();
-
-  const formatTime = (dateString) => {
-    return new Date(dateString).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString([], {
-      month: "short",
-      day: "numeric",
-      year: "numeric"
-    });
-  };
 
   if (isLoading) {
     return (
@@ -73,12 +83,6 @@ export default function TeacherDashboard() {
   return (
     <div className="min-h-screen bg-transparent p-8 animate-in fade-in duration-500">
       <div className="max-w-7xl mx-auto space-y-8">
-        {/* Header Section */}
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-1 font-arimo">Teacher Dashboard</h1>
-          <p className="text-gray-500">Overview of your courses and upcoming activities</p>
-        </div>
-
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {stats.map((stat) => {
@@ -115,47 +119,52 @@ export default function TeacherDashboard() {
             <div className="p-6">
               <div className="space-y-4">
                 {dashboardData?.upcoming_live_sessions?.length > 0 ? (
-                  dashboardData.upcoming_live_sessions.map((session) => (
-                    <div
-                      key={session.id}
-                      className="group flex items-center justify-between p-4 border border-gray-100 rounded-xl hover:border-teal-200 hover:bg-teal-50/30 transition-all"
-                    >
-                      <div className="flex-1">
-                        <p className="font-bold text-gray-900 mb-1 group-hover:text-teal-700 transition-colors">
-                          {session.title}
-                        </p>
-                        <div className="flex flex-wrap gap-y-1 gap-x-4">
-                          <div className="flex items-center gap-1.5 text-sm text-gray-500">
-                            <Clock className="w-3.5 h-3.5" />
-                            <span>{formatTime(session.scheduled_at)}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-sm text-gray-500">
-                            <Users className="w-3.5 h-3.5" />
-                            <span>{session.enrolled_count} Students</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-xm font-medium text-gray-400">
-                            <BookOpen className="w-3.5 h-3.5" />
-                            <span>{session.course_title}</span>
+                  dashboardData.upcoming_live_sessions.map((session) => {
+                    const urgent = URGENT_STATUS[session.live_status];
+                    const UrgentIcon = urgent?.icon;
+                    return (
+                      <div
+                        key={session.id}
+                        className="group flex items-center justify-between p-4 border border-gray-100 rounded-xl hover:border-teal-200 hover:bg-teal-50/30 transition-all"
+                      >
+                        <div className="flex-1">
+                          <p className="font-bold text-gray-900 mb-1 group-hover:text-teal-700 transition-colors">
+                            {session.title}
+                          </p>
+                          <div className="flex flex-wrap gap-y-1 gap-x-4">
+                            <div className="flex items-center gap-1.5 text-sm text-gray-500">
+                              <Users className="w-3.5 h-3.5" />
+                              <span>{session.enrolled_count} Students</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-xm font-medium text-gray-400">
+                              <BookOpen className="w-3.5 h-3.5" />
+                              <span>{session.course_title}</span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <div className="flex flex-col items-end gap-2 ml-4">
-                        <span className="bg-teal-100 text-teal-700 text-[10px] uppercase tracking-wider font-bold px-2.5 py-1 rounded-lg shrink-0">
-                          Scheduled
-                        </span>
-                        {session.zoom_start_url && (
-                          <a 
-                            href={session.zoom_start_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-teal-600 font-semibold hover:underline"
+                        <div className="flex flex-col items-end gap-2 ml-4">
+                          <span
+                            className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg shrink-0 ${
+                              urgent ? `${urgent.bg} ${urgent.text}` : "bg-gray-100 text-gray-600"
+                            }`}
                           >
-                            Join as Host
-                          </a>
-                        )}
+                            {UrgentIcon ? <UrgentIcon className="w-3.5 h-3.5" /> : <Calendar className="w-3.5 h-3.5" />}
+                            {urgent ? urgent.label : formatDateTime(session.scheduled_at)}
+                          </span>
+                          {session.zoom_start_url && (
+                            <a
+                              href={session.zoom_start_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-white font-semibold bg-teal-600 hover:bg-teal-700 rounded-md px-3 py-1.5 transition-colors"
+                            >
+                              Join as Host
+                            </a>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 ) : (
                   <div className="text-center py-12">
                     <Calendar className="w-12 h-12 text-gray-200 mx-auto mb-3" />

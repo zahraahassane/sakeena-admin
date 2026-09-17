@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import defaultProfileImg from "../assets/images/profile.jpg";
 
-import { CircleCheckBig, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useGetTeacherProfileMeQuery } from "../Api/adminApi";
 
 export default function PublicProfile() {
@@ -47,10 +47,6 @@ export default function PublicProfile() {
               className="w-28 h-28 rounded-full object-cover"
             />
             <div>
-              <div className="inline-flex font-medium text-[#008236] items-center gap-2 px-4 py-1 rounded-full bg-[#E8FFF0] mb-1 border border-[#C3FFCA]">
-                <CircleCheckBig size={18} /> <p className=" "> Available</p>
-              </div>
-
               <h1 className="text-3xl font-bold text-gray-800">
                 {profile?.user?.first_name} {profile?.user?.last_name}
               </h1>
