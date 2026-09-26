@@ -1,18 +1,20 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { BookOpen, CalendarDays, Clock, Eye, Lock, X } from "lucide-react";
-import featuredCourse1 from "../assets/img/featuredCourse1.png";
-import featuredCourse2 from "../assets/img/featuredCourse2.png";
-import featuredCourse3 from "../assets/img/featuredCourse3.png";
-import { FaUserDoctor } from "react-icons/fa6";
+import { BookOpen, CalendarDays, Clock, Eye, Lock, Search, User, X } from "lucide-react";
 import { useGetCategoriesQuery, useGetCoursesQuery } from "../Api/api";
 
 export default function MyCourses() {
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedStatus, setSelectedStatus] = useState("All");
+  const [searchInput, setSearchInput] = useState("");
   const [searchText, setSearchText] = useState("");
   const [selectedCourse, setSelectedCourse] = useState(null);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => setSearchText(searchInput), 300);
+    return () => clearTimeout(timeout);
+  }, [searchInput]);
 
   const {
     data: categoriesData = [],
@@ -115,55 +117,60 @@ export default function MyCourses() {
           </div>
         )}
 
-        <div className="flex flex-col md:flex-row gap-6 mb-8">
+        <div className="space-y-5 mb-8">
           {/* Search */}
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-gray-700 mb-3">Search</p>
-            <input
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              placeholder="Search course title..."
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-teal-500"
-            />
-          </div>
-
-          {/* Category Filter */}
           <div>
-            <p className="text-sm font-semibold text-gray-700 mb-3">Category</p>
-            <div className="flex flex-wrap gap-2">
-              {categories.map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => setSelectedCategory(cat.id)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                    selectedCategory === cat.id
-                      ? "bg-teal-600 text-white"
-                      : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-                  }`}
-                >
-                  {cat.name}
-                </button>
-              ))}
+            <p className="text-sm font-semibold text-gray-700 mb-3">Search</p>
+            <div className="relative max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                placeholder="Search course title..."
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-teal-500"
+              />
             </div>
           </div>
 
-          {/* Status Filter */}
-          <div>
-            <p className="text-sm font-semibold text-gray-700 mb-3">Status</p>
-            <div className="flex flex-wrap gap-2">
-              {statuses.map((status) => (
-                <button
-                  key={status}
-                  onClick={() => setSelectedStatus(status)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                    selectedStatus === status
-                      ? "bg-teal-600 text-white"
-                      : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-                  }`}
-                >
-                  {status}
-                </button>
-              ))}
+          <div className="flex flex-col sm:flex-row gap-5 sm:gap-10">
+            {/* Category Filter */}
+            <div>
+              <p className="text-sm font-semibold text-gray-700 mb-3">Category</p>
+              <div className="flex flex-wrap gap-2">
+                {categories.map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => setSelectedCategory(cat.id)}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                      selectedCategory === cat.id
+                        ? "bg-teal-600 text-white"
+                        : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                    }`}
+                  >
+                    {cat.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Status Filter */}
+            <div>
+              <p className="text-sm font-semibold text-gray-700 mb-3">Status</p>
+              <div className="flex flex-wrap gap-2">
+                {statuses.map((status) => (
+                  <button
+                    key={status}
+                    onClick={() => setSelectedStatus(status)}
+                    className={`px-4 py-2 rounded-full text-sm font-medium capitalize transition-colors ${
+                      selectedStatus === status
+                        ? "bg-stone-800 text-white"
+                        : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                    }`}
+                  >
+                    {status}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -179,7 +186,7 @@ export default function MyCourses() {
               }
             >
               {/* Course Image */}
-              <div className="relative h-48 bg-gray-200 overflow-hidden">
+              <div className="relative aspect-[16/10] bg-gray-200 overflow-hidden">
                 <img
                   src={course.thumbnail || "/placeholder.svg"}
                   alt={course.title}
@@ -195,12 +202,10 @@ export default function MyCourses() {
 
               {/* Course Info */}
               <div className="p-4">
-                <div className="flex justify-between items-center mb-2">
-                  <div
-                    className={`px-3 py-1 rounded-full text-xs font-medium mb-2 ${course.statusColor}`}
-                  >
-                    {course.status}
-                  </div>
+                <div
+                  className={`inline-block px-3 py-1 rounded-full text-xs font-medium capitalize mb-2 ${course.statusColor}`}
+                >
+                  {course.status}
                 </div>
                 <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">
                   {course.title}
@@ -208,7 +213,7 @@ export default function MyCourses() {
 
                 {/* Instructor */}
                 <div className="flex items-center gap-2 text-sm text-gray-600 mb-3">
-                  <FaUserDoctor className="text-lg" />
+                  <User className="w-[18px] h-[18px]" />
                   {course.instructor}
                 </div>
 
@@ -235,7 +240,7 @@ export default function MyCourses() {
                 {/* Footer */}
                 <div className="flex items-center justify-between pt-3 border-t border-gray-200">
                   <span className="text-2xl font-semibold text-[#7AA4A5]">
-                    {course.price}
+                    ${course.price}
                   </span>
                   <button
                     onClick={(e) => {
@@ -322,7 +327,7 @@ export default function MyCourses() {
                 <div>
                   <p className="font-semibold text-gray-500 mb-1">Price</p>
                   <p className="bg-[#F9FAFB] p-4 rounded-lg font-semibold text-teal-600">
-                    {selectedCourse.price}
+                    ${selectedCourse.price}
                   </p>
                 </div>
                 <div>

@@ -6,6 +6,7 @@ import CourseCurriculum from "./Curriculum";
 import CourseReviews from "./Reviews";
 import CourseCommunity from "./Community";
 import { ChevronLeft, Share2, Twitter, Facebook } from "lucide-react";
+import toast from "react-hot-toast";
 import { useGetCourseByIdQuery, useGetCourseEnrollmentsQuery } from "../../Api/adminApi";
 
 function statusBadgeClass(status) {
@@ -15,6 +16,8 @@ function statusBadgeClass(status) {
   if (s === "recorded") return "bg-[#2E9BDF] text-white";
   return "bg-gray-400 text-white";
 }
+
+const PUBLIC_SITE_URL = import.meta.env.VITE_PUBLIC_SITE_URL || "https://sakeenainstitute.com";
 
 export default function CourseDetailsPage() {
   const { courseId } = useParams();
@@ -34,6 +37,28 @@ export default function CourseDetailsPage() {
   // and on refresh/direct visit (no router state) this just starts empty and fills in from the API.
   const course = { ...location.state?.course, ...courseDetail };
   const totalEnrolled = enrollmentsData?.count ?? 0;
+
+  const publicCourseUrl = courseId ? `${PUBLIC_SITE_URL}/courses/${courseId}` : PUBLIC_SITE_URL;
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(publicCourseUrl);
+      toast.success("Link copied to clipboard");
+    } catch {
+      toast.error("Couldn't copy the link");
+    }
+  };
+
+  const handleShareTwitter = () => {
+    const text = course.title ? `Check out this course: ${course.title}` : "Check out this course";
+    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(publicCourseUrl)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  const handleShareFacebook = () => {
+    const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(publicCourseUrl)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
 
   const tabs = [
     { id: "overview", label: "Overview" },
@@ -123,7 +148,7 @@ export default function CourseDetailsPage() {
                     <div className="px-4 pb-4">
                       <div className="flex items-center justify-between">
                         <p className="text-2xl font-semibold text-[#3A6E73]">
-                          {course.price}
+                          {course.price != null ? `$${course.price}` : ""}
                         </p>
                       </div>
                       <div className="flex items-center text-gray-500 justify-between mt-3">
@@ -141,11 +166,34 @@ export default function CourseDetailsPage() {
                       <div className="mt-4 border-t p-3 border rounded-xl items-center justify-between">
                         <p className="mb-2">Share this course</p>
                         <div className="flex items-center gap-3 text-gray-600">
-                          <Share2 size={16} />
-                          <Twitter size={16} />
-                          <Facebook size={16} />
+                          <button
+                            type="button"
+                            onClick={handleCopyLink}
+                            title="Copy link"
+                            aria-label="Copy course link"
+                            className="hover:text-teal-600 transition-colors cursor-pointer"
+                          >
+                            <Share2 size={16} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleShareTwitter}
+                            title="Share on X"
+                            aria-label="Share on X"
+                            className="hover:text-teal-600 transition-colors cursor-pointer"
+                          >
+                            <Twitter size={16} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleShareFacebook}
+                            title="Share on Facebook"
+                            aria-label="Share on Facebook"
+                            className="hover:text-teal-600 transition-colors cursor-pointer"
+                          >
+                            <Facebook size={16} />
+                          </button>
                         </div>
-
                       </div>
                     </div>
                   </div>
