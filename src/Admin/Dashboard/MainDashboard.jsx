@@ -10,7 +10,8 @@ const MainDashboard = () => {
     total_students: 0,
     total_teachers: 0,
     active_courses: 0,
-    total_revenue: 0,
+    monthly_revenue: 0,
+    monthly_revenue_period: "",
   };
 
   const topCourses = dashboardData?.top_courses || [];
@@ -39,8 +40,10 @@ const MainDashboard = () => {
       bgColor: "#7AA4A5",
     },
     {
-      title: "Total Revenue",
-      number: `$${stats.total_revenue?.toFixed(2)}`,
+      title: stats.monthly_revenue_period
+        ? `Monthly Revenue (${stats.monthly_revenue_period})`
+        : "Monthly Revenue",
+      number: `$${Number(stats.monthly_revenue || 0).toFixed(2)}`,
       icon: DollarSign,
       iconColor: "#ffffff",
       bgColor: "#1B08C0",

@@ -730,6 +730,9 @@ export const adminApi = api.injectEndpoints({
       query: () => ({
         url: "/dashboard/admin/",
         method: "GET",
+        params: {
+          tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        },
       }),
       providesTags: ["dashboard"],
     }),
