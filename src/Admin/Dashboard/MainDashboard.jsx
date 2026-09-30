@@ -12,7 +12,11 @@ const MainDashboard = () => {
     active_courses: 0,
     monthly_revenue: 0,
     monthly_revenue_period: "",
+    monthly_revenue_breakdown: {},
   };
+
+  const formatMoney = (value) => `$${Number(value || 0).toFixed(2)}`;
+  const revenueBreakdown = stats.monthly_revenue_breakdown || {};
 
   const topCourses = dashboardData?.top_courses || [];
   const todaysClasses = dashboardData?.todays_classes || [];
@@ -43,7 +47,13 @@ const MainDashboard = () => {
       title: stats.monthly_revenue_period
         ? `Monthly Revenue (${stats.monthly_revenue_period})`
         : "Monthly Revenue",
-      number: `$${Number(stats.monthly_revenue || 0).toFixed(2)}`,
+      number: formatMoney(stats.monthly_revenue),
+      details: [
+        { label: "Orders", value: formatMoney(revenueBreakdown.orders) },
+        { label: "Donations", value: formatMoney(revenueBreakdown.donations) },
+        { label: "Consultations", value: formatMoney(revenueBreakdown.consultations) },
+        { label: "Membership", value: formatMoney(revenueBreakdown.memberships) },
+      ],
       icon: DollarSign,
       iconColor: "#ffffff",
       bgColor: "#1B08C0",
@@ -72,6 +82,15 @@ const MainDashboard = () => {
               <div className="text-[#2B2B2B] flex flex-col gap-2">
                 <h2 className="font-semibold text-sm">{card.title}</h2>
                 <p className="font-bold text-xl">{card.number}</p>
+                {card.details && (
+                  <div className="flex flex-col text-xs font-normal text-[#6B7280]">
+                    {card.details.map((detail) => (
+                      <span key={detail.label}>
+                        {detail.label}: {detail.value}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
               <div
                 className="w-12 h-12 p-3 rounded-lg"
