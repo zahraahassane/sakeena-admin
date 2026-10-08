@@ -136,8 +136,13 @@ export const adminApi = api.injectEndpoints({
       query: () => "/books/lulu-packages/",
       providesTags: ["books"],
     }),
+    // Without pod_package_id Lulu lists every format that fits the file; with one it checks that format.
     validateLuluInterior: builder.mutation({
-      query: (slug) => ({ url: `/books/${slug}/lulu-validate-interior/`, method: "POST" }),
+      query: ({ slug, pod_package_id }) => ({
+        url: `/books/${slug}/lulu-validate-interior/`,
+        method: "POST",
+        body: pod_package_id ? { pod_package_id } : undefined,
+      }),
     }),
     getLuluInteriorValidationResult: builder.query({
       query: (slug) => `/books/${slug}/lulu-validate-interior-result/`,

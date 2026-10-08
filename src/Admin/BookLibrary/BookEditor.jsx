@@ -61,6 +61,9 @@ const PROBLEM_ORDER = [
 // Description is compared as text: the rich-text editor rewrites markup when it loads.
 const formKey = (form) => JSON.stringify({ ...form, description: stripHtml(form.description) });
 
+// Fields that live on the Print setup tab; everything else is on Details.
+const PRINT_FIELDS = ["physical_file", "lulu_cover_pdf", "lulu_pod_package_id", "page_count"];
+
 const scrollToField = (name) => {
   const target =
     document.getElementById(`field-${name}`) ||
@@ -68,7 +71,7 @@ const scrollToField = (name) => {
   target?.scrollIntoView({ behavior: "smooth", block: "center" });
 };
 
-const Checklist = ({ items }) => {
+const Checklist = ({ items, onJump }) => {
   const missing = items.filter((i) => !i.done && !i.recommended).length;
   return (
     <div className="bg-white rounded-2xl border border-black/10 shadow-sm p-5 space-y-3">
@@ -83,7 +86,7 @@ const Checklist = ({ items }) => {
           <li key={item.key}>
             <button
               type="button"
-              onClick={() => document.getElementById(item.target)?.scrollIntoView({ behavior: "smooth", block: "start" })}
+              onClick={() => onJump(item.target)}
               className="flex items-start gap-2 text-left text-sm w-full hover:bg-gray-50 rounded-md px-1 py-0.5"
             >
               {item.done ? (
@@ -145,6 +148,7 @@ const BookEditor = () => {
   const [fieldErrors, setFieldErrors] = useState({});
   const [banner, setBanner] = useState(null);
   const [busyAction, setBusyAction] = useState(null);
+  const [activeTab, setActiveTab] = useState("details");
   const [newCategory, setNewCategory] = useState("");
   const abortRefs = useRef({});
   const allowLeaveRef = useRef(false);
@@ -290,6 +294,18 @@ const BookEditor = () => {
     return failed;
   };
 
+  // ------------------------------------------------------------------- tabs
+  // Both tabs stay mounted (just hidden) so nothing typed or uploaded is lost when switching.
+  const focusField = (name) => {
+    setActiveTab(PRINT_FIELDS.includes(name) ? "print" : "details");
+    setTimeout(() => scrollToField(name), 120);
+  };
+
+  const jumpTo = (id) => {
+    setActiveTab(id === "section-print" ? "print" : "details");
+    setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" }), 120);
+  };
+
   // ----------------------------------------------------------------- saving
   const showProblems = (errors, text) => {
     setFieldErrors(errors);
@@ -298,7 +314,7 @@ const BookEditor = () => {
       title: text || "Please fix the following before saving:",
       items: Object.entries(errors).map(([field, message]) => message || field),
     });
-    if (first) setTimeout(() => scrollToField(first), 50);
+    if (first) focusField(first);
     else window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -307,7 +323,7 @@ const BookEditor = () => {
     setFieldErrors(errors);
     setBanner({ title: getApiErrorMessage(err, fallback), items: [] });
     const first = PROBLEM_ORDER.find((key) => errors[key]);
-    if (first) setTimeout(() => scrollToField(first), 50);
+    if (first) focusField(first);
     else window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -427,6 +443,10 @@ const BookEditor = () => {
   const busy = !!busyAction;
   const languages = LANGUAGES.includes(form.language) ? LANGUAGES : [form.language, ...LANGUAGES];
   const uploadingNow = Object.values(uploads).some((u) => u?.state === "uploading");
+  const tab = form.has_physical ? activeTab : "details";
+  const errorKeys = Object.keys(fieldErrors).filter((k) => fieldErrors[k]);
+  const printHasErrors = errorKeys.some((k) => PRINT_FIELDS.includes(k));
+  const detailsHaveErrors = errorKeys.some((k) => !PRINT_FIELDS.includes(k));
 
   return (
     <div className="pb-28 arimo-font">
@@ -469,8 +489,47 @@ const BookEditor = () => {
         </div>
       )}
 
+      <div className="lg:hidden mb-6">
+        <Checklist items={checklist} onJump={jumpTo} />
+      </div>
+
+      {form.has_physical && (
+        <div role="tablist" className="flex gap-1 p-1 bg-gray-100 rounded-xl mb-6 max-w-md">
+          {[
+            { key: "details", label: "Details", error: detailsHaveErrors },
+            {
+              key: "print",
+              label: "Print setup",
+              error: printHasErrors,
+              ready: !isNew && !!book?.is_lulu_print_ready,
+            },
+          ].map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              role="tab"
+              aria-selected={tab === t.key}
+              onClick={() => setActiveTab(t.key)}
+              className={`flex-1 h-10 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-all ${
+                tab === t.key ? "bg-white text-neutral-950 shadow-sm" : "text-gray-500 hover:text-neutral-800"
+              }`}
+            >
+              {t.label}
+              {t.error ? (
+                <span className="w-2 h-2 rounded-full bg-rose-500" title="Needs attention" />
+              ) : t.ready ? (
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              ) : t.key === "print" ? (
+                <span className="w-2 h-2 rounded-full bg-amber-400" title="Not ready to print" />
+              ) : null}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6 items-start">
         <div className="space-y-6 min-w-0">
+          <div className={tab === "details" ? "space-y-6" : "hidden"}>
           <Section id="section-basics" title="1. About the book" description="What customers read on the book page.">
             <Field id="title" label="Book title" required error={fieldErrors.title}>
               <input id="title" value={form.title} onChange={(e) => update("title", e.target.value)} className={inputClass(!!fieldErrors.title)} placeholder="e.g. The Healing Heart" />
@@ -611,50 +670,38 @@ const BookEditor = () => {
                   <input id="physical_isbn" value={form.physical_isbn} onChange={(e) => update("physical_isbn", e.target.value)} className={inputClass(!!fieldErrors.physical_isbn)} placeholder="978-…" />
                 </Field>
               </div>
-              {!form.lulu_pod_package_id && (
-                <Field id="stock_count" label="Copies in stock" hint="Only used until a print format is chosen. Books printed by Lulu are never out of stock.">
-                  <input id="stock_count" type="number" min="0" value={form.stock_count} onChange={(e) => update("stock_count", e.target.value)} className={`${inputClass(false)} max-w-[160px]`} />
-                </Field>
-              )}
               <p className="text-xs text-gray-600">
-                The print files and Lulu checks are in step 4 below.
+                The print files, format and Lulu checks are in the Print setup tab.
               </p>
             </EditionCard>
           </Section>
 
-          {form.has_physical && (
-            <Section
-              id="section-print"
-              title="4. Print setup"
-              description="Get the book ready for Lulu to print. Each step builds on the one before."
-            >
-              <PrintSetup
-                book={isNew ? null : book}
-                form={form}
-                setForm={setForm}
-                errors={fieldErrors}
-                fileProps={fileProps}
-                ensureSaved={ensureSaved}
-                onRefresh={refreshBook}
-                syncFromServer={syncFromServer}
-              />
-            </Section>
-          )}
+          </div>
 
-          <Section id="section-review" title={form.has_physical ? "5. Review and publish" : "4. Review and publish"}>
-            <div className="lg:hidden">
-              <Checklist items={checklist} />
+          {form.has_physical && (
+            <div className={tab === "print" ? "" : "hidden"}>
+              <Section
+                id="section-print"
+                title="Print setup"
+                description="Get the book ready for Lulu to print. Each step builds on the one before."
+              >
+                <PrintSetup
+                  book={isNew ? null : book}
+                  form={form}
+                  setForm={setForm}
+                  errors={fieldErrors}
+                  fileProps={fileProps}
+                  ensureSaved={ensureSaved}
+                  onRefresh={refreshBook}
+                  syncFromServer={syncFromServer}
+                />
+              </Section>
             </div>
-            <p className="text-sm text-gray-600">
-              {live
-                ? "This book is live. Use Save changes to update it, or hide it to take it off the store (people who bought it keep access)."
-                : "This book is a draft and customers can't see it. Press Publish when the checklist is complete."}
-            </p>
-          </Section>
+          )}
         </div>
 
         <aside className="hidden lg:block sticky top-24">
-          <Checklist items={checklist} />
+          <Checklist items={checklist} onJump={jumpTo} />
         </aside>
       </div>
 

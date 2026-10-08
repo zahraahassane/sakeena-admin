@@ -37,7 +37,6 @@ export const emptyForm = () => ({
   digital_isbn: "",
   physical_isbn: "",
   page_count: "",
-  stock_count: "0",
   lulu_pod_package_id: "",
   // New books start hidden so they can be finished before customers see them.
   is_visible: false,
@@ -61,7 +60,6 @@ export const bookToForm = (book) => ({
   digital_isbn: book.digital_isbn || "",
   physical_isbn: book.physical_isbn || "",
   page_count: book.page_count ? String(book.page_count) : "",
-  stock_count: String(book.stock_count ?? 0),
   lulu_pod_package_id: book.lulu_pod_package_id || "",
   is_visible: !!book.is_visible,
 });
@@ -142,7 +140,6 @@ export const formToPayload = (form) => ({
   digital_isbn: form.digital_isbn.trim(),
   physical_isbn: form.physical_isbn.trim(),
   page_count: Number(form.page_count) || 0,
-  stock_count: Number(form.stock_count) || 0,
   lulu_pod_package_id: form.lulu_pod_package_id || null,
   is_visible: form.is_visible,
 });
@@ -237,8 +234,8 @@ export const validateForm = (form, ctx, forPublish) => {
     if (form.has_physical) {
       if (!(Number(form.physical_price) > 0)) errors.physical_price = errors.physical_price || "Set a physical price above 0.";
       if (!normalizeIsbn(form.physical_isbn)) errors.physical_isbn = errors.physical_isbn || "Enter the physical ISBN.";
-      if (!(Number(form.page_count) > 0)) errors.page_count = "Enter the page count (more than 0).";
-      if (!form.lulu_pod_package_id) errors.lulu_pod_package_id = "Choose a print format.";
+      if (!(Number(form.page_count) > 0)) errors.page_count = "The page count is filled in when Lulu checks the interior. Open Print setup and run the check.";
+      if (!form.lulu_pod_package_id) errors.lulu_pod_package_id = "Choose a print format in Print setup.";
       if (!has("physical_file")) errors.physical_file = "Upload the print-ready interior PDF.";
       if (!has("lulu_cover_pdf")) errors.lulu_cover_pdf = "Upload the print-ready cover PDF.";
     }
@@ -283,12 +280,17 @@ export const buildChecklist = (form, ctx) => {
       { key: "pprice", label: "Physical price above 0", done: Number(form.physical_price) > 0, target: "section-editions" },
       { key: "pisbn", label: "Physical ISBN", done: !!normalizeIsbn(form.physical_isbn) && !isbnProblem(form.physical_isbn), target: "section-editions" },
       { key: "pinterior", label: "Print interior PDF uploaded", done: has("physical_file"), target: "section-print" },
-      { key: "ppkg", label: "Print format chosen", done: !!form.lulu_pod_package_id, target: "section-print" },
-      { key: "ppages", label: "Page count", done: Number(form.page_count) > 0, target: "section-print" },
-      { key: "pcover", label: "Print cover PDF uploaded", done: has("lulu_cover_pdf"), target: "section-print" },
       {
         key: "pcheck",
-        label: "Interior and cover checked by Lulu",
+        label: "Interior checked by Lulu (fills in the page count)",
+        done: Number(form.page_count) > 0,
+        target: "section-print",
+      },
+      { key: "ppkg", label: "Print format chosen", done: !!form.lulu_pod_package_id, target: "section-print" },
+      { key: "pcover", label: "Print cover PDF uploaded", done: has("lulu_cover_pdf"), target: "section-print" },
+      {
+        key: "pcovercheck",
+        label: "Cover checked by Lulu",
         done: !!book?.is_lulu_print_ready,
         recommended: true,
         target: "section-print",
