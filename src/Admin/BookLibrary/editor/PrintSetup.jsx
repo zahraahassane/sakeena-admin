@@ -74,7 +74,11 @@ const Step = ({ number, title, description, right, children }) => (
  * Guided print-on-demand setup. Every step works on the saved book, so anything that
  * reads server values first calls ensureSaved() to store unsaved edits.
  */
-const PrintSetup = ({ book, form, setForm, errors, fileProps, ensureSaved, onRefresh, syncFromServer }) => {
+const PrintSetup = ({ book: savedBook, form, setForm, errors, fileProps, ensureSaved, onRefresh, syncFromServer }) => {
+  // Before the first save there is no book yet: files can be chosen (they upload with the
+  // draft) but anything that talks to Lulu has to wait.
+  const saved = !!savedBook;
+  const book = savedBook || {};
   const { data: curated = [] } = useGetLuluPackagesQuery();
   const [validateInterior] = useValidateLuluInteriorMutation();
   const [pollInterior] = useLazyGetLuluInteriorValidationResultQuery();
@@ -231,7 +235,7 @@ const PrintSetup = ({ book, form, setForm, errors, fileProps, ensureSaved, onRef
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            disabled={!book.physical_file || interiorBusy}
+            disabled={!saved || !book.physical_file || interiorBusy}
             onClick={() => run("interior")}
             className="px-4 h-10 bg-teal-600 hover:bg-teal-700 disabled:opacity-40 text-white rounded-lg text-xs font-bold flex items-center gap-2"
           >
@@ -248,7 +252,11 @@ const PrintSetup = ({ book, form, setForm, errors, fileProps, ensureSaved, onRef
               <RefreshCw className="w-3.5 h-3.5" /> Check status
             </button>
           )}
-          {!book.physical_file && <span className="text-xs text-amber-700">Upload the interior PDF first.</span>}
+          {!saved ? (
+            <span className="text-xs text-gray-500">Available after you save the draft.</span>
+          ) : (
+            !book.physical_file && <span className="text-xs text-amber-700">Upload the interior PDF first.</span>
+          )}
         </div>
         {messages.interior && <p className="text-xs text-rose-600">{messages.interior}</p>}
         {interiorErrors.length > 0 && (
@@ -372,12 +380,13 @@ const PrintSetup = ({ book, form, setForm, errors, fileProps, ensureSaved, onRef
         <button
           type="button"
           onClick={calculateCoverSize}
-          disabled={calculating}
+          disabled={calculating || !saved}
           className="px-4 h-10 bg-white border border-black/10 hover:bg-gray-50 disabled:opacity-40 rounded-lg text-xs font-bold flex items-center gap-2"
         >
           {calculating && <Loader2 className="w-4 h-4 animate-spin" />}
           {size ? "Recalculate cover size" : "Calculate cover size"}
         </button>
+        {!saved && <p className="text-xs text-gray-500">Available after you save the draft.</p>}
         {messages.size && <p className="text-xs text-rose-600">{messages.size}</p>}
         {size ? (
           <div className="p-3 bg-teal-50 border border-teal-200 rounded-lg flex items-start justify-between gap-3">
@@ -405,7 +414,7 @@ const PrintSetup = ({ book, form, setForm, errors, fileProps, ensureSaved, onRef
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            disabled={!book.lulu_cover_pdf || coverBusy}
+            disabled={!saved || !book.lulu_cover_pdf || coverBusy}
             onClick={() => run("cover")}
             className="px-4 h-10 bg-teal-600 hover:bg-teal-700 disabled:opacity-40 text-white rounded-lg text-xs font-bold flex items-center gap-2"
           >
@@ -422,7 +431,11 @@ const PrintSetup = ({ book, form, setForm, errors, fileProps, ensureSaved, onRef
               <RefreshCw className="w-3.5 h-3.5" /> Check status
             </button>
           )}
-          {!book.lulu_cover_pdf && <span className="text-xs text-amber-700">Upload the cover PDF first.</span>}
+          {!saved ? (
+            <span className="text-xs text-gray-500">Available after you save the draft.</span>
+          ) : (
+            !book.lulu_cover_pdf && <span className="text-xs text-amber-700">Upload the cover PDF first.</span>
+          )}
         </div>
         {messages.cover && <p className="text-xs text-rose-600">{messages.cover}</p>}
         {coverErrors.length > 0 && (

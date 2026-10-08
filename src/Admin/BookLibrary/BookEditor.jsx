@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useBlocker, useNavigate, useParams } from "react-router-dom";
+import { useDispatch } from "react-redux";
 import {
   AlertCircle,
   ArrowLeft,
@@ -20,6 +21,7 @@ import {
   useGetBookDetailsQuery,
   useUpdateBookMutation,
 } from "../../Api/adminApi";
+import { api } from "../../Api/api";
 import FileDropzone from "../../components/FileDropzone";
 import TextEditor from "../../components/Editor";
 import { getApiErrorMessage, getFieldErrors } from "../../utils/apiError";
@@ -117,6 +119,7 @@ const EditionCard = ({ enabled, onToggle, title, subtitle, children }) => (
 const BookEditor = () => {
   const { slug: routeSlug } = useParams();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [createdSlug, setCreatedSlug] = useState(null);
   const slug = routeSlug || createdSlug;
   const isNew = !slug;
@@ -220,6 +223,9 @@ const BookEditor = () => {
         onProgress: (progress) => setUpload(field, { state: "uploading", progress }),
       });
       setUpload(field, { state: "done" });
+      // Files upload outside RTK Query, so tell it the book changed. Without this the
+      // page can keep showing the book as it was before the file arrived.
+      dispatch(api.util.invalidateTags(["books"]));
       removePending(field);
       setFieldErrors((prev) => {
         const next = { ...prev };
@@ -622,22 +628,16 @@ const BookEditor = () => {
               title="4. Print setup"
               description="Get the book ready for Lulu to print. Each step builds on the one before."
             >
-              {isNew || !book ? (
-                <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-900">
-                  Save the draft first. Print setup uses the saved book, so it unlocks as soon as the draft exists.
-                </div>
-              ) : (
-                <PrintSetup
-                  book={book}
-                  form={form}
-                  setForm={setForm}
-                  errors={fieldErrors}
-                  fileProps={fileProps}
-                  ensureSaved={ensureSaved}
-                  onRefresh={refreshBook}
-                  syncFromServer={syncFromServer}
-                />
-              )}
+              <PrintSetup
+                book={isNew ? null : book}
+                form={form}
+                setForm={setForm}
+                errors={fieldErrors}
+                fileProps={fileProps}
+                ensureSaved={ensureSaved}
+                onRefresh={refreshBook}
+                syncFromServer={syncFromServer}
+              />
             </Section>
           )}
 
