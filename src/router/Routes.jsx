@@ -27,6 +27,7 @@ import Contents from "../Admin/Contents/Contents";
 import ContentDetails from "../Admin/Contents/ContentDetails";
 import BookLibrary from "../Admin/BookLibrary/BookLibrary";
 import BookDetailsPage from "../Admin/BookLibrary/BookDetailsPage";
+import BookEditor from "../Admin/BookLibrary/BookEditor";
 import BookSales from "../Admin/BookSales/BookSales";
 import Submission from "../Admin/Submission/Submission";
 import Announcement from "../Admin/Announesement/Announcement";
@@ -84,6 +85,8 @@ const router = createBrowserRouter([
       { path: "contents", element: <Contents /> },
       { path: "contents/:id", element: <ContentDetails /> },
       { path: "book-library", element: <BookLibrary /> },
+      { path: "book-library/new", element: <BookEditor /> },
+      { path: "book-library/:slug/edit", element: <BookEditor /> },
       { path: "book-library/:slug", element: <BookDetailsPage /> },
       { path: "sales", element: <BookSales /> },
       // { path: "book-sales/:id", element: <>Book Sales Details</> },

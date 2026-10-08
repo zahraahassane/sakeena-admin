@@ -1,5 +1,5 @@
-import { X, Download, Eye, User, Calendar, Tag, Image as ImageIcon, ArrowLeft } from "lucide-react";
-import { useParams, useNavigate } from "react-router-dom";
+import { X, Download, Eye, User, Calendar, Tag, Image as ImageIcon, ArrowLeft, Edit3 } from "lucide-react";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { useGetBookDetailsQuery } from "../../Api/adminApi";
 
 const BookDetailsPage = () => {
@@ -8,8 +8,6 @@ const BookDetailsPage = () => {
   const { data: currentBook, isLoading, isError } = useGetBookDetailsQuery(slug, {
     skip: !slug,
   });
-
-  console.log("Current Book:", currentBook);
 
   if (isError) {
     return (
@@ -43,6 +41,14 @@ const BookDetailsPage = () => {
           </div>
           <span className="text-sm font-medium">Back to Book Library</span>
         </button>
+        {currentBook && (
+          <Link
+            to={`/admin/book-library/${currentBook.slug}/edit`}
+            className="h-10 px-5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-sm font-semibold flex items-center gap-2"
+          >
+            <Edit3 className="w-4 h-4" /> Edit book
+          </Link>
+        )}
       </div>
 
       <div className="bg-white rounded-3xl border border-black/10 shadow-sm overflow-hidden">

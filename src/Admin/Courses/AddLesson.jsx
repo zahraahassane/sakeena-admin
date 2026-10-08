@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { markUploadStart, markUploadEnd } from "../../lib/uploadActivity";
+import { getApiErrorMessage } from "../../utils/apiError";
 
 import AssignmentForm from "./AssignmentForm";
 import QuizForm from "./QuizForm";
@@ -34,19 +35,10 @@ import {
   useDeleteAssignmentReferenceFileMutation,
 } from "../../Api/adminApi";
 
-// DRF field-validation errors come back as {field: ["msg", ...]}, not
-// {detail: "msg"} — surface those instead of falling through to a generic
-// error and hiding what actually failed.
-const getErrorMessage = (err) => {
-  const data = err?.data;
-  if (!data) return null;
-  if (typeof data === "string") return data;
-  if (data.detail) return data.detail;
-  const fieldErrors = Object.entries(data)
-    .filter(([, v]) => Array.isArray(v) && v.length)
-    .map(([field, messages]) => `${field}: ${messages[0]}`);
-  return fieldErrors.length ? fieldErrors.join("; ") : null;
-};
+// DRF field-validation errors come back as {field: ["msg", ...]}; the shared helper
+// surfaces those instead of falling through to a generic error. Returns null when
+// nothing specific is known so callers can supply their own fallback.
+const getErrorMessage = (err) => getApiErrorMessage(err, null);
 
 const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
   const [title, setTitle] = useState("");

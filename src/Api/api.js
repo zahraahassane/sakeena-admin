@@ -6,7 +6,7 @@ const normalizeBaseUrl = (value) => {
   return value.endsWith("/") ? value : `${value}/`;
 };
 
-const API_BASE_URL =
+export const API_BASE_URL =
   normalizeBaseUrl(import.meta.env.VITE_API_URL) || "http://10.10.29.171:8000/";
 // "https://api.sakeenapress.org/";
 

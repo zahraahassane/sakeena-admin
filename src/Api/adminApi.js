@@ -39,7 +39,15 @@ export const adminApi = api.injectEndpoints({
 
     // Get Books Data
     getBooksData: builder.query({
-      query: () => "/books/",
+      query: (params = {}) => {
+        const queryParams = new URLSearchParams();
+        if (params.page) queryParams.append("page", params.page);
+        if (params.page_size) queryParams.append("page_size", params.page_size);
+        if (params.search) queryParams.append("search", params.search);
+        if (params.category__slug) queryParams.append("category__slug", params.category__slug);
+        const qs = queryParams.toString();
+        return `/books/${qs ? `?${qs}` : ""}`;
+      },
       providesTags: ["books"],
     }),
 
@@ -65,6 +73,31 @@ export const adminApi = api.injectEndpoints({
           body: formData,
         };
       },
+      invalidatesTags: ["books"],
+    }),
+
+    // Several gallery images in one request (the server numbers them in order)
+    addBookGalleryImages: builder.mutation({
+      query: ({ slug, images }) => {
+        const formData = new FormData();
+        images.forEach((image) => formData.append("images", image));
+        return { url: `/books/${slug}/gallery/`, method: "POST", body: formData };
+      },
+      invalidatesTags: ["books"],
+    }),
+    updateBookGalleryImage: builder.mutation({
+      query: ({ slug, id, order }) => ({
+        url: `/books/${slug}/gallery/${id}/`,
+        method: "PATCH",
+        body: { order },
+      }),
+      invalidatesTags: ["books"],
+    }),
+    deleteBookGalleryImage: builder.mutation({
+      query: ({ slug, id }) => ({
+        url: `/books/${slug}/gallery/${id}/`,
+        method: "DELETE",
+      }),
       invalidatesTags: ["books"],
     }),
 
@@ -1544,6 +1577,9 @@ export const {
   useGetBooksDataQuery,
   useAddBookMutation,
   useAddBookGalleryImageMutation,
+  useAddBookGalleryImagesMutation,
+  useUpdateBookGalleryImageMutation,
+  useDeleteBookGalleryImageMutation,
   useGetBookDetailsQuery,
   useUpdateBookMutation,
   useDeleteBookMutation,
