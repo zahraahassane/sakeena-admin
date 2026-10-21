@@ -16,6 +16,7 @@ import {
   Edit2,
   Check,
   RefreshCw,
+  Trash2,
 } from "lucide-react";
 
 import AddContentModal from "./AddLesson";
@@ -30,6 +31,7 @@ import {
   useReorderModuleLessonsMutation,
   useLazyGetVideoStatusQuery,
 } from "../../Api/adminApi";
+import ConfirmDialog from "../../components/ConfirmDialog";
 import Pagination from "../../components/Pagination";
 import toast from "react-hot-toast";
 import {
@@ -159,11 +161,11 @@ const SortableLessonItem = ({ lesson, mod, onLessonDetails, onEditLesson, handle
           <Edit2 className="w-4 h-4" />
         </button>
         <button
-          onClick={() => handleRemoveLesson(lesson.id)}
+          onClick={() => handleRemoveLesson(lesson)}
           className="p-2 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
           title="Delete Lesson"
         >
-          <X className="w-4 h-4" />
+          <Trash2 className="w-4 h-4" />
         </button>
       </div>
     </div>
@@ -310,49 +312,19 @@ const ModuleItem = ({
     }
   };
 
-  const handleRemoveLesson = (lessonId) => {
-    toast(
-      (t) => (
-        <div className="flex flex-col gap-3 min-w-[250px]">
-          <div className="flex items-center gap-2 text-stone-800">
-            <X className="w-5 h-5 text-red-500" />
-            <span className="font-bold arimo-font text-sm">
-              Delete this lesson?
-            </span>
-          </div>
-          <p className="text-xs text-stone-500 inter-font">
-            This action cannot be undone.
-          </p>
-          <div className="flex justify-end gap-2 mt-2">
-            <button
-              onClick={() => toast.dismiss(t.id)}
-              className="px-4 py-2 text-xs font-bold text-stone-400 hover:text-stone-600 transition-all rounded-xl"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={async () => {
-                toast.dismiss(t.id);
-                try {
-                  await deleteLesson({
-                    course_pk: courseId,
-                    module_pk: mod.id,
-                    id: lessonId,
-                  }).unwrap();
-                  toast.success("Lesson deleted");
-                } catch (err) {
-                  toast.error("Failed to delete lesson");
-                }
-              }}
-              className="px-4 py-2 text-xs font-bold bg-red-500 text-white hover:bg-red-600 rounded-xl transition-all shadow-lg shadow-red-200 active:scale-95"
-            >
-              Confirm Delete
-            </button>
-          </div>
-        </div>
-      ),
-      { duration: 5000, position: "top-center" },
-    );
+  const [lessonToDelete, setLessonToDelete] = useState(null);
+
+  const confirmDeleteLesson = async () => {
+    try {
+      await deleteLesson({
+        course_pk: courseId,
+        module_pk: mod.id,
+        id: lessonToDelete.id,
+      }).unwrap();
+      toast.success("Lesson deleted");
+    } catch (err) {
+      toast.error("Failed to delete lesson");
+    }
   };
 
   return (
@@ -437,11 +409,11 @@ const ModuleItem = ({
             <Edit2 className="w-5 h-5" />
           </button>
           <button
-            onClick={() => onRemoveModule(mod.id)}
+            onClick={() => onRemoveModule(mod)}
             className="p-2.5 text-red-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
             title="Delete Module"
           >
-            <X className="w-5 h-5" />
+            <Trash2 className="w-5 h-5" />
           </button>
           <button
             onClick={() => onAddLesson(mod.id)}
@@ -477,7 +449,7 @@ const ModuleItem = ({
                     mod={mod}
                     onLessonDetails={onLessonDetails}
                     onEditLesson={onEditLesson}
-                    handleRemoveLesson={handleRemoveLesson}
+                    handleRemoveLesson={setLessonToDelete}
                     onRefreshVideoStatus={handleRefreshVideoStatus}
                   />
                 ))}
@@ -501,6 +473,14 @@ const ModuleItem = ({
           )}
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!lessonToDelete}
+        onOpenChange={(open) => !open && setLessonToDelete(null)}
+        title={`Delete lesson "${lessonToDelete?.title ?? ""}"?`}
+        description="This action cannot be undone."
+        onConfirm={confirmDeleteLesson}
+      />
     </div>
   );
 };
@@ -552,49 +532,18 @@ const CourseCurriculum = ({ courseId, onInitialize }) => {
     setIsModalOpen(true);
   };
 
-  const handleRemoveModule = (moduleId) => {
-    toast(
-      (t) => (
-        <div className="flex flex-col gap-3 min-w-[300px]">
-          <div className="flex items-center gap-2 text-stone-800">
-            <X className="w-5 h-5 text-red-500" />
-            <span className="font-bold arimo-font text-sm">
-              Delete this module?
-            </span>
-          </div>
-          <p className="text-xs text-stone-500 inter-font">
-            Deleting this module will remove all its lessons. This action cannot
-            be undone.
-          </p>
-          <div className="flex justify-end gap-2 mt-2">
-            <button
-              onClick={() => toast.dismiss(t.id)}
-              className="px-4 py-2 text-xs font-bold text-stone-400 hover:text-stone-600 transition-all rounded-xl"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={async () => {
-                toast.dismiss(t.id);
-                try {
-                  await deleteModule({
-                    course_pk: courseId,
-                    id: moduleId,
-                  }).unwrap();
-                  toast.success("Module deleted");
-                } catch (err) {
-                  toast.error("Failed to delete module");
-                }
-              }}
-              className="px-4 py-2 text-xs font-bold bg-red-500 text-white hover:bg-red-600 rounded-xl transition-all shadow-lg shadow-red-200 active:scale-95"
-            >
-              Confirm Delete
-            </button>
-          </div>
-        </div>
-      ),
-      { duration: 6000, position: "top-center" },
-    );
+  const [moduleToDelete, setModuleToDelete] = useState(null);
+
+  const confirmDeleteModule = async () => {
+    try {
+      await deleteModule({
+        course_pk: courseId,
+        id: moduleToDelete.id,
+      }).unwrap();
+      toast.success("Module deleted");
+    } catch (err) {
+      toast.error("Failed to delete module");
+    }
   };
 
   const openLessonDetails = (lesson) => {
@@ -645,7 +594,7 @@ const CourseCurriculum = ({ courseId, onInitialize }) => {
               courseId={courseId}
               onAddLesson={openAddContentModal}
               onEditLesson={openEditContentModal}
-              onRemoveModule={handleRemoveModule}
+              onRemoveModule={setModuleToDelete}
               onLessonDetails={openLessonDetails}
             />
           ))
@@ -704,6 +653,14 @@ const CourseCurriculum = ({ courseId, onInitialize }) => {
           setIsDetailsOpen(false);
           setSelectedLesson(null);
         }}
+      />
+
+      <ConfirmDialog
+        open={!!moduleToDelete}
+        onOpenChange={(open) => !open && setModuleToDelete(null)}
+        title={`Delete module "${moduleToDelete?.title ?? ""}"?`}
+        description="All lessons in this module will be deleted too. This action cannot be undone."
+        onConfirm={confirmDeleteModule}
       />
     </div>
   );

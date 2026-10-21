@@ -15,10 +15,13 @@
     "@dnd-kit/react": "^0.4.0",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
+    "@radix-ui/react-alert-dialog": "^1.2.1",
+    "@radix-ui/react-slot": "^1.5.0",
     "@react-pdf/renderer": "^4.3.2",
     "@reduxjs/toolkit": "^2.11.2",
     "chart.js": "^4.5.1",
     "ckeditor5": "^48.0.0",
+    "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.1.0",
@@ -34,6 +37,7 @@
     "react-redux": "^9.2.0",
     "react-router-dom": "^7.8.0",
     "tailwind-merge": "^3.4.0",
+    "tailwindcss-animate": "^1.0.7",
     "tus-js-client": "^4.3.1"
   },
   "devDependencies": {
