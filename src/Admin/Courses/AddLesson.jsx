@@ -386,24 +386,11 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
     }
   };
 
-  const isRichTextEmpty = (html) =>
-    !html || !html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, "").trim();
-
   const handleSubmit = async () => {
     if (isUploading) return;
     if (!title.trim()) {
       toast.error("Please enter a lesson title");
       return;
-    }
-    if (contentType === "assignment") {
-      if (isRichTextEmpty(assignmentData.description)) {
-        toast.error("Please add a description for the assignment");
-        return;
-      }
-      if (isRichTextEmpty(assignmentData.instructions)) {
-        toast.error("Please add instructions for the assignment");
-        return;
-      }
     }
 
     setIsUploading(true);
