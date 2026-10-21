@@ -226,6 +226,17 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
   const handleFileUpload = (e) => {
     const uploadedFile = e.target?.files?.[0] || e.dataTransfer?.files?.[0];
     if (uploadedFile) {
+      // The accept attribute doesn't apply to drag-and-drop, so check here too.
+      if (contentType === "document") {
+        const isPdf =
+          uploadedFile.type === "application/pdf" ||
+          uploadedFile.name.toLowerCase().endsWith(".pdf");
+        if (!isPdf) {
+          toast.error("Only PDF files are allowed for document lessons.");
+          if (e.target?.value) e.target.value = "";
+          return;
+        }
+      }
       setFile(uploadedFile);
     }
   };
@@ -939,7 +950,7 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
                         type="file"
                         ref={fileInputRef}
                         onChange={handleFileUpload}
-                        accept={contentType === "video" ? "video/*" : ".pdf,.doc,.docx,.ppt,.pptx,.odp,.key"}
+                        accept={contentType === "video" ? "video/*" : ".pdf,application/pdf"}
                         className="hidden"
                       />
                       <div className="flex flex-col items-center text-center">
@@ -955,7 +966,7 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
                           <p className="text-stone-400 text-sm font-medium inter-font">
                             {contentType === "video"
                               ? "MP4, MOV"
-                              : "PDF, DOCX, PPTX"}
+                              : "PDF"}
                           </p>
                         </div>
                       </div>
