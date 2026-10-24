@@ -91,7 +91,8 @@ const LessonDetailsModal = ({ lesson, isOpen, onClose }) => {
                   <a
                     href={lesson.file_content || lesson.content || lesson.video_content || lesson.bunny_embed_url}
                     target="_blank"
-                    rel="noreferrer"
+                    // Not "noreferrer": Bunny refuses an embed link opened without a referer.
+                    rel="noopener"
                     className="text-sm font-bold text-blue-700 hover:underline break-all truncate block"
                   >
                     {lesson.file_content || lesson.content || lesson.video_content || lesson.bunny_embed_url}
