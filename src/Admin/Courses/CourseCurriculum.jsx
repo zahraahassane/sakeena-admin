@@ -26,6 +26,7 @@ import {
   useCreateCourseModuleMutation,
   useDeleteCourseModuleMutation,
   useUpdateCourseModuleMutation,
+  useReorderCourseModulesMutation,
   useGetModuleLessonsQuery,
   useDeleteModuleLessonMutation,
   useReorderModuleLessonsMutation,
@@ -180,6 +181,22 @@ const ModuleItem = ({
   onRemoveModule,
   onLessonDetails,
 }) => {
+  const {
+    attributes: moduleDragAttributes,
+    listeners: moduleDragListeners,
+    setNodeRef: setModuleNodeRef,
+    transform: moduleTransform,
+    transition: moduleTransition,
+    isDragging: isModuleDragging,
+  } = useSortable({ id: mod.id });
+
+  const moduleStyle = {
+    transform: CSS.Translate.toString(moduleTransform),
+    transition: moduleTransition,
+    zIndex: isModuleDragging ? 10 : undefined,
+    position: "relative",
+  };
+
   const [isExpanded, setIsExpanded] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(mod.title);
@@ -328,7 +345,13 @@ const ModuleItem = ({
   };
 
   return (
-    <div className="bg-white rounded-[2rem] border border-stone-200 shadow-sm overflow-hidden animate-in slide-in-from-bottom-2 duration-300">
+    <div
+      ref={setModuleNodeRef}
+      style={moduleStyle}
+      className={`bg-white rounded-[2rem] border border-stone-200 shadow-sm overflow-hidden animate-in slide-in-from-bottom-2 duration-300 ${
+        isModuleDragging ? "opacity-80 shadow-xl ring-2 ring-teal-200" : ""
+      }`}
+    >
       {/* Module Header */}
       <div
         onClick={() => !isEditing && setIsExpanded(!isExpanded)}
@@ -337,6 +360,17 @@ const ModuleItem = ({
         }`}
       >
         <div className="flex items-center gap-4">
+          <button
+            type="button"
+            {...moduleDragAttributes}
+            {...moduleDragListeners}
+            onClick={(e) => e.stopPropagation()}
+            className="p-1 -ml-3 text-stone-300 hover:text-teal-500 cursor-grab active:cursor-grabbing touch-none transition-colors"
+            title="Drag to reorder module"
+            aria-label="Drag to reorder module"
+          >
+            <GripVertical className="w-5 h-5" />
+          </button>
           <div className="text-stone-400 group-hover:text-teal-600 transition-colors">
             {isExpanded ? (
               <ChevronUp className="w-5 h-5" />
@@ -498,7 +532,46 @@ const CourseCurriculum = ({ courseId, onInitialize }) => {
     useGetCourseModulesQuery(courseId, {
       skip: !courseId,
     });
-  const modules = modulesResponse?.results || modulesResponse || [];
+  const serverModules = modulesResponse?.results || modulesResponse || [];
+
+  const [modules, setModules] = useState([]);
+  useEffect(() => {
+    setModules(serverModules);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modulesResponse]);
+
+  const [reorderModules] = useReorderCourseModulesMutation();
+
+  const moduleSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
+  const handleModuleDragEnd = async (event) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const previous = modules;
+    const oldIndex = previous.findIndex((m) => m.id === active.id);
+    const newIndex = previous.findIndex((m) => m.id === over.id);
+    if (oldIndex < 0 || newIndex < 0) return;
+
+    const reordered = arrayMove(previous, oldIndex, newIndex);
+    setModules(reordered);
+
+    try {
+      await reorderModules({
+        course_pk: courseId,
+        order: reordered.map((m, idx) => ({ id: m.id, order: idx })),
+      }).unwrap();
+      toast.success("Modules reordered successfully", { id: "reorder-modules" });
+    } catch (err) {
+      toast.error("Failed to reorder modules", { id: "reorder-modules-err" });
+      setModules(previous); // Revert
+    }
+  };
 
   const [createModule, { isLoading: isCreatingModule }] =
     useCreateCourseModuleMutation();
@@ -587,17 +660,28 @@ const CourseCurriculum = ({ courseId, onInitialize }) => {
             <Loader2 className="w-8 h-8 text-teal-600 animate-spin" />
           </div>
         ) : modules.length > 0 ? (
-          modules.map((mod) => (
-            <ModuleItem
-              key={mod.id}
-              mod={mod}
-              courseId={courseId}
-              onAddLesson={openAddContentModal}
-              onEditLesson={openEditContentModal}
-              onRemoveModule={setModuleToDelete}
-              onLessonDetails={openLessonDetails}
-            />
-          ))
+          <DndContext
+            sensors={moduleSensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleModuleDragEnd}
+          >
+            <SortableContext
+              items={modules.map((m) => m.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              {modules.map((mod) => (
+                <ModuleItem
+                  key={mod.id}
+                  mod={mod}
+                  courseId={courseId}
+                  onAddLesson={openAddContentModal}
+                  onEditLesson={openEditContentModal}
+                  onRemoveModule={setModuleToDelete}
+                  onLessonDetails={openLessonDetails}
+                />
+              ))}
+            </SortableContext>
+          </DndContext>
         ) : (
           <div className="py-12 text-center text-stone-400 text-sm font-medium border-2 border-dashed border-stone-100 rounded-[2rem]">
             No modules added yet. Start by adding a module below.

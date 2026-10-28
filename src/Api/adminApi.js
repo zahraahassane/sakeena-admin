@@ -459,6 +459,16 @@ export const adminApi = api.injectEndpoints({
         { type: "courseModules", id: course_pk },
       ],
     }),
+    reorderCourseModules: builder.mutation({
+      query: ({ course_pk, order }) => ({
+        url: `/courses/${course_pk}/modules/reorder/`,
+        method: "POST",
+        body: { order },
+      }),
+      invalidatesTags: (result, error, { course_pk }) => [
+        { type: "courseModules", id: course_pk },
+      ],
+    }),
     // Update Course Module
     updateCourseModule: builder.mutation({
       query: ({ course_pk, id, body }) => ({
@@ -1705,6 +1715,7 @@ export const {
   useCreateCourseModuleMutation,
   useDeleteCourseModuleMutation,
   useUpdateCourseModuleMutation,
+  useReorderCourseModulesMutation,
   useGetModuleLessonsQuery,
   useGetLessonDetailsQuery,
   useCreateModuleLessonMutation,
