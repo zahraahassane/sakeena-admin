@@ -355,7 +355,7 @@ const ManualBookingModal = ({ isOpen, onClose }) => {
                     {calendarCells.map((cell, index) => {
                       if (!cell) return <div key={`empty-${index}`} className="aspect-square" />;
                       const status = getCellStatus(cell.iso);
-                      const isAvailable = status === "available";
+                      const isAvailable = status === "available" || status === "too_soon"; // admins may book inside the notice window
                       const isSelected = selectedDate === cell.iso;
                       let cls = "text-stone-300 cursor-not-allowed";
                       if (isSelected) cls = "bg-teal-600 text-white shadow-sm cursor-pointer";

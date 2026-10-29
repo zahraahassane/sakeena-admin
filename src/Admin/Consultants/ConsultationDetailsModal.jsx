@@ -186,7 +186,7 @@ const ConsultationDetailsModal = ({ isOpen, onClose, consultation: initialConsul
 
   const getCellStatus = (iso) => {
     if (!calendarData || !calendarData[iso]) return "unavailable";
-    return calendarData[iso].status; // Can be "available" or "fully_booked"
+    return calendarData[iso].status; // "available", "too_soon" or "fully_booked"
   };
 
   const handleDateClick = (iso, status) => {
@@ -526,7 +526,7 @@ const ConsultationDetailsModal = ({ isOpen, onClose, consultation: initialConsul
                   }
 
                   const status = getCellStatus(cell.iso);
-                  const isAvailable = status === "available";
+                  const isAvailable = status === "available" || status === "too_soon";
                   const isFullyBooked = status === "fully_booked";
                   const isSelected = selectedDate === cell.iso;
 

@@ -145,7 +145,7 @@ function AvailabilityCalendar({ consultationId }) {
     if (!day || !calendarData) return null;
     const entry = calendarData[getDateKey(day)];
     if (!entry) return null;
-    return entry.status === 'available' ? 'green' : 'red';
+    return entry.status === 'available' || entry.status === 'too_soon' ? 'green' : 'red';
   };
 
   return (
