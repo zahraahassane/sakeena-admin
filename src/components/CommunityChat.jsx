@@ -268,9 +268,11 @@ const ReplyItem = ({ reply, courseId, discussionId, currentUserId, currentUserRo
 
 // --- Main Chat Component ---
 
-const CommunityChat = ({ courseTitle, courseId }) => {
-  const [activeView, setActiveView] = useState("list");
-  const [selectedDiscussion, setSelectedDiscussion] = useState(null);
+// `initialDiscussion` opens straight into one thread (used by the Discussions page);
+// `onBack` then replaces the in-component back-to-list behaviour.
+const CommunityChat = ({ courseTitle, courseId, initialDiscussion = null, onBack }) => {
+  const [activeView, setActiveView] = useState(initialDiscussion ? "details" : "list");
+  const [selectedDiscussion, setSelectedDiscussion] = useState(initialDiscussion);
   const [isAddingPost, setIsAddingPost] = useState(false);
   const [newPost, setNewPost] = useState({ title: "", body: "" });
   const [newReplyBody, setNewReplyBody] = useState("");
@@ -280,7 +282,9 @@ const CommunityChat = ({ courseTitle, courseId }) => {
   const currentUserRole = useSelector((state) => state.auth.role);
   const currentUserId = useMemo(() => decodeJwtUserId(accessToken), [accessToken]);
 
-  const { data: discussionsData, isLoading: isDiscussionsLoading } = useGetCourseDiscussionsQuery(courseId);
+  const { data: discussionsData, isLoading: isDiscussionsLoading } = useGetCourseDiscussionsQuery(courseId, {
+    skip: !!initialDiscussion,
+  });
   const { data: repliesData, isLoading: isRepliesLoading } = useGetDiscussionRepliesQuery(
     { course_pk: courseId, post_pk: selectedDiscussion?.id },
     { skip: !selectedDiscussion }
@@ -356,7 +360,7 @@ const CommunityChat = ({ courseTitle, courseId }) => {
       <div className="p-8 border-b border-stone-100 flex items-center justify-between gap-6">
         <div className="flex items-center gap-4">
           {activeView === "details" && (
-            <button onClick={() => setActiveView("list")} className="p-3 bg-stone-50 rounded-2xl text-stone-400 hover:text-teal-600 hover:bg-teal-50 transition-all">
+            <button onClick={() => (onBack ? onBack() : setActiveView("list"))} aria-label="Back to the list" className="p-3 bg-stone-50 rounded-2xl text-stone-400 hover:text-teal-600 hover:bg-teal-50 transition-all">
               <ChevronLeft className="w-5 h-5" />
             </button>
           )}

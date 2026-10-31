@@ -150,6 +150,7 @@ export const api = createApi({
     "lesson",
     "coupons",
     "consultations",
+    "discussionsInbox",
   ],
   endpoints: (builder) => ({
     login: builder.mutation({

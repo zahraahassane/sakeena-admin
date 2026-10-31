@@ -826,6 +826,20 @@ export const adminApi = api.injectEndpoints({
       providesTags: ["consultations"],
     }),
 
+    // Staff discussions inbox (all courses the user can moderate)
+    getDiscussionInbox: builder.query({
+      query: ({ page = 1, course, search } = {}) => ({
+        url: "/discussions/inbox/",
+        params: { page, page_size: 15, ...(course ? { course } : {}), ...(search ? { search } : {}) },
+      }),
+      providesTags: ["discussionsInbox"],
+    }),
+
+    getDiscussionInboxCount: builder.query({
+      query: () => "/discussions/inbox/count/",
+      providesTags: ["discussionsInbox"],
+    }),
+
     // Course Discussions
     getCourseDiscussions: builder.query({
       query: (course_pk) => `/courses/${course_pk}/discussions/`,
@@ -847,6 +861,7 @@ export const adminApi = api.injectEndpoints({
       }),
       invalidatesTags: (result, error, { course_pk }) => [
         { type: "discussions", id: course_pk },
+        "discussionsInbox",
       ],
     }),
 
@@ -867,6 +882,7 @@ export const adminApi = api.injectEndpoints({
       invalidatesTags: (result, error, { id, course_pk }) => [
         { type: "discussions", id },
         { type: "discussions", id: course_pk },
+        "discussionsInbox",
       ],
     }),
 
@@ -878,6 +894,7 @@ export const adminApi = api.injectEndpoints({
       invalidatesTags: (result, error, { id, course_pk }) => [
         { type: "discussions", id },
         { type: "discussions", id: course_pk },
+        "discussionsInbox",
       ],
     }),
 
@@ -888,6 +905,7 @@ export const adminApi = api.injectEndpoints({
       }),
       invalidatesTags: (result, error, { course_pk }) => [
         { type: "discussions", id: course_pk },
+        "discussionsInbox",
       ],
     }),
 
@@ -907,6 +925,7 @@ export const adminApi = api.injectEndpoints({
       }),
       invalidatesTags: (result, error, { post_pk }) => [
         { type: "replies", id: post_pk },
+        "discussionsInbox",
       ],
     }),
 
@@ -932,6 +951,7 @@ export const adminApi = api.injectEndpoints({
       invalidatesTags: (result, error, { course_pk, post_pk }) => [
         { type: "replies", id: post_pk },
         { type: "discussions", id: course_pk },
+        "discussionsInbox",
       ],
     }),
 
@@ -1738,6 +1758,8 @@ export const {
   useGetLuluCoverDimensionsMutation,
   useValidateLuluCoverMutation,
   useLazyGetLuluCoverValidationResultQuery,
+  useGetDiscussionInboxQuery,
+  useGetDiscussionInboxCountQuery,
   useGetCourseDiscussionsQuery,
   useGetCourseDiscussionDetailsQuery,
   useCreateCourseDiscussionMutation,

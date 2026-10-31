@@ -25,15 +25,25 @@ import {
   DoorOpenIcon,
   Ticket,
   X,
+  MessagesSquare,
 } from "lucide-react";
 import logo from "../../assets/img/logo.png";
-import { useGetTeacherProfileMeQuery } from "../../Api/adminApi";
+import {
+  useGetTeacherProfileMeQuery,
+  useGetDiscussionInboxCountQuery,
+} from "../../Api/adminApi";
 
 export const Sidebar = ({ onClose }) => {
   const role = useSelector((state) => state.auth.role);
   const { data: teacherProfile } = useGetTeacherProfileMeQuery(undefined, {
     skip: role !== "teacher",
   });
+  const { data: inboxCount } = useGetDiscussionInboxCountQuery(undefined, {
+    skip: role !== "admin" && role !== "teacher",
+    pollingInterval: 60000,
+    skipPollingIfUnfocused: true,
+  });
+  const waitingForReply = inboxCount?.needs_reply || 0;
   let menuItems = [];
 
   if (role === "admin") {
@@ -45,7 +55,18 @@ export const Sidebar = ({ onClose }) => {
         slug: "dashboard",
       },
       { icon: Users, label: "User", slug: "users-management" },
-      { icon: BookOpen, label: "Courses", slug: "courses-management" },
+      {
+        icon: BookOpen,
+        label: "Courses",
+        slug: "courses-management",
+        group: "Courses",
+      },
+      {
+        icon: MessagesSquare,
+        label: "Discussions",
+        slug: "discussions",
+        badge: waitingForReply,
+      },
       { icon: ClipboardCheck, label: "Submissions", slug: "submissions" },
       { icon: Users, label: "Consultants", slug: "consultants" },
       { icon: FileText, label: "Content", slug: "contents" },
@@ -76,6 +97,14 @@ export const Sidebar = ({ onClose }) => {
         label: "Courses",
         active: false,
         slug: "teacher/my-courses",
+        group: "Courses",
+      },
+      {
+        icon: MessagesSquare,
+        label: "Discussions",
+        active: false,
+        slug: "teacher/discussions",
+        badge: waitingForReply,
       },
       {
         icon: ClipboardCheck,
@@ -158,6 +187,11 @@ export const Sidebar = ({ onClose }) => {
 
               return (
                 <li key={index}>
+                  {item.group && (
+                    <p className="mx-4 mt-3 mb-1 pl-6 text-[11px] font-bold uppercase tracking-widest text-[#8A96A3]">
+                      {item.group}
+                    </p>
+                  )}
                   <NavLink
                     to={to}
                     onClick={onClose}
@@ -185,6 +219,14 @@ export const Sidebar = ({ onClose }) => {
                     <span className="font-semibold text-base">
                       {item.label}
                     </span>
+                    {item.badge > 0 && (
+                      <span
+                        className="ml-auto mr-4 min-w-[22px] rounded-full bg-amber-500 px-2 py-0.5 text-center text-xs font-bold text-white"
+                        aria-label={`${item.badge} waiting for a reply`}
+                      >
+                        {item.badge}
+                      </span>
+                    )}
                   </NavLink>
                 </li>
               );

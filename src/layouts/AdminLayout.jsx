@@ -12,6 +12,9 @@ export default function AdminLayout() {
     ? "Users Management"
     : location.pathname.startsWith(`/admin/courses-management`)
     ? "My Courses"
+    : location.pathname.startsWith(`/admin/discussions`) ||
+      location.pathname.startsWith(`/teacher/discussions`)
+    ? "Discussions"
     : location.pathname.startsWith(`/admin/submissions`)
     ? "Submissions Management"
     : location.pathname.startsWith(`/admin/consultants`)
@@ -66,6 +69,9 @@ export default function AdminLayout() {
     ? "Manage students, teachers, and system users"
     : location.pathname.startsWith(`/admin/courses-management`)
     ? "Create and manage your course offerings"
+    : location.pathname.startsWith(`/admin/discussions`) ||
+      location.pathname.startsWith(`/teacher/discussions`)
+    ? "Student questions and replies across your courses"
     : location.pathname.startsWith(`/admin/submissions`)
     ? "View and grade student quiz and assignment submissions"
     : location.pathname.startsWith(`/admin/consultants`)
