@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import {
   useGetCourseDiscussionsQuery,
+  useGetCourseDiscussionDetailsQuery,
   useCreateCourseDiscussionMutation,
   usePinCourseDiscussionMutation,
   useCloseCourseDiscussionMutation,
@@ -290,6 +291,16 @@ const CommunityChat = ({ courseTitle, courseId, initialDiscussion = null, onBack
     { skip: !selectedDiscussion }
   );
 
+  // Opened from the Discussions page: the passed-in thread is a snapshot, so read the
+  // live copy to keep pin/close state current after the buttons below are used.
+  const { data: liveDiscussion } = useGetCourseDiscussionDetailsQuery(
+    { course_pk: courseId, id: initialDiscussion?.id },
+    { skip: !initialDiscussion }
+  );
+  const currentDiscussion = liveDiscussion
+    ? { ...selectedDiscussion, ...liveDiscussion }
+    : selectedDiscussion;
+
   const [createDiscussion, { isLoading: isCreating }] = useCreateCourseDiscussionMutation();
   const [pinDiscussion] = usePinCourseDiscussionMutation();
   const [closeDiscussion] = useCloseCourseDiscussionMutation();
@@ -323,12 +334,23 @@ const CommunityChat = ({ courseTitle, courseId, initialDiscussion = null, onBack
     confirmToast("Delete this discussion? All replies will be lost.", async () => {
       try {
         await deleteDiscussion({ course_pk: courseId, id }).unwrap();
-        if (selectedDiscussion?.id === id) setActiveView("list");
+        if (selectedDiscussion?.id === id) {
+          if (onBack) onBack();
+          else setActiveView("list");
+        }
         toast.success("Discussion deleted successfully");
       } catch {
         toast.error("Failed to delete discussion");
       }
     });
+  };
+
+  const handleToggle = async (mutate, failMessage) => {
+    try {
+      await mutate({ course_pk: courseId, id: selectedDiscussion.id }).unwrap();
+    } catch (err) {
+      toast.error(err?.data?.detail || failMessage);
+    }
   };
 
   const getRoleBadgeColor = (role) => {
@@ -372,6 +394,32 @@ const CommunityChat = ({ courseTitle, courseId, initialDiscussion = null, onBack
             <p className="text-stone-400 text-xs inter-font italic">{activeView === "list" ? `Sharing knowledge in ${courseTitle}` : selectedDiscussion?.title}</p>
           </div>
         </div>
+
+        {activeView === "details" && initialDiscussion && currentUserRole === "admin" && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handleToggle(pinDiscussion, "Failed to update pin")}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-bold transition-all active:scale-95 ${currentDiscussion?.is_pinned ? "bg-amber-500 border-amber-400 text-white" : "bg-white border-stone-200 text-stone-600 hover:text-amber-600 hover:border-amber-300"}`}
+            >
+              <Pin className="w-4 h-4" />
+              {currentDiscussion?.is_pinned ? "Unpin" : "Pin"}
+            </button>
+            <button
+              onClick={() => handleToggle(closeDiscussion, "Failed to update thread")}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-bold transition-all active:scale-95 ${currentDiscussion?.is_closed ? "bg-stone-900 border-stone-800 text-white" : "bg-white border-stone-200 text-stone-600 hover:text-teal-700 hover:border-teal-300"}`}
+            >
+              <Lock className="w-4 h-4" />
+              {currentDiscussion?.is_closed ? "Reopen" : "Close"}
+            </button>
+            <button
+              onClick={(e) => handleDeletePost(e, selectedDiscussion.id)}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-stone-200 bg-white text-sm font-bold text-stone-600 hover:text-red-600 hover:border-red-300 transition-all active:scale-95"
+            >
+              <Trash2 className="w-4 h-4" />
+              Delete
+            </button>
+          </div>
+        )}
 
         {activeView === "list" && (
           <button onClick={() => setIsAddingPost(true)} className="bg-stone-900 text-white px-6 py-3 rounded-2xl font-bold text-sm shadow-lg shadow-stone-900/10 hover:bg-teal-700 transition-all active:scale-95">
@@ -548,7 +596,7 @@ const CommunityChat = ({ courseTitle, courseId, initialDiscussion = null, onBack
             </div>
 
             {/* Sticky Bottom Input */}
-            {!selectedDiscussion?.is_closed && (
+            {!currentDiscussion?.is_closed && (
               <div className="sticky bottom-0 pt-8 mt-12 border-t border-stone-100 bg-white/80 backdrop-blur-md pb-4 animate-in fade-in duration-500">
                 <div className="flex gap-4">
                   <div className="flex-1 relative group">
