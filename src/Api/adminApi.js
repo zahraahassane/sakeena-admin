@@ -1169,6 +1169,7 @@ export const adminApi = api.injectEndpoints({
       query: (params) => {
         const queryParams = new URLSearchParams();
         if (params?.page) queryParams.append("page", params.page);
+        if (params?.search) queryParams.append("search", params.search);
         if (params?.status) queryParams.append("status", params.status);
         if (params?.course) queryParams.append("course", params.course);
         const q = queryParams.toString();

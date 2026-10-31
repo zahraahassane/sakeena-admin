@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   useGetScholarshipsQuery,
   useApproveScholarshipMutation,
@@ -234,15 +234,27 @@ const ApplicationCard = ({ app, onReject, onViewDetails, onOpenDiscount }) => {
 
 const Scholarships = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedAppDetails, setSelectedAppDetails] = useState(null);
   const [selectedAppDiscount, setSelectedAppDiscount] = useState(null);
 
-  const { data, isLoading } = useGetScholarshipsQuery({ page: currentPage });
+  const { data, isLoading } = useGetScholarshipsQuery({
+    page: currentPage,
+    search: debouncedSearch,
+  });
   const [rejectScholarship] = useRejectScholarshipMutation();
   const [approveScholarship] = useApproveScholarshipMutation();
 
   const applications = data?.results || [];
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedSearch(searchQuery.trim());
+      setCurrentPage(1);
+    }, 400);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
 
   const stats = [
     {
@@ -270,19 +282,6 @@ const Scholarships = () => {
       color: "red",
     },
   ];
-
-  const filteredApplications = applications.filter((app) => {
-    const appName =
-      app.name ||
-      `${app.user_detail?.first_name || ""} ${app.user_detail?.last_name || ""}`;
-    const email = app.email || app.user_detail?.email || "";
-    const course = app.course_detail?.title || "";
-    return (
-      appName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      course.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  });
 
   const handleReject = (id) => {
     toast(
@@ -406,7 +405,7 @@ const Scholarships = () => {
             <div className="text-center py-12 text-neutral-400">Loading...</div>
           ) : (
             <>
-              {filteredApplications.map((app) => (
+              {applications.map((app) => (
                 <ApplicationCard
                   key={app.id}
                   app={app}
@@ -416,7 +415,7 @@ const Scholarships = () => {
                 />
               ))}
 
-              {filteredApplications.length === 0 && (
+              {applications.length === 0 && (
                 <div className="text-center py-12">
                   <p className="text-neutral-400 text-lg">
                     No applications found matching your search.
