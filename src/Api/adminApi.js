@@ -1413,8 +1413,10 @@ export const adminApi = api.injectEndpoints({
     }),
 
     getCourseEnrollments: builder.query({
-      query: ({ courseId, page = 1, pageSize = 20 } = {}) =>
-        `/enrollments/?course=${courseId}&page=${page}&page_size=${pageSize}`,
+      query: ({ courseId, page = 1, pageSize = 20, search = "" } = {}) =>
+        `/enrollments/?course=${courseId}&page=${page}&page_size=${pageSize}${
+          search ? `&search=${encodeURIComponent(search)}` : ""
+        }`,
       providesTags: ["enrollments"],
     }),
 

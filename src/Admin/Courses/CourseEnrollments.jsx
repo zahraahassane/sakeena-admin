@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { User, Calendar, CheckCircle2, XCircle, Search, Mail, Loader2, Award, Phone, UserPlus } from "lucide-react";
 import { useGetCourseEnrollmentsQuery } from "../../Api/adminApi";
 import Pagination from "../../components/Pagination";
@@ -9,23 +9,25 @@ const CourseEnrollments = ({ courseId }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showEnroll, setShowEnroll] = useState(false);
 
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedSearch(searchQuery.trim());
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
+
   const { data, isLoading, isError } = useGetCourseEnrollmentsQuery({
     courseId,
     page,
     pageSize: 10,
+    search: debouncedSearch,
   });
 
   const enrollments = data?.results || [];
   const totalPages = data?.total_pages || 1;
-
-  // Search filtering locally if API doesn't support search param for enrollments
-  // This will apply to current page only. If global search is needed, backend should support ?search=
-  const filteredEnrollments = enrollments.filter(
-    (e) =>
-      e.student?.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      e.student?.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      e.student?.email?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
@@ -82,7 +84,7 @@ const CourseEnrollments = ({ courseId }) => {
             <p className="text-stone-800 font-bold mb-1">Failed to load data</p>
             <p className="text-stone-500 text-sm">Please try refreshing the page.</p>
           </div>
-        ) : filteredEnrollments.length > 0 ? (
+        ) : enrollments.length > 0 ? (
           <>
             <div className="overflow-x-auto rounded-2xl border border-stone-100 mb-6">
               <table className="w-full text-left">
@@ -103,7 +105,7 @@ const CourseEnrollments = ({ courseId }) => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-stone-100">
-                  {filteredEnrollments.map((enrollment) => (
+                  {enrollments.map((enrollment) => (
                     <tr
                       key={enrollment.id}
                       className="group hover:bg-teal-50/30 transition-colors"
