@@ -1,11 +1,13 @@
 import React, { useState } from "react";
-import { User, Calendar, CheckCircle2, XCircle, Search, Mail, Loader2, Award, Phone } from "lucide-react";
+import { User, Calendar, CheckCircle2, XCircle, Search, Mail, Loader2, Award, Phone, UserPlus } from "lucide-react";
 import { useGetCourseEnrollmentsQuery } from "../../Api/adminApi";
 import Pagination from "../../components/Pagination";
+import EnrollStudentModal from "./EnrollStudentModal";
 
 const CourseEnrollments = ({ courseId }) => {
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showEnroll, setShowEnroll] = useState(false);
 
   const { data, isLoading, isError } = useGetCourseEnrollmentsQuery({
     courseId,
@@ -47,6 +49,14 @@ const CourseEnrollments = ({ courseId }) => {
             Manage and view all students currently enrolled in this course
           </p>
         </div>
+
+        <button
+          onClick={() => setShowEnroll(true)}
+          className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white text-sm font-bold transition-colors shrink-0"
+        >
+          <UserPlus className="w-4 h-4" />
+          Enroll Student
+        </button>
 
         <div className="flex items-center w-full md:w-auto relative max-w-sm">
           <Search className="w-5 h-5 text-stone-400 absolute left-4" />
@@ -201,6 +211,12 @@ const CourseEnrollments = ({ courseId }) => {
           </div>
         )}
       </div>
+      {showEnroll && (
+        <EnrollStudentModal
+          courseId={courseId}
+          onClose={() => setShowEnroll(false)}
+        />
+      )}
     </div>
   );
 };

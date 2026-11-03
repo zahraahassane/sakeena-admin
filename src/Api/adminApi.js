@@ -1418,6 +1418,15 @@ export const adminApi = api.injectEndpoints({
       providesTags: ["enrollments"],
     }),
 
+    enrollStudent: builder.mutation({
+      query: ({ courseId, userId }) => ({
+        url: "/enrollments/",
+        method: "POST",
+        body: { course_id: courseId, user_id: userId },
+      }),
+      invalidatesTags: ["enrollments"],
+    }),
+
     getLessonQuizzes: builder.query({
       query: ({ courseId, moduleId, lessonId }) =>
         `/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/quizzes/`,
@@ -1666,6 +1675,7 @@ export const {
   useGetAdminDashboardQuery,
   useGetCourseByIdQuery,
   useGetCourseEnrollmentsQuery,
+  useEnrollStudentMutation,
   useGetLessonQuizzesQuery,
   useGetLessonAssignmentsQuery,
   useGetCourseReviewsQuery,
