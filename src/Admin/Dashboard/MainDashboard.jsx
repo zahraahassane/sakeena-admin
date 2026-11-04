@@ -84,7 +84,7 @@ const MainDashboard = () => {
                 <h2 className="font-semibold text-sm">{card.title}</h2>
                 <p className="font-bold text-xl">{card.number}</p>
                 {card.details && (
-                  <div className="flex flex-col text-xs font-bold text-[#6B7280]">
+                  <div className="flex flex-col text-xs font-bold text-black">
                     {card.details.map((detail) => (
                       <span key={detail.label}>
                         {detail.label}: {detail.value}
