@@ -49,7 +49,8 @@ const MainDashboard = () => {
         : "Monthly Revenue",
       number: formatMoney(stats.monthly_revenue),
       details: [
-        { label: "Orders", value: formatMoney(revenueBreakdown.orders) },
+        { label: "Courses", value: formatMoney(revenueBreakdown.courses) },
+        { label: "Books", value: formatMoney(revenueBreakdown.books) },
         { label: "Donations", value: formatMoney(revenueBreakdown.donations) },
         { label: "Consultations", value: formatMoney(revenueBreakdown.consultations) },
         { label: "Membership", value: formatMoney(revenueBreakdown.memberships) },
@@ -83,7 +84,7 @@ const MainDashboard = () => {
                 <h2 className="font-semibold text-sm">{card.title}</h2>
                 <p className="font-bold text-xl">{card.number}</p>
                 {card.details && (
-                  <div className="flex flex-col text-xs font-normal text-[#6B7280]">
+                  <div className="flex flex-col text-xs font-bold text-[#6B7280]">
                     {card.details.map((detail) => (
                       <span key={detail.label}>
                         {detail.label}: {detail.value}
