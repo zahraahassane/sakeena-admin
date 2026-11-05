@@ -6,13 +6,13 @@ import {
   DollarSign,
   Download,
   Package,
-  Calendar,
   MapPin,
   ClipboardList,
   ChevronDown,
 } from "lucide-react";
 import { useGetSalesQuery } from "../../Api/adminApi";
 import Pagination from "../../components/Pagination";
+import SalesTable from "./SalesTable";
 
 const BookSales = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -171,40 +171,6 @@ const BookSales = () => {
     },
   ];
 
-  const getTypeStyle = (typeDisplay) => {
-    switch (typeDisplay) {
-      case "Physical Book":
-        return "bg-purple-50 text-purple-700 outline-purple-300";
-      case "Digital Book":
-        return "bg-blue-50 text-blue-700 outline-blue-300";
-      case "Course":
-        return "bg-teal-50 text-teal-700 outline-teal-300";
-      case "Bundle":
-        return "bg-orange-50 text-orange-700 outline-orange-300";
-      case "Consultation":
-        return "bg-indigo-50 text-indigo-700 outline-indigo-300";
-      case "Donation":
-        return "bg-rose-50 text-rose-700 outline-rose-300";
-      case "Membership":
-        return "bg-amber-50 text-amber-700 outline-amber-300";
-      default:
-        return "bg-gray-50 text-gray-700 outline-gray-300";
-    }
-  };
-
-  const getStatusStyle = (status) => {
-    switch (status) {
-      case "Delivered":
-        return "bg-green-100 text-green-700";
-      case "Pending":
-        return "bg-amber-100 text-amber-700";
-      case "Failed":
-        return "bg-red-100 text-red-700";
-      default:
-        return "bg-gray-100 text-gray-700";
-    }
-  };
-
   // We rely fully on the backend API for search and type filtering since it is paginated
   const filteredData = transformedSalesData;
 
@@ -304,155 +270,7 @@ const BookSales = () => {
           </p>
         </div>
 
-        <div className="overflow-x-auto no-scrollbar">
-          <table className="w-full text-left min-w-[1200px]">
-            <thead className="bg-[#F8FAFC] border-b border-black/10">
-              <tr>
-                <th className="px-6 py-5 text-base font-bold text-neutral-950">
-                  Order ID
-                </th>
-                <th className="px-6 py-5 text-base font-bold text-neutral-950">
-                  Student
-                </th>
-                <th className="px-6 py-5 text-base font-bold text-neutral-950">
-                  Book
-                </th>
-                <th className="px-6 py-5 text-base font-bold text-neutral-950">
-                  Type
-                </th>
-                <th className="px-6 py-5 text-base font-bold text-neutral-950">
-                  Quantity
-                </th>
-                <th className="px-6 py-5 text-base font-bold text-neutral-950">
-                  Amount
-                </th>
-                <th className="px-6 py-5 text-base font-bold text-neutral-950">
-                  Shipping Address
-                </th>
-                <th className="px-6 py-5 text-base font-bold text-neutral-950 text-center">
-                  Payment
-                </th>
-                <th className="px-6 py-5 text-base font-bold text-neutral-950 text-center">
-                  Status
-                </th>
-                <th className="px-6 py-5 text-base font-bold text-neutral-950">
-                  Date
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-black/10 text-sm">
-              {filteredData.length > 0 ? (
-                filteredData.map((order, index) => (
-                  <tr
-                    key={index}
-                    className="hover:bg-gray-50/50 transition-colors border-l-2 border-transparent hover:border-teal-500"
-                  >
-                    <td className="px-6 py-5">
-                      <div className="flex flex-col">
-                        <span className="text-teal-600 font-bold text-sm">
-                          {order.id}
-                        </span>
-                        {order.trackId && (
-                          <span className="text-gray-500 text-sm">
-                            Track: {order.trackId}
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-5">
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-neutral-950 font-bold text-base">
-                          {order.student.name}
-                        </span>
-                        <span className="text-gray-500 text-sm">
-                          {order.student.email}
-                        </span>
-                        <span className="text-gray-500 text-sm">
-                          {order.student.phone}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-5">
-                      <div className="flex items-center gap-4">
-                        {/* <img
-                          src={order.book.image}
-                          alt={order.book.title}
-                          className="w-12 h-16 rounded-lg object-cover shadow-sm"
-                        /> */}
-                        <div className="flex flex-col">
-                          <span className="text-neutral-950 font-bold text-base line-clamp-1 w-48">
-                            {order.book.title}
-                          </span>
-                          <span className="text-gray-500 text-sm">
-                            {order.book.author}
-                          </span>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-5">
-                      <span
-                        className={`inline-block whitespace-nowrap px-3 py-1 rounded-xl outline outline-1 outline-offset-[-1px] text-sm font-bold ${getTypeStyle(order.typeDisplay)}`}
-                      >
-                        {order.typeDisplay}
-                      </span>
-                    </td>
-                    <td className="px-6 py-5 text-neutral-950 font-medium text-lg">
-                      &times;{order.quantity}
-                    </td>
-                    <td className="px-6 py-5 text-green-600 font-black text-xl arimo-font">
-                      ${order.amount.toFixed(2)}
-                    </td>
-                    <td className="px-6 py-5 max-w-[250px]">
-                      <div className="flex flex-col text-sm gap-0.5">
-                        <span className="text-neutral-950 font-medium truncate">
-                          {order.address.line1}
-                        </span>
-                        <span className="text-gray-600 truncate">
-                          {order.address.city}
-                        </span>
-                        <span className="text-gray-500 font-medium">
-                          {order.address.country}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-5 text-center">
-                      <span className="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-xl font-bold uppercase tracking-wide">
-                        {order.payment}
-                      </span>
-                    </td>
-                    <td className="px-6 py-5 text-center">
-                      <span
-                        className={`text-[11px] px-3 py-1 rounded-xl font-black inter-font uppercase tracking-widest ${getStatusStyle(order.status)}`}
-                      >
-                        {order.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-5">
-                      <div className="flex flex-col items-start gap-1">
-                        <div className="flex items-center gap-2 text-neutral-950 font-bold">
-                          <Calendar className="w-4 h-4 text-teal-500" />
-                          <span>{order.date}</span>
-                        </div>
-                        <span className="text-gray-500 text-sm font-medium ml-6">
-                          {order.time}
-                        </span>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td
-                    colSpan="10"
-                    className="px-6 py-12 text-center text-gray-500"
-                  >
-                    No orders found matching your search and filter criteria.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+        <SalesTable data={filteredData} isLoading={isLoading} />
 
         {/* Pagination */}
         <div className="border-t border-black/10 bg-white">
