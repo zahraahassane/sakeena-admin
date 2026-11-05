@@ -12,8 +12,11 @@ import {
   StickyNote,
   Loader2,
   CircleAlert,
+  Plus,
+  Trash2,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import SearchableSelect from "../../components/SearchableSelect";
 import {
   useGetConsultationsQuery,
   useGetStudentProfilesQuery,
@@ -24,7 +27,9 @@ import {
 
 const ManualBookingModal = ({ isOpen, onClose }) => {
   const [consultationSearch, setConsultationSearch] = useState("");
-  const [selectedConsultationId, setSelectedConsultationId] = useState("");
+  // The whole picked plan is kept, not just its id, so searching again in the
+  // picker never drops the selection.
+  const [selectedConsultation, setSelectedConsultation] = useState(null);
 
   const [studentSearch, setStudentSearch] = useState("");
   const [selectedStudent, setSelectedStudent] = useState(null); // { id, name, email }
@@ -36,6 +41,12 @@ const ManualBookingModal = ({ isOpen, onClose }) => {
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedSlotIds, setSelectedSlotIds] = useState([]);
 
+  // One-off times typed in by the admin when no timeslot exists for them.
+  const [customSlots, setCustomSlots] = useState([]); // { start: "YYYY-MM-DDTHH:mm", duration: number }
+  const [customStart, setCustomStart] = useState("");
+  const [customDuration, setCustomDuration] = useState("60");
+  const [conflicts, setConflicts] = useState(null); // set when the teacher is already booked then
+
   const [priceOverride, setPriceOverride] = useState("");
   const [paymentReference, setPaymentReference] = useState("");
 
@@ -43,11 +54,15 @@ const ManualBookingModal = ({ isOpen, onClose }) => {
 
   const resetAll = () => {
     setConsultationSearch("");
-    setSelectedConsultationId("");
+    setSelectedConsultation(null);
     setStudentSearch("");
     setSelectedStudent(null);
     setSelectedDate(null);
     setSelectedSlotIds([]);
+    setCustomSlots([]);
+    setCustomStart("");
+    setCustomDuration("60");
+    setConflicts(null);
     setPriceOverride("");
     setPaymentReference("");
   };
@@ -64,10 +79,6 @@ const ManualBookingModal = ({ isOpen, onClose }) => {
   const consultations = useMemo(
     () => consultationsData?.results || (Array.isArray(consultationsData) ? consultationsData : []),
     [consultationsData],
-  );
-  const selectedConsultation = useMemo(
-    () => consultations.find((c) => String(c.id) === String(selectedConsultationId)) || null,
-    [consultations, selectedConsultationId],
   );
 
   const { data: studentsData, isFetching: isFetchingStudents } =
@@ -127,13 +138,46 @@ const ManualBookingModal = ({ isOpen, onClose }) => {
     );
   };
 
+  const totalSessions = selectedSlotIds.length + customSlots.length;
   const estimatedPrice =
-    selectedConsultation && selectedSlotIds.length
-      ? (Number(selectedConsultation.standard_price || 0) * selectedSlotIds.length).toFixed(2)
+    selectedConsultation && totalSessions
+      ? (Number(selectedConsultation.standard_price || 0) * totalSessions).toFixed(2)
       : "0.00";
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const formatCustomStart = (value) =>
+    new Date(value).toLocaleString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+
+  const addCustomSlot = () => {
+    if (!customStart) {
+      toast.error("Choose a date and time first.");
+      return;
+    }
+    if (new Date(customStart) <= new Date()) {
+      toast.error("The session must start in the future.");
+      return;
+    }
+    if (customSlots.some((c) => c.start === customStart)) {
+      toast.error("That time is already added.");
+      return;
+    }
+    setCustomSlots((prev) => [...prev, { start: customStart, duration: Number(customDuration) }]);
+    setCustomStart("");
+    setConflicts(null);
+  };
+
+  const removeCustomSlot = (start) => {
+    setCustomSlots((prev) => prev.filter((c) => c.start !== start));
+    setConflicts(null);
+  };
+
+  const submitBooking = async (allowOverlap = false) => {
 
     if (!selectedConsultation) {
       toast.error("Please select a consultation plan.");
@@ -143,15 +187,20 @@ const ManualBookingModal = ({ isOpen, onClose }) => {
       toast.error("Please select a student.");
       return;
     }
-    if (selectedSlotIds.length === 0) {
-      toast.error("Please select at least one timeslot.");
+    if (totalSessions === 0) {
+      toast.error("Please select a timeslot or add a custom date and time.");
       return;
     }
 
     const body = {
       student_id: selectedStudent.id,
       timeslot_ids: selectedSlotIds,
+      custom_slots: customSlots.map((c) => ({
+        start: new Date(c.start).toISOString(),
+        duration_minutes: c.duration,
+      })),
     };
+    if (allowOverlap) body.allow_overlap = true;
     if (priceOverride !== "") {
       body.total_price_paid = priceOverride;
     }
@@ -161,13 +210,27 @@ const ManualBookingModal = ({ isOpen, onClose }) => {
 
     try {
       await manualBookConsultation({ id: selectedConsultation.id, body }).unwrap();
-      toast.success(`Booked ${selectedSlotIds.length} session(s) for ${selectedStudent.name}.`);
+      toast.success(`Booked ${totalSessions} session(s) for ${selectedStudent.name}.`);
       onClose();
       resetAll();
     } catch (error) {
+      if (error?.status === 409 && error?.data?.conflicts) {
+        setConflicts(error.data.conflicts);
+        return;
+      }
       console.error("Failed to manually book consultation:", error);
-      toast.error(error?.data?.error || "Unable to book this consultation. Please try again.");
+      const detail =
+        error?.data?.error ||
+        error?.data?.non_field_errors?.[0] ||
+        error?.data?.custom_slots?.[0]?.start?.[0];
+      toast.error(detail || "Unable to book this consultation. Please try again.");
     }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setConflicts(null);
+    submitBooking(false);
   };
 
   return (
@@ -208,43 +271,37 @@ const ManualBookingModal = ({ isOpen, onClose }) => {
               <Layout className="w-4 h-4 text-stone-400" />
               Consultation Plan <span className="text-red-500">*</span>
             </label>
-            <div className="relative">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-300 w-4 h-4" />
-              <input
-                type="text"
-                placeholder="Search by title, teacher name or email..."
-                value={consultationSearch}
-                onChange={(e) => setConsultationSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all mb-2"
-              />
-            </div>
-            <select
-              required
-              value={selectedConsultationId}
-              onChange={(e) => {
-                setSelectedConsultationId(e.target.value);
+            <SearchableSelect
+              options={consultations.map((c) => {
+                const teacherName =
+                  `${c.teacher?.user?.first_name || ""} ${c.teacher?.user?.last_name || ""}`.trim() ||
+                  c.teacher?.user?.email;
+                return {
+                  value: String(c.id),
+                  label: c.title,
+                  description: `${teacherName}${c.standard_price ? ` · $${c.standard_price}` : ""}`,
+                };
+              })}
+              selected={
+                selectedConsultation
+                  ? { value: String(selectedConsultation.id), label: selectedConsultation.title }
+                  : null
+              }
+              onSelect={(option) => {
+                setSelectedConsultation(
+                  consultations.find((c) => String(c.id) === option.value) || null,
+                );
                 setSelectedDate(null);
                 setSelectedSlotIds([]);
+                setConflicts(null);
               }}
-              className={`w-full bg-stone-100/50 border border-transparent rounded-xl px-4 py-3 outline-none focus:bg-white focus:border-teal-500 transition-all font-medium text-stone-800 inter-font appearance-none ${
-                isFetchingConsultations ? "opacity-50 pointer-events-none" : ""
-              }`}
-            >
-              <option value="">
-                {isFetchingConsultations ? "Loading..." : "Choose a consultation plan..."}
-              </option>
-              {!isFetchingConsultations && consultations.length === 0 && (
-                <option value="" disabled>
-                  No consultation plans found
-                </option>
-              )}
-              {consultations.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.title} — {`${c.teacher?.user?.first_name || ""} ${c.teacher?.user?.last_name || ""}`.trim() || c.teacher?.user?.email}
-                  {c.standard_price ? ` ($${c.standard_price})` : ""}
-                </option>
-              ))}
-            </select>
+              search={consultationSearch}
+              onSearchChange={setConsultationSearch}
+              isLoading={isFetchingConsultations}
+              placeholder="Choose a consultation plan..."
+              searchPlaceholder="Search by title, teacher name or email..."
+              emptyText="No consultation plans found"
+            />
           </div>
 
           {/* Student picker */}
@@ -260,51 +317,34 @@ const ManualBookingModal = ({ isOpen, onClose }) => {
                 </span>
               )}
             </div>
-            <div className="relative">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-300 w-4 h-4" />
-              <input
-                type="text"
-                placeholder="Search students by name or email..."
-                value={studentSearch}
-                onChange={(e) => setStudentSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all mb-2"
-              />
-            </div>
-            <select
-              required
-              value={selectedStudent?.id || ""}
-              onChange={(e) => {
-                const profile = studentProfiles.find(
-                  (p) => String(p.user.id) === String(e.target.value),
-                );
-                setSelectedStudent(
-                  profile
-                    ? {
-                        id: profile.user.id,
-                        name: `${profile.user.first_name || ""} ${profile.user.last_name || ""}`.trim() || profile.user.email,
-                        email: profile.user.email,
-                      }
-                    : null,
-                );
+            <SearchableSelect
+              options={studentProfiles.map((p) => ({
+                value: String(p.user.id),
+                label:
+                  `${p.user.first_name || ""} ${p.user.last_name || ""}`.trim() || "Unnamed",
+                description: p.user.email,
+              }))}
+              selected={
+                selectedStudent
+                  ? { value: String(selectedStudent.id), label: selectedStudent.name }
+                  : null
+              }
+              onSelect={(option) => {
+                const profile = studentProfiles.find((p) => String(p.user.id) === option.value);
+                if (!profile) return;
+                setSelectedStudent({
+                  id: profile.user.id,
+                  name: option.label === "Unnamed" ? profile.user.email : option.label,
+                  email: profile.user.email,
+                });
               }}
-              className={`w-full bg-stone-100/50 border border-transparent rounded-xl px-4 py-3 outline-none focus:bg-white focus:border-teal-500 transition-all font-medium text-stone-800 inter-font appearance-none ${
-                isFetchingStudents ? "opacity-50 pointer-events-none" : ""
-              }`}
-            >
-              <option value="">
-                {isFetchingStudents ? "Loading..." : "Choose a student..."}
-              </option>
-              {!isFetchingStudents && studentProfiles.length === 0 && (
-                <option value="" disabled>
-                  No students found
-                </option>
-              )}
-              {studentProfiles.map((p) => (
-                <option key={p.id} value={p.user.id}>
-                  {`${p.user.first_name || ""} ${p.user.last_name || ""}`.trim() || "Unnamed"} ({p.user.email})
-                </option>
-              ))}
-            </select>
+              search={studentSearch}
+              onSearchChange={setStudentSearch}
+              isLoading={isFetchingStudents}
+              placeholder="Choose a student..."
+              searchPlaceholder="Search students by name or email..."
+              emptyText="No students found"
+            />
           </div>
 
           {/* Timeslot picker */}
@@ -442,6 +482,77 @@ const ManualBookingModal = ({ isOpen, onClose }) => {
             </div>
           )}
 
+          {/* Custom date and time, for when no timeslot exists */}
+          {selectedConsultation && (
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-sm font-bold text-stone-700 inter-font">
+                <CalendarPlus className="w-4 h-4 text-stone-400" />
+                Custom Date &amp; Time
+                {customSlots.length > 0 && (
+                  <span className="text-[10px] font-bold text-teal-600 bg-teal-50 px-2 py-1 rounded-lg ml-auto">
+                    {customSlots.length} added
+                  </span>
+                )}
+              </label>
+              <div className="bg-stone-50/60 border border-stone-200 rounded-2xl p-4 space-y-3">
+                <p className="text-[11px] text-stone-400">
+                  Use this when the time you need is not in the list above. A new session is
+                  created at exactly this time. Times are in your timezone ({timeZone}).
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <input
+                    type="datetime-local"
+                    value={customStart}
+                    onChange={(e) => setCustomStart(e.target.value)}
+                    className="flex-1 bg-white border border-stone-200 rounded-xl px-4 py-2.5 outline-none focus:border-teal-500 transition-all text-sm font-medium text-stone-800 inter-font"
+                  />
+                  <select
+                    value={customDuration}
+                    onChange={(e) => setCustomDuration(e.target.value)}
+                    className="sm:w-36 bg-white border border-stone-200 rounded-xl px-4 py-2.5 outline-none focus:border-teal-500 transition-all text-sm font-medium text-stone-800 inter-font"
+                  >
+                    {[30, 45, 60, 90, 120].map((m) => (
+                      <option key={m} value={m}>
+                        {m} minutes
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={addCustomSlot}
+                    className="flex items-center justify-center gap-1.5 bg-white border border-teal-500 text-teal-700 hover:bg-teal-50 px-4 py-2.5 rounded-xl text-sm font-bold transition-all inter-font"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add
+                  </button>
+                </div>
+                {customSlots.length > 0 && (
+                  <div className="space-y-2">
+                    {customSlots.map((c) => (
+                      <div
+                        key={c.start}
+                        className="flex items-center justify-between bg-white border border-teal-500 rounded-xl px-3 py-2.5"
+                      >
+                        <span className="text-sm font-bold text-stone-800 inter-font">
+                          {formatCustomStart(c.start)}
+                          <span className="text-stone-400 font-medium"> · {c.duration} min</span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => removeCustomSlot(c.start)}
+                          aria-label="Remove custom time"
+                          className="p-1 text-stone-400 hover:text-red-500 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Price + note */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -478,10 +589,37 @@ const ManualBookingModal = ({ isOpen, onClose }) => {
             </div>
           </div>
 
+          {conflicts && (
+            <div className="rounded-xl px-4 py-3 border border-red-200 bg-red-50 space-y-2">
+              <div className="flex items-center gap-2 text-red-700">
+                <CircleAlert className="w-4 h-4 shrink-0" />
+                <span className="text-xs font-bold inter-font">
+                  The teacher already has a booked session at this time:
+                </span>
+              </div>
+              <ul className="text-xs text-red-700 inter-font list-disc pl-10">
+                {conflicts.map((c) => (
+                  <li key={c.id}>
+                    {c.consultation}, {formatCustomStart(c.start)} to{" "}
+                    {new Date(c.end).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+                  </li>
+                ))}
+              </ul>
+              <button
+                type="button"
+                disabled={isBooking}
+                onClick={() => submitBooking(true)}
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-xs font-bold transition-all inter-font disabled:opacity-50"
+              >
+                Book anyway
+              </button>
+            </div>
+          )}
+
           <div className="flex items-center gap-2 text-amber-600/80 bg-amber-50 rounded-xl px-4 py-3 border border-amber-600/10">
             <CircleAlert className="w-4 h-4 shrink-0" />
             <span className="text-[11px] font-bold inter-font">
-              This confirms the booking immediately — the slot is marked booked and the student is
+              This confirms the booking immediately: the slot is marked booked and the student is
               emailed their Zoom link once it's ready, no payment is collected through Stripe.
             </span>
           </div>
