@@ -130,19 +130,15 @@ const columns = [
     id: "address",
     header: "Shipping Address",
     cell: ({ row }) => {
-      const a = row.original.address;
-      if (!a || typeof a === "string") {
+      // The API sends the address as one string, or "N/A" when there is none.
+      const address = row.original.address;
+      if (!address || address === "N/A") {
         return <span className="text-gray-500">N/A</span>;
       }
       return (
-        <div className="flex flex-col text-xs max-w-[200px]">
-          <span className="text-neutral-950 font-medium truncate">
-            {a.line1}
-          </span>
-          <span className="text-gray-600 truncate">
-            {[a.city, a.country].filter(Boolean).join(", ")}
-          </span>
-        </div>
+        <span className="text-xs text-neutral-950 line-clamp-2 max-w-[220px]">
+          {address}
+        </span>
       );
     },
   },
