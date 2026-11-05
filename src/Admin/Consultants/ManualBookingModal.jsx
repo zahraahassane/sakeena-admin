@@ -496,8 +496,9 @@ const ManualBookingModal = ({ isOpen, onClose }) => {
               </label>
               <div className="bg-stone-50/60 border border-stone-200 rounded-2xl p-4 space-y-3">
                 <p className="text-[11px] text-stone-400">
-                  Use this when the time you need is not in the list above. A new session is
-                  created at exactly this time. Times are in your timezone ({timeZone}).
+                  Use this when the time you need is not in the list above. If a timeslot already
+                  exists at exactly this time, that one is booked. Otherwise a new session is
+                  created. Times are in your timezone ({timeZone}).
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3">
                   <input
@@ -594,14 +595,15 @@ const ManualBookingModal = ({ isOpen, onClose }) => {
               <div className="flex items-center gap-2 text-red-700">
                 <CircleAlert className="w-4 h-4 shrink-0" />
                 <span className="text-xs font-bold inter-font">
-                  The teacher already has a booked session at this time:
+                  This time overlaps sessions this teacher already has:
                 </span>
               </div>
               <ul className="text-xs text-red-700 inter-font list-disc pl-10">
                 {conflicts.map((c) => (
                   <li key={c.id}>
                     {c.consultation}, {formatCustomStart(c.start)} to{" "}
-                    {new Date(c.end).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+                    {new Date(c.end).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}{" "}
+                    ({c.is_booked ? "booked" : "open slot, stays open"})
                   </li>
                 ))}
               </ul>
