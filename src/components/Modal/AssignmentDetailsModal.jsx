@@ -1,5 +1,7 @@
 "use client";
 
+import { getSubmissionFiles, mediaKind } from "../../utils/submissionFiles";
+import VideoDownloadButton from "../VideoDownloadButton";
 import { X, Download, FileText, History } from "lucide-react";
 import { useGetAssignmentSubmissionHistoryQuery } from "../../Api/adminApi";
 
@@ -122,8 +124,8 @@ export default function AssignmentDetailsModal({
             <div className="space-y-3">
               {submission.files && submission.files.length > 0 ? (
                 submission.files.map((file, index) => (
+                  <div key={index} className="space-y-2">
                   <div
-                    key={index}
                     className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                   >
                     <div className="flex items-center gap-3">
@@ -133,12 +135,39 @@ export default function AssignmentDetailsModal({
                         <p className="text-sm text-gray-500">{file.size}</p>
                       </div>
                     </div>
-                    <button
-                      onClick={() => handleDownload(file)}
-                      className="p-2 hover:bg-gray-200 rounded-lg transition-colors text-teal-600"
-                    >
-                      <Download className="w-5 h-5" />
-                    </button>
+                    {file.embedUrl && (
+                      <VideoDownloadButton
+                        submissionId={file.submissionId}
+                        fileId={file.id}
+                        className="p-2 hover:bg-gray-200 rounded-lg transition-colors text-teal-600 disabled:opacity-60"
+                      />
+                    )}
+                    {file.url && (
+                      <button
+                        onClick={() => handleDownload(file)}
+                        className="p-2 hover:bg-gray-200 rounded-lg transition-colors text-teal-600"
+                      >
+                        <Download className="w-5 h-5" />
+                      </button>
+                    )}
+                  </div>
+                  {file.embedUrl && (
+                    <div className="rounded-lg overflow-hidden bg-black aspect-video">
+                      <iframe
+                        src={file.embedUrl}
+                        title={file.name}
+                        className="w-full h-full"
+                        allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
+                        allowFullScreen
+                      />
+                    </div>
+                  )}
+                  {mediaKind(file.name || file.url) === "audio" && (
+                    <audio src={file.url} controls preload="metadata" className="w-full" />
+                  )}
+                  {!file.embedUrl && mediaKind(file.name || file.url) === "video" && (
+                    <video src={file.url} controls className="w-full rounded-lg bg-black" />
+                  )}
                   </div>
                 ))
               ) : (
@@ -181,21 +210,21 @@ export default function AssignmentDetailsModal({
                         {attempt.submission_text}
                       </p>
                     )}
-                    {attempt.submission_file ? (
-                      <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <FileText className="w-4 h-4 text-gray-400 shrink-0" />
-                          <p className="text-xs text-gray-600 truncate">
-                            {attempt.submission_file.split("/").pop()}
-                          </p>
+                    {getSubmissionFiles(attempt).length > 0 ? (
+                      getSubmissionFiles(attempt).map((f) => (
+                        <div key={f.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <FileText className="w-4 h-4 text-gray-400 shrink-0" />
+                            <p className="text-xs text-gray-600 truncate">{f.name}</p>
+                          </div>
+                          <button
+                            onClick={() => handleDownload(f)}
+                            className="shrink-0 p-1.5 hover:bg-gray-200 rounded-lg transition-colors text-teal-600"
+                          >
+                            <Download className="w-4 h-4" />
+                          </button>
                         </div>
-                        <button
-                          onClick={() => handleDownload({ name: attempt.submission_file.split("/").pop(), url: attempt.submission_file })}
-                          className="shrink-0 p-1.5 hover:bg-gray-200 rounded-lg transition-colors text-teal-600"
-                        >
-                          <Download className="w-4 h-4" />
-                        </button>
-                      </div>
+                      ))
                     ) : (
                       <p className="text-xs text-gray-400">No file submitted</p>
                     )}

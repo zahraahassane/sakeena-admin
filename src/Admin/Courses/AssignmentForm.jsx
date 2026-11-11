@@ -1,10 +1,35 @@
 import { Calendar, ExternalLink, FileText, Plus, UploadCloud, X } from "lucide-react";
 import { useRef, useState } from "react";
 import TextEditor from "../../components/Editor";
+import {
+  FILE_CATEGORIES,
+  MAX_FILES,
+  MAX_SUBMISSION_MB,
+  categoriesFromExtensions,
+  defaultMbFor,
+  extensionsFromCategories,
+} from "./assignmentFileTypes";
 
 const AssignmentForm = ({ data, onChange, onRemoveFile }) => {
   const handleChange = (field, value) => {
     onChange({ ...data, [field]: value });
+  };
+
+  const selectedCategories = categoriesFromExtensions(data.allowedFileTypes);
+
+  const toggleCategory = (key) => {
+    const next = selectedCategories.includes(key)
+      ? selectedCategories.filter((k) => k !== key)
+      : [...selectedCategories, key];
+    // Follow the suggested size for the new selection, unless the teacher already
+    // set a custom size.
+    const followsDefault =
+      !data.maxFileSize || Number(data.maxFileSize) === defaultMbFor(selectedCategories);
+    onChange({
+      ...data,
+      allowedFileTypes: extensionsFromCategories(next),
+      maxFileSize: followsDefault ? defaultMbFor(next) : data.maxFileSize,
+    });
   };
 
   const fileInputRef = useRef(null);
@@ -203,68 +228,101 @@ const AssignmentForm = ({ data, onChange, onRemoveFile }) => {
         </div>
       </div>
 
-      {/* Allowed File Types */}
+      {/* Allowed submission types */}
       <div className="space-y-3">
         <label className="text-sm font-bold text-stone-700 ml-1 inter-font">
-          Allowed File Types
+          What can students submit?
         </label>
-        <div className="flex flex-wrap gap-2">
-          {["pdf", "docx", "mp4"].map((type) => {
-            const currentTypes = data.allowedFileTypes 
-              ? data.allowedFileTypes.split(',').map(t => t.trim().toLowerCase()).filter(Boolean) 
-              : [];
-            const isSelected = currentTypes.includes(type.toLowerCase());
-            
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {FILE_CATEGORIES.map((cat) => {
+            const isSelected = selectedCategories.includes(cat.key);
             return (
               <button
-                key={type}
+                key={cat.key}
                 type="button"
-                onClick={() => {
-                  let newTypes;
-                  if (isSelected) {
-                    newTypes = currentTypes.filter(t => t !== type.toLowerCase());
-                  } else {
-                    newTypes = [...currentTypes, type.toLowerCase()];
-                  }
-                  // Sort and format for display
-                  handleChange("allowedFileTypes", newTypes.join(', '));
-                }}
-                className={`px-4 py-1.5 rounded-xl text-sm font-bold transition-all ${
+                aria-pressed={isSelected}
+                onClick={() => toggleCategory(cat.key)}
+                className={`rounded-2xl border px-5 py-4 text-left transition-all ${
                   isSelected
-                    ? "bg-orange-500 text-white shadow-md scale-105"
-                    : "bg-stone-50 border border-stone-200 text-stone-500 hover:border-stone-400"
+                    ? "border-orange-500 bg-orange-50 shadow-sm"
+                    : "border-stone-200 bg-stone-50 hover:border-stone-400"
                 }`}
               >
-                {type}
+                <span
+                  className={`block text-sm font-bold inter-font ${
+                    isSelected ? "text-orange-600" : "text-stone-700"
+                  }`}
+                >
+                  {cat.label}
+                </span>
+                <span className="block text-xs text-stone-500 inter-font mt-1">
+                  {cat.extensions.join(", ")}
+                </span>
               </button>
             );
           })}
         </div>
-        
-        <div className="mt-2">
-          <input
-            type="text"
-            placeholder="Other types (comma separated), e.g., txt, mp3"
-            value={data.allowedFileTypes || ""}
-            onChange={(e) => handleChange("allowedFileTypes", e.target.value)}
-            className="w-full bg-stone-50 border border-stone-200 rounded-2xl px-6 py-3 outline-none focus:ring-4 focus:ring-teal-500/5 focus:border-teal-500 transition-all font-medium text-stone-800 inter-font text-sm"
-          />
-        </div>
+        <p className="text-xs text-stone-500 ml-1 inter-font">
+          {selectedCategories.length === 0
+            ? "Select at least one type. "
+            : ""}
+          Students can attach several files per submission. Zip files are always accepted, so
+          students can compress their work if it is too large.
+        </p>
       </div>
 
-      {/* Max File Size */}
+      {/* Max number of files */}
       <div className="space-y-2">
         <label className="text-sm font-bold text-stone-700 ml-1 inter-font">
-          Max File Size (MB)
+          Maximum number of files
         </label>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <input
             type="number"
-            value={data.maxFileSize || 10}
-            onChange={(e) => handleChange("maxFileSize", e.target.value)}
+            min={1}
+            max={MAX_FILES}
+            value={data.maxFiles ?? ""}
+            onChange={(e) =>
+              handleChange(
+                "maxFiles",
+                e.target.value === ""
+                  ? ""
+                  : Math.min(MAX_FILES, Math.max(1, parseInt(e.target.value) || 1)),
+              )
+            }
             className="w-full bg-stone-50 border border-stone-200 rounded-2xl px-6 py-4 outline-none focus:ring-4 focus:ring-teal-500/5 focus:border-teal-500 transition-all font-bold text-stone-800 inter-font"
           />
         </div>
+        <p className="text-xs text-stone-500 ml-1 inter-font">
+          For example, 2 for a document plus a video or audio recording.
+        </p>
+      </div>
+
+      {/* Max submission size */}
+      <div className="space-y-2">
+        <label className="text-sm font-bold text-stone-700 ml-1 inter-font">
+          Maximum total size (MB)
+        </label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <input
+            type="number"
+            min={1}
+            max={MAX_SUBMISSION_MB}
+            value={data.maxFileSize || ""}
+            onChange={(e) =>
+              handleChange(
+                "maxFileSize",
+                e.target.value === ""
+                  ? ""
+                  : Math.min(MAX_SUBMISSION_MB, Math.max(1, parseInt(e.target.value) || 1)),
+              )
+            }
+            className="w-full bg-stone-50 border border-stone-200 rounded-2xl px-6 py-4 outline-none focus:ring-4 focus:ring-teal-500/5 focus:border-teal-500 transition-all font-bold text-stone-800 inter-font"
+          />
+        </div>
+        <p className="text-xs text-stone-500 ml-1 inter-font">
+          Applies to all of a student's files together. Maximum {MAX_SUBMISSION_MB} MB.
+        </p>
       </div>
     </div>
   );

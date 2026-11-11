@@ -19,6 +19,7 @@ import { markUploadStart, markUploadEnd } from "../../lib/uploadActivity";
 import { getApiErrorMessage } from "../../utils/apiError";
 
 import AssignmentForm from "./AssignmentForm";
+import { DEFAULT_ALLOWED_TYPES, DEFAULT_MAX_FILES } from "./assignmentFileTypes";
 import QuizForm from "./QuizForm";
 import {
   useCreateModuleLessonMutation,
@@ -61,7 +62,8 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
     dueDate: "",
     maxPoints: 100,
     maxFileSize: 10,
-    allowedFileTypes: "pdf, docx",
+    maxFiles: DEFAULT_MAX_FILES,
+    allowedFileTypes: DEFAULT_ALLOWED_TYPES,
     referenceFiles: [],
   });
   const [isDownloadable, setIsDownloadable] = useState(false);
@@ -139,7 +141,8 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
           dueDate: ad.due_date ? ad.due_date.split('T')[0] : "",
           maxPoints: ad.max_points || 100,
           maxFileSize: ad.max_file_size || 10,
-          allowedFileTypes: ad.allowed_file_types || "pdf, docx",
+          maxFiles: ad.max_files || DEFAULT_MAX_FILES,
+          allowedFileTypes: ad.allowed_file_types || DEFAULT_ALLOWED_TYPES,
           referenceFiles: (ad.reference_files || []).map((f) => ({
             id: f.id,
             file: null,
@@ -322,8 +325,9 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
     payload.append("instructions", data.instructions || "");
     payload.append("due_date", data.dueDate ? `${data.dueDate}T23:59:00Z` : "");
     payload.append("max_points", parseInt(data.maxPoints) || 100);
-    payload.append("allowed_file_types", data.allowedFileTypes || "pdf, docx");
+    payload.append("allowed_file_types", data.allowedFileTypes || DEFAULT_ALLOWED_TYPES);
     payload.append("max_file_size", parseInt(data.maxFileSize) || 10);
+    payload.append("max_files", parseInt(data.maxFiles) || DEFAULT_MAX_FILES);
     return payload;
   };
 
@@ -630,7 +634,8 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
       dueDate: "",
       maxPoints: 100,
       maxFileSize: 10,
-      allowedFileTypes: "pdf, docx",
+      maxFiles: DEFAULT_MAX_FILES,
+      allowedFileTypes: DEFAULT_ALLOWED_TYPES,
       referenceFiles: [],
     });
     setQuizData({

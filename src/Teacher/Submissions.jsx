@@ -1,5 +1,6 @@
 "use client";
 
+import { getSubmissionFiles } from "../utils/submissionFiles";
 import { useState, useMemo, useEffect, useRef } from "react";
 import { Eye, FileText, AlertCircle, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
@@ -31,9 +32,7 @@ function toModalShape(sub, historyCount = 0) {
       ? new Date(sub.created_at).toLocaleString()
       : "—",
     studentComments: sub.submission_text || "No text submitted.",
-    files: sub.submission_file
-      ? [{ name: "Submission File", url: sub.submission_file }]
-      : [],
+    files: getSubmissionFiles(sub),
     status: label,
     statusColor: color,
     rawStatus: sub.status,

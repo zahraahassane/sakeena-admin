@@ -1,6 +1,8 @@
 import React from "react";
 import { X, FileText, Download, CheckCircle2, History } from "lucide-react";
 import { useGetAssignmentSubmissionHistoryQuery } from "../../Api/adminApi";
+import SubmissionFileList from "../../components/SubmissionFileList";
+import { getSubmissionFiles } from "../../utils/submissionFiles";
 
 const HISTORY_BADGE = {
   approved: "bg-green-50 text-green-700 border-green-200",
@@ -92,56 +94,17 @@ const AssignmentDetailsModal = ({ isOpen, onClose, submission, onGrade }) => {
             <div className="flex items-center gap-2">
               <FileText className="w-5 h-5 text-[#7AA4A5]" />
               <h3 className="text-lg font-bold text-neutral-800 font-['Arimo']">
-                Submitted File
+                Submitted Files
               </h3>
             </div>
 
             <div className="space-y-4">
-              {submission.submissionFile ||
-              submission.rawSubmission?.submission_file ? (
-                <>
-                  <div className="flex items-center justify-between p-4 bg-white border border-neutral-200 rounded-xl hover:border-[#7AA4A5] transition-colors group">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-[#7AA4A5]/10 rounded-lg flex items-center justify-center">
-                        <FileText className="w-5 h-5 text-[#7AA4A5]" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-neutral-800 truncate">
-                          {(submission.submissionFile || submission.rawSubmission?.submission_file)?.split("/").pop()}
-                        </p>
-                        <p className="text-xs text-neutral-500 truncate">
-                          {submission.submissionFile || submission.rawSubmission?.submission_file}
-                        </p>
-                      </div>
-                    </div>
-                    <a
-                      href={submission.submissionFile || submission.rawSubmission?.submission_file}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="px-4 py-2 rounded-xl bg-[#7AA4A5] text-white text-sm font-medium hover:bg-[#6b9192] transition-colors"
-                    >
-                      Download
-                    </a>
-                  </div>
-
-                  {/* Video Preview for mp4 */}
-                  {(submission.submissionFile || submission.rawSubmission?.submission_file)?.toLowerCase().endsWith('.mp4') && (
-                    <div className="mt-4 rounded-xl overflow-hidden border border-neutral-200 bg-black aspect-video flex items-center justify-center">
-                       <video 
-                        src={submission.submissionFile || submission.rawSubmission?.submission_file} 
-                        controls 
-                        className="max-h-full max-w-full"
-                      />
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="p-4 bg-white border border-neutral-200 rounded-xl">
-                  <p className="text-sm text-neutral-500">
-                    No submitted file attached.
-                  </p>
-                </div>
-              )}
+              <SubmissionFileList
+                files={getSubmissionFiles(
+                  submission.rawSubmission || { submission_file: submission.submissionFile },
+                )}
+                empty="No submitted files attached."
+              />
             </div>
           </div>
 
@@ -179,27 +142,11 @@ const AssignmentDetailsModal = ({ isOpen, onClose, submission, onGrade }) => {
                         {attempt.submission_text}
                       </p>
                     )}
-                    {attempt.submission_file ? (
-                      <div className="flex items-center justify-between p-3 bg-neutral-50 border border-neutral-200 rounded-lg">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <FileText className="w-4 h-4 text-[#7AA4A5] shrink-0" />
-                          <p className="text-xs text-neutral-600 truncate">
-                            {attempt.submission_file.split("/").pop()}
-                          </p>
-                        </div>
-                        <a
-                          href={attempt.submission_file}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="shrink-0 px-3 py-1.5 rounded-lg bg-[#7AA4A5] text-white text-xs font-medium hover:bg-[#6b9192] transition-colors flex items-center gap-1.5"
-                        >
-                          <Download className="w-3.5 h-3.5" />
-                          Download
-                        </a>
-                      </div>
-                    ) : (
-                      <p className="text-xs text-neutral-400">No file submitted</p>
-                    )}
+                    <SubmissionFileList
+                      files={getSubmissionFiles(attempt)}
+                      showPlayers={false}
+                      empty="No file submitted"
+                    />
                     {attempt.teacher_feedback && (
                       <p className="text-xs text-neutral-500">{attempt.teacher_feedback}</p>
                     )}

@@ -1494,6 +1494,11 @@ export const adminApi = api.injectEndpoints({
       invalidatesTags: ["assignmentSubmissions"],
     }),
 
+    getSubmissionFileDownloadLink: builder.query({
+      query: ({ submissionId, fileId }) =>
+        `/assignment-submissions/${submissionId}/files/${fileId}/download-link/`,
+    }),
+
     getAssignmentSubmissionHistory: builder.query({
       query: (id) => `/assignment-submissions/${id}/history/`,
       transformResponse: normalizeListResponse,
@@ -1687,6 +1692,7 @@ export const {
   useGetAssignmentSubmissionQuery,
   useReviewAssignmentSubmissionMutation,
   useGetAssignmentSubmissionHistoryQuery,
+  useLazyGetSubmissionFileDownloadLinkQuery,
   useGetConsultationsQuery,
   useGetConsultationQuery,
   useCreateConsultationMutation,
