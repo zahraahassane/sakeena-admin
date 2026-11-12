@@ -577,6 +577,27 @@ export const adminApi = api.injectEndpoints({
         { type: "lesson", id: lesson_pk },
       ],
     }),
+    updateLessonQuizQuestion: builder.mutation({
+      query: ({ course_pk, module_pk, lesson_pk, quiz_pk, id, body }) => ({
+        url: `/courses/${course_pk}/modules/${module_pk}/lessons/${lesson_pk}/quizzes/${quiz_pk}/questions/${id}/`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: (result, error, { module_pk, lesson_pk }) => [
+        { type: "moduleLessons", id: module_pk },
+        { type: "lesson", id: lesson_pk },
+      ],
+    }),
+    deleteLessonQuizQuestion: builder.mutation({
+      query: ({ course_pk, module_pk, lesson_pk, quiz_pk, id }) => ({
+        url: `/courses/${course_pk}/modules/${module_pk}/lessons/${lesson_pk}/quizzes/${quiz_pk}/questions/${id}/`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (result, error, { module_pk, lesson_pk }) => [
+        { type: "moduleLessons", id: module_pk },
+        { type: "lesson", id: lesson_pk },
+      ],
+    }),
     createLessonAssignment: builder.mutation({
       query: ({ course_pk, module_pk, lesson_pk, body }) => ({
         url: `/courses/${course_pk}/modules/${module_pk}/lessons/${lesson_pk}/assignments/`,
@@ -1766,6 +1787,8 @@ export const {
   useCreateLessonQuizMutation,
   useUpdateLessonQuizMutation,
   useCreateLessonQuizQuestionMutation,
+  useUpdateLessonQuizQuestionMutation,
+  useDeleteLessonQuizQuestionMutation,
   useCreateLessonAssignmentMutation,
   useUpdateLessonAssignmentMutation,
   useCreateAssignmentReferenceFileMutation,

@@ -30,6 +30,8 @@ import {
   useCreateLessonQuizMutation,
   useUpdateLessonQuizMutation,
   useCreateLessonQuizQuestionMutation,
+  useUpdateLessonQuizQuestionMutation,
+  useDeleteLessonQuizQuestionMutation,
   useCreateLessonAssignmentMutation,
   useUpdateLessonAssignmentMutation,
   useCreateAssignmentReferenceFileMutation,
@@ -71,6 +73,9 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
     timeLimit: 30,
     passingScore: 70,
     description: "",
+    maxAttempts: "",
+    shuffleOptions: false,
+    showAnswers: false,
     questions: [],
   });
   const [isDragging, setIsDragging] = useState(false);
@@ -95,6 +100,8 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
   const [createQuiz] = useCreateLessonQuizMutation();
   const [updateQuiz] = useUpdateLessonQuizMutation();
   const [createQuizQuestion] = useCreateLessonQuizQuestionMutation();
+  const [updateQuizQuestion] = useUpdateLessonQuizQuestionMutation();
+  const [deleteQuizQuestion] = useDeleteLessonQuizQuestionMutation();
   const [createAssignment] = useCreateLessonAssignmentMutation();
   const [updateAssignment] = useUpdateLessonAssignmentMutation();
   const [createAssignmentReferenceFile] = useCreateAssignmentReferenceFileMutation();
@@ -158,6 +165,9 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
           timeLimit: qd.time_limit || 30,
           passingScore: qd.passing_score || 70,
           description: qd.description || "",
+          maxAttempts: qd.max_attempts ?? "",
+          shuffleOptions: Boolean(qd.shuffle_options),
+          showAnswers: Boolean(qd.show_answers),
           questions: (qd.questions || []).map(q => ({
             id: q.id,
             text: q.text,
@@ -301,6 +311,9 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
       time_limit: parseInt(data.timeLimit) || 30,
       passing_score: parseInt(data.passingScore) || 70,
       description: data.description || "",
+      max_attempts: data.maxAttempts === "" || data.maxAttempts == null ? null : parseInt(data.maxAttempts),
+      shuffle_options: Boolean(data.shuffleOptions),
+      show_answers: Boolean(data.showAnswers),
       questions: (data.questions || []).map(q => {
         const mappedQ = {
           text: q.text,
@@ -452,6 +465,12 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
           time_limit: parseInt(quizData.timeLimit) || 30,
           passing_score: parseInt(quizData.passingScore) || 70,
           description: quizData.description || "",
+          max_attempts:
+            quizData.maxAttempts === "" || quizData.maxAttempts == null
+              ? null
+              : parseInt(quizData.maxAttempts),
+          shuffle_options: Boolean(quizData.shuffleOptions),
+          show_answers: Boolean(quizData.showAnswers),
         };
 
         if (lessonId && lessonDetails?.quiz_details) {
@@ -476,17 +495,36 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
               quiz: quizPk
             };
 
-            // If it's a new question (front-end generated ID), POST it
+            const questionPath = {
+              course_pk: courseId,
+              module_pk: moduleId,
+              lesson_pk: activeLessonId,
+              quiz_pk: quizPk,
+            };
             if (!q.id || q.id > 1000000000) {
-              await createQuizQuestion({
+              // New question (front-end generated ID): create it.
+              await createQuizQuestion({ ...questionPath, body: questionBody }).unwrap();
+            } else {
+              // Existing question: save edits (text, points, options, which
+              // answer is correct). Without this, edits were silently dropped.
+              await updateQuizQuestion({ ...questionPath, id: q.id, body: questionBody }).unwrap();
+            }
+          }
+
+          // Questions the admin removed in the form.
+          const keptIds = new Set(
+            quizData.questions.filter(q => q.id && q.id < 1000000000).map(q => q.id)
+          );
+          for (const old of lessonDetails.quiz_details.questions || []) {
+            if (!keptIds.has(old.id)) {
+              await deleteQuizQuestion({
                 course_pk: courseId,
                 module_pk: moduleId,
                 lesson_pk: activeLessonId,
                 quiz_pk: quizPk,
-                body: questionBody
+                id: old.id,
               }).unwrap();
             }
-            // Note: Update logic for existing questions could go here if endpoint exists
           }
         } else {
           // For fresh creation, we can still use the nested approach if the backend supports it,
@@ -642,6 +680,9 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
       timeLimit: 30,
       passingScore: 70,
       description: "",
+      maxAttempts: "",
+      shuffleOptions: false,
+      showAnswers: false,
       questions: [],
     });
     setVideoStatus(null);

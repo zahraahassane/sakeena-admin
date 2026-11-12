@@ -96,6 +96,47 @@ const QuizForm = ({ data, onChange }) => {
         </div>
       </div>
 
+      {/* Attempts and review settings */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-2">
+          <label className="text-sm font-bold text-stone-700 ml-1 inter-font">
+            Total attempts allowed
+          </label>
+          <input
+            type="number"
+            min="1"
+            value={data.maxAttempts ?? ""}
+            onChange={(e) => updateQuiz("maxAttempts", e.target.value)}
+            placeholder="Blank = unlimited"
+            className="w-full bg-stone-50 border border-stone-200 rounded-2xl px-6 py-4 outline-none focus:ring-4 focus:ring-teal-500/5 focus:border-teal-500 transition-all font-bold text-stone-800 inter-font"
+          />
+          <p className="text-xs text-stone-500 ml-1 inter-font">
+            2 = one retake after a fail. A student who passes cannot retake.
+          </p>
+        </div>
+
+        <div className="space-y-4 md:pt-8">
+          <label className="flex items-center gap-3 cursor-pointer inter-font text-sm font-bold text-stone-700">
+            <input
+              type="checkbox"
+              checked={Boolean(data.shuffleOptions)}
+              onChange={(e) => updateQuiz("shuffleOptions", e.target.checked)}
+              className="w-5 h-5 accent-teal-600"
+            />
+            Shuffle answer options for each student
+          </label>
+          <label className="flex items-center gap-3 cursor-pointer inter-font text-sm font-bold text-stone-700">
+            <input
+              type="checkbox"
+              checked={Boolean(data.showAnswers)}
+              onChange={(e) => updateQuiz("showAnswers", e.target.checked)}
+              className="w-5 h-5 accent-teal-600"
+            />
+            Show correct answers after each attempt
+          </label>
+        </div>
+      </div>
+
       {/* Description */}
       <div className="space-y-2">
         <label className="text-sm font-bold text-stone-700 ml-1 inter-font">
