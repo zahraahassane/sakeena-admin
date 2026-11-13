@@ -9,6 +9,7 @@ import {
   UploadCloud,
   Loader2,
   ExternalLink,
+  Youtube,
   Calendar,
   Clock,
   CheckCircle2,
@@ -18,6 +19,7 @@ import toast from "react-hot-toast";
 import { markUploadStart, markUploadEnd } from "../../lib/uploadActivity";
 import { getApiErrorMessage } from "../../utils/apiError";
 
+import YouTubePreview, { extractYouTubeId } from "../../components/YouTubePreview";
 import AssignmentForm from "./AssignmentForm";
 import { DEFAULT_ALLOWED_TYPES, DEFAULT_MAX_FILES } from "./assignmentFileTypes";
 import QuizForm from "./QuizForm";
@@ -120,7 +122,7 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
     if (lessonDetails && lessonId) {
       setTitle(lessonDetails.title || "");
       setContentType(lessonDetails.content_type || "video");
-      setLink(lessonDetails.content || "");
+      setLink(extractYouTubeId(lessonDetails.content) || lessonDetails.content || "");
       setDuration(lessonDetails.duration_in_minutes || "");
       setIsPreview(lessonDetails.is_preview || false);
       setIsReleased(lessonDetails.is_released ?? true);
@@ -229,8 +231,8 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
     },
     {
       id: "external_link",
-      label: "External Link",
-      icon: <ExternalLink className="w-5 h-5 text-teal-600" />,
+      label: "YouTube Video",
+      icon: <Youtube className="w-5 h-5 text-teal-600" />,
       activeClass: "bg-teal-50 border-teal-500 text-teal-700",
       baseClass: "border-stone-200 text-stone-600",
     },
@@ -407,6 +409,10 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
     if (isUploading) return;
     if (!title.trim()) {
       toast.error("Please enter a lesson title");
+      return;
+    }
+    if (contentType === "external_link" && !extractYouTubeId(link)) {
+      toast.error("Please enter a valid YouTube video ID");
       return;
     }
 
@@ -871,15 +877,26 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
               {contentType === "external_link" && (
                 <div className="space-y-3">
                   <label className="text-sm font-bold text-stone-700 ml-1 inter-font">
-                    External URL
+                    YouTube Video ID
                   </label>
                   <input
-                    type="url"
+                    type="text"
                     value={link}
-                    onChange={(e) => setLink(e.target.value)}
-                    placeholder="https://example.com/resource"
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      // A pasted YouTube link is turned into just its ID.
+                      setLink(extractYouTubeId(value) || value.trim());
+                    }}
+                    placeholder="e.g. dQw4w9WgXcQ"
+                    maxLength={200}
                     className="w-full bg-stone-50 border border-stone-200 rounded-2xl px-6 py-4 outline-none focus:ring-4 focus:ring-teal-500/5 focus:border-teal-500 transition-all font-bold text-blue-600 inter-font"
                   />
+                  {link && !extractYouTubeId(link) && (
+                    <p className="text-xs font-bold text-red-500 ml-1 inter-font">
+                      Not a valid YouTube video ID
+                    </p>
+                  )}
+                  <YouTubePreview videoId={extractYouTubeId(link)} />
                 </div>
               )}
 

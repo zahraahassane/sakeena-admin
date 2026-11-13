@@ -1,3 +1,4 @@
+import YouTubePreview, { extractYouTubeId } from "../../components/YouTubePreview";
 import { X, Download, ExternalLink, Clock, Award, FileText, Radio, AlertCircle } from "lucide-react";
 import { useGetLessonQuizzesQuery, useGetLessonAssignmentsQuery } from "../../Api/adminApi";
 
@@ -76,35 +77,14 @@ function DocumentViewer({ lesson }) {
   );
 }
 
-// ─── External Link ────────────────────────────────────────────────────────────
+// ─── YouTube Video ────────────────────────────────────────────────────────────
 function ExternalLinkViewer({ lesson }) {
-  const url = lesson.content;
-  return (
-    <div className="space-y-4">
-      {url ? (
-        <div className="border border-gray-200 rounded-xl p-5 flex items-center justify-between bg-gray-50">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
-              <ExternalLink size={18} className="text-blue-600" />
-            </div>
-            <p className="text-sm text-gray-600 truncate">{url}</p>
-          </div>
-          <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="ml-4 shrink-0 flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <ExternalLink size={15} />
-            Open
-          </a>
-        </div>
-      ) : (
-        <div className="rounded-xl bg-gray-50 border border-dashed border-gray-200 p-8 text-center text-gray-400">
-          <ExternalLink size={32} className="mx-auto mb-2 opacity-40" />
-          <p className="text-sm">No link provided.</p>
-        </div>
-      )}
+  const videoId = extractYouTubeId(lesson.content);
+  return videoId ? (
+    <YouTubePreview videoId={videoId} />
+  ) : (
+    <div className="rounded-xl bg-gray-50 border border-dashed border-gray-200 p-8 text-center text-gray-400">
+      <p className="text-sm">No valid YouTube video ID.</p>
     </div>
   );
 }
@@ -363,7 +343,7 @@ const CONTENT_TYPE_LABEL = {
   document: "Document",
   quiz: "Quiz",
   assignment: "Assignment",
-  external_link: "External Link",
+  external_link: "YouTube Video",
   live: "Live Session",
 };
 

@@ -1,3 +1,13 @@
+import { extractYouTubeId, youTubeWatchUrl } from "../../components/YouTubePreview";
+
+// A YouTube lesson stores just the video ID; legacy ones may hold some other text.
+const getResourceLink = (lesson) => {
+  if (lesson.content_type === "external_link") {
+    const id = extractYouTubeId(lesson.content);
+    return id ? youTubeWatchUrl(id) : lesson.content;
+  }
+  return lesson.file_content || lesson.content || lesson.video_content || lesson.bunny_embed_url;
+};
 import React from "react";
 import toast from "react-hot-toast";
 import {
@@ -10,6 +20,7 @@ import {
   Target,
   FileDown,
   ExternalLink,
+  Youtube,
   CheckCircle2,
   Calendar,
   Loader2,
@@ -31,7 +42,7 @@ const LessonDetailsModal = ({ lesson, isOpen, onClose }) => {
       case "live":
         return <VideoIcon className="w-8 h-8 text-red-600" />;
       case "external_link":
-        return <ExternalLink className="w-8 h-8 text-teal-600" />;
+        return <Youtube className="w-8 h-8 text-teal-600" />;
       default:
         return <FileText className="w-8 h-8 text-stone-600" />;
     }
@@ -48,7 +59,7 @@ const LessonDetailsModal = ({ lesson, isOpen, onClose }) => {
             </div>
             <div>
               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400 block mb-1 inter-font">
-                Lesson Type: {lesson.content_type}
+                Lesson Type: {lesson.content_type === "external_link" ? "YouTube Video" : lesson.content_type}
               </span>
               <div className="flex flex-wrap gap-2 mt-2">
                 {lesson.is_preview && (
@@ -86,16 +97,16 @@ const LessonDetailsModal = ({ lesson, isOpen, onClose }) => {
                 <div className="p-5 bg-blue-50/50 border border-blue-100 rounded-3xl space-y-2">
                   <div className="flex items-center gap-2 text-blue-600 font-bold text-xs uppercase tracking-wider">
                     <ExternalLink className="w-3.5 h-3.5" />
-                    <span>{lesson.content_type === "video" ? "Video Resource" : lesson.content_type === "document" ? "Document File" : "URL / Resource"}</span>
+                    <span>{lesson.content_type === "video" ? "Video Resource" : lesson.content_type === "document" ? "Document File" : "YouTube Link"}</span>
                   </div>
                   <a
-                    href={lesson.file_content || lesson.content || lesson.video_content || lesson.bunny_embed_url}
+                    href={getResourceLink(lesson)}
                     target="_blank"
                     // Not "noreferrer": Bunny refuses an embed link opened without a referer.
                     rel="noopener"
                     className="text-sm font-bold text-blue-700 hover:underline break-all truncate block"
                   >
-                    {lesson.file_content || lesson.content || lesson.video_content || lesson.bunny_embed_url}
+                    {getResourceLink(lesson)}
                   </a>
                 </div>
               )}

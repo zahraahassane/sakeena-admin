@@ -36,7 +36,7 @@ const CONTENT_TYPE_LABEL = {
   document: "Document",
   quiz: "Quiz",
   assignment: "Assignment",
-  external_link: "External Link",
+  external_link: "YouTube Video",
   live: "Live Session",
 };
 

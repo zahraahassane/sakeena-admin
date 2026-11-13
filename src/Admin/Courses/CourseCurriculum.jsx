@@ -9,6 +9,7 @@ import {
   BookOpen,
   Loader2,
   ExternalLink,
+  Youtube,
   Zap,
   Save,
   ChevronDown,
@@ -95,6 +96,8 @@ const SortableLessonItem = ({ lesson, mod, onLessonDetails, onEditLesson, handle
           <HelpCircle className="w-5 h-5" />
         ) : lesson.content_type === "assignment" ? (
           <BookOpen className="w-5 h-5" />
+        ) : lesson.content_type === "external_link" ? (
+          <Youtube className="w-5 h-5" />
         ) : (
           <ExternalLink className="w-5 h-5" />
         )}
@@ -108,7 +111,7 @@ const SortableLessonItem = ({ lesson, mod, onLessonDetails, onEditLesson, handle
         </h4>
         <div className="flex gap-2">
           <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest arimo-font mt-0.5 block">
-            {lesson.content_type}
+            {lesson.content_type === "external_link" ? "YouTube Video" : lesson.content_type}
           </span>
           {lesson.duration_in_minutes > 0 && (
             <span className="text-[10px] font-bold text-stone-400 arimo-font mt-0.5 block">
