@@ -1066,6 +1066,13 @@ export const adminApi = api.injectEndpoints({
       query: (page = 1) => `/consultation-purchases/booked/?page=${page}`,
       providesTags: ["consultations"],
     }),
+    cancelConsultationPurchase: builder.mutation({
+      query: (id) => ({
+        url: `/consultation-purchases/${id}/cancel/`,
+        method: "POST",
+      }),
+      invalidatesTags: ["consultations"],
+    }),
     manualBookConsultation: builder.mutation({
       query: ({ id, body }) => ({
         url: `/consultations/${id}/manual-book/`,
@@ -1727,6 +1734,7 @@ export const {
   useGetConsultationCalendarQuery,
   useGetConsultationTimeslotsQuery,
   useGetBookedConsultationsQuery,
+  useCancelConsultationPurchaseMutation,
   useManualBookConsultationMutation,
   useGetTeacherUpcomingSessionsQuery,
   useGetConsultationEarningsQuery,

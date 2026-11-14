@@ -35,7 +35,9 @@ import {
   useGetConsultationCalendarQuery,
   useGetConsultationTimeslotsQuery,
   useGetBookedConsultationsQuery,
+  useCancelConsultationPurchaseMutation,
 } from "../../Api/adminApi";
+import ConfirmDialog from "../../components/ConfirmDialog";
 import { toast } from "react-hot-toast";
 
 // Consultation Card Component with Calendar
@@ -435,6 +437,8 @@ const Consultants = () => {
   const [bookedConsultationsPage, setBookedConsultationsPage] = useState(1);
   const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
   const [selectedReschedule, setSelectedReschedule] = useState(null);
+  const [bookingToCancel, setBookingToCancel] = useState(null);
+  const [cancelConsultationPurchase] = useCancelConsultationPurchaseMutation();
   const [searchQuery, setSearchQuery] = useState("");
 
   // Reset pages when search query changes to prevent "out of bounds" pagination on new results
@@ -596,6 +600,12 @@ const Consultants = () => {
         return (
           <span className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-600 px-3 py-1 rounded-full text-[8px] font-bold uppercase tracking-wider">
             Pending
+          </span>
+        );
+      case "cancelled":
+        return (
+          <span className="inline-flex items-center gap-1.5 bg-stone-100 text-stone-500 px-3 py-1 rounded-full text-[8px] font-bold uppercase tracking-wider">
+            Cancelled
           </span>
         );
       case "failed":
@@ -1141,6 +1151,16 @@ const Consultants = () => {
                               {booking.sessions_purchased} Session{booking.sessions_purchased !== 1 ? "s" : ""}
                             </span>
                           </div>
+
+                          {booking.status === "completed" && (
+                            <button
+                              onClick={() => setBookingToCancel(booking)}
+                              className="w-full px-4 py-2.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-xl text-[10px] font-black uppercase tracking-wider transition-colors inline-flex items-center justify-center gap-2 border border-rose-100"
+                            >
+                              <XCircle className="w-3.5 h-3.5" />
+                              Cancel Booking
+                            </button>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -1155,6 +1175,7 @@ const Consultants = () => {
                             <th className="px-4 py-3 text-[10px] font-black text-stone-500 uppercase tracking-wider">Paid</th>
                             <th className="px-4 py-3 text-[10px] font-black text-stone-500 uppercase tracking-wider">Sessions</th>
                             <th className="px-4 py-3 text-[10px] font-black text-stone-500 uppercase tracking-wider">Status</th>
+                            <th className="px-4 py-3 text-[10px] font-black text-stone-500 uppercase tracking-wider">Action</th>
                             {/* <th className="px-4 py-3 text-[10px] font-black text-stone-500 uppercase tracking-wider">Booked On</th> */}
                           </tr>
                         </thead>
@@ -1231,6 +1252,16 @@ const Consultants = () => {
                               <td className="px-4 py-4">
                                 {getStatusBadge(booking.status)}
                               </td>
+                              <td className="px-4 py-4">
+                                {booking.status === "completed" && (
+                                  <button
+                                    onClick={() => setBookingToCancel(booking)}
+                                    className="px-3 py-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors border border-rose-100 whitespace-nowrap"
+                                  >
+                                    Cancel Booking
+                                  </button>
+                                )}
+                              </td>
                               {/* <td className="px-4 py-4">
                                 <p className="text-[10px] text-stone-400 font-medium">
                                   {formatDate(booking.created_at)}
@@ -1283,6 +1314,26 @@ const Consultants = () => {
         isOpen={isDetailsModalOpen}
         onClose={() => setIsDetailsModalOpen(false)}
         consultation={selectedConsultation}
+      />
+
+      <ConfirmDialog
+        open={!!bookingToCancel}
+        onOpenChange={(open) => !open && setBookingToCancel(null)}
+        title="Cancel this booking?"
+        description={
+          bookingToCancel
+            ? `${bookingToCancel.customer.name}'s booking will be cancelled, the time slot(s) freed, and the student emailed. The booking stays in your records as cancelled. This does not refund the payment: refund it in Stripe if needed.`
+            : ""
+        }
+        confirmLabel="Cancel booking"
+        onConfirm={async () => {
+          try {
+            await cancelConsultationPurchase(bookingToCancel.id).unwrap();
+            toast.success("Booking cancelled.");
+          } catch (err) {
+            toast.error(err?.data?.error || "Failed to cancel the booking.");
+          }
+        }}
       />
 
       <RescheduleDetailsModal
