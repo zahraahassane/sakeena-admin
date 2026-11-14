@@ -27,6 +27,7 @@ import ConsultationDetailsModal from "./ConsultationDetailsModal";
 import RescheduleDetailsModal from "./RescheduleDetailsModal";
 import ManageRecurringSchedulesModal from "./ManageRecurringSchedulesModal";
 import ManualBookingModal from "./ManualBookingModal";
+import RescheduleBookingModal from "./RescheduleBookingModal";
 import Pagination from "../../components/Pagination";
 import {
   useGetConsultationsQuery,
@@ -38,6 +39,13 @@ import {
   useCancelConsultationPurchaseMutation,
 } from "../../Api/adminApi";
 import ConfirmDialog from "../../components/ConfirmDialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "react-hot-toast";
 
 // Consultation Card Component with Calendar
@@ -438,6 +446,7 @@ const Consultants = () => {
   const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
   const [selectedReschedule, setSelectedReschedule] = useState(null);
   const [bookingToCancel, setBookingToCancel] = useState(null);
+  const [bookingToReschedule, setBookingToReschedule] = useState(null);
   const [cancelConsultationPurchase] = useCancelConsultationPurchaseMutation();
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -1153,13 +1162,22 @@ const Consultants = () => {
                           </div>
 
                           {booking.status === "completed" && (
-                            <button
-                              onClick={() => setBookingToCancel(booking)}
-                              className="w-full px-4 py-2.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-xl text-[10px] font-black uppercase tracking-wider transition-colors inline-flex items-center justify-center gap-2 border border-rose-100"
-                            >
-                              <XCircle className="w-3.5 h-3.5" />
-                              Cancel Booking
-                            </button>
+                            <div className="flex gap-3">
+                              <button
+                                onClick={() => setBookingToReschedule(booking)}
+                                className="flex-1 px-4 py-2.5 bg-teal-50 text-teal-700 hover:bg-teal-100 rounded-xl text-[10px] font-black uppercase tracking-wider transition-colors inline-flex items-center justify-center gap-2 border border-teal-100"
+                              >
+                                <Clock className="w-3.5 h-3.5" />
+                                Reschedule
+                              </button>
+                              <button
+                                onClick={() => setBookingToCancel(booking)}
+                                className="flex-1 px-4 py-2.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-xl text-[10px] font-black uppercase tracking-wider transition-colors inline-flex items-center justify-center gap-2 border border-rose-100"
+                              >
+                                <XCircle className="w-3.5 h-3.5" />
+                                Cancel Booking
+                              </button>
+                            </div>
                           )}
                         </div>
                       ))}
@@ -1254,12 +1272,30 @@ const Consultants = () => {
                               </td>
                               <td className="px-4 py-4">
                                 {booking.status === "completed" && (
-                                  <button
-                                    onClick={() => setBookingToCancel(booking)}
-                                    className="px-3 py-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors border border-rose-100 whitespace-nowrap"
-                                  >
-                                    Cancel Booking
-                                  </button>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <button
+                                        aria-label="Booking actions"
+                                        className="p-2 rounded-lg text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-colors data-[state=open]:bg-stone-100 data-[state=open]:text-stone-700"
+                                      >
+                                        <MoreHorizontal className="w-5 h-5" />
+                                      </button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-48">
+                                      <DropdownMenuItem onSelect={() => setBookingToReschedule(booking)}>
+                                        <Clock className="w-4 h-4" />
+                                        Reschedule
+                                      </DropdownMenuItem>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem
+                                        onSelect={() => setBookingToCancel(booking)}
+                                        className="text-rose-600 focus:text-rose-600 focus:bg-rose-50"
+                                      >
+                                        <XCircle className="w-4 h-4" />
+                                        Cancel booking
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
                                 )}
                               </td>
                               {/* <td className="px-4 py-4">
@@ -1334,6 +1370,12 @@ const Consultants = () => {
             toast.error(err?.data?.error || "Failed to cancel the booking.");
           }
         }}
+      />
+
+      <RescheduleBookingModal
+        isOpen={!!bookingToReschedule}
+        onClose={() => setBookingToReschedule(null)}
+        booking={bookingToReschedule}
       />
 
       <RescheduleDetailsModal
