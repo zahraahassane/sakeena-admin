@@ -1444,7 +1444,7 @@ export const adminApi = api.injectEndpoints({
         method: method,
         body: body || data,
       }),
-      invalidatesTags: ["teacher"],
+      invalidatesTags: ["teacher", "teachers"],
     }),
 
     getCourseById: builder.query({

@@ -33,6 +33,7 @@ const TeacherDetails = ({ teacher, onBack }) => {
     about: "",
     education: "",
     consultation_rate: "",
+    offers_consultations: false,
     specialties: "",
     achievements: "",
     first_name: "",
@@ -53,6 +54,7 @@ const TeacherDetails = ({ teacher, onBack }) => {
           ? source.education.join("\n")
           : source.education || "",
         consultation_rate: source.consultation_rate || source.consultationRate || "0",
+        offers_consultations: Boolean(source.offers_consultations),
         specialties: Array.isArray(source.specialties)
           ? source.specialties.join(", ")
           : "",
@@ -84,6 +86,16 @@ const TeacherDetails = ({ teacher, onBack }) => {
   };
 
   const handleSave = async () => {
+    const rate = parseFloat(formData.consultation_rate) || 0;
+    if (rate < 0) {
+      toast.error("Consultation rate cannot be negative");
+      return;
+    }
+    if (formData.offers_consultations && rate <= 0) {
+      toast.error("Set an hourly rate above 0 to offer consultations");
+      return;
+    }
+
     try {
       // Step 1: Update text data using JSON
       const jsonData = {
@@ -95,6 +107,7 @@ const TeacherDetails = ({ teacher, onBack }) => {
         location: formData.location,
         about: formData.about,
         consultation_rate: formData.consultation_rate,
+        offers_consultations: formData.offers_consultations,
         specialties: formData.specialties
           ? formData.specialties.split(",").map((s) => s.trim())
           : [],
@@ -570,6 +583,56 @@ const TeacherDetails = ({ teacher, onBack }) => {
                 <p className="text-neutral-400 text-[11px] arimo-font">
                   Rate for one-on-one consultation sessions
                 </p>
+              </div>
+
+              <div className="bg-white p-5 rounded-xl border border-stone-200 flex items-center justify-between gap-4">
+                <div className="flex flex-col gap-1">
+                  <span className="text-neutral-500 text-xs font-medium uppercase tracking-wider">
+                    Offers Consultations
+                  </span>
+                  <p className="text-neutral-400 text-[11px] arimo-font">
+                    {formData.offers_consultations
+                      ? "This teacher is a consultant and can have consultation plans"
+                      : "Turn on to make this teacher a consultant"}
+                  </p>
+                </div>
+                {isEditing ? (
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={formData.offers_consultations}
+                    aria-label="Offers consultations"
+                    onClick={() =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        offers_consultations: !prev.offers_consultations,
+                      }))
+                    }
+                    className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
+                      formData.offers_consultations
+                        ? "bg-greenTeal"
+                        : "bg-stone-300"
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                        formData.offers_consultations
+                          ? "translate-x-5"
+                          : "translate-x-0.5"
+                      }`}
+                    />
+                  </button>
+                ) : (
+                  <span
+                    className={`px-3 py-1 rounded-full text-xs font-bold ${
+                      profile.offers_consultations
+                        ? "bg-green-50 text-green-700"
+                        : "bg-stone-100 text-stone-500"
+                    }`}
+                  >
+                    {profile.offers_consultations ? "Yes" : "No"}
+                  </span>
+                )}
               </div>
             </div>
 
