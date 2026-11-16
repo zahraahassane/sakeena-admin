@@ -44,6 +44,10 @@ import {
 import CourseBuilder from "./CourseBuilder";
 import LiveSessions from "./LiveSessions";
 import Pagination from "../../components/Pagination";
+import {
+  getCourseTeachers,
+  getCourseTeacherNames,
+} from "../../utils/courseTeachers";
 
 // Sortable row for drag-and-drop reorder mode
 const SortableCourseRow = ({ course, getInstructorName, getStatusLabel }) => {
@@ -63,7 +67,7 @@ const SortableCourseRow = ({ course, getInstructorName, getStatusLabel }) => {
     zIndex: isDragging ? 10 : undefined,
   };
 
-  const instructorName = getInstructorName(course.teacher);
+  const instructorName = getInstructorName(course);
   const statusLabel = getStatusLabel(course.status);
 
   return (
@@ -90,7 +94,9 @@ const SortableCourseRow = ({ course, getInstructorName, getStatusLabel }) => {
         <p className="text-sm font-bold text-stone-900 truncate">
           {course.title}
         </p>
-        <p className="text-xs text-stone-400">{instructorName}</p>
+        <p className="text-xs text-stone-400 truncate" title={instructorName}>
+          {instructorName}
+        </p>
       </div>
       <span
         className={`hidden sm:inline-flex px-3 py-1 rounded-full text-[10px] font-bold uppercase shrink-0 ${
@@ -176,9 +182,8 @@ const Courses = () => {
     return status;
   };
 
-  const getInstructorName = (teacher) => {
-    if (!teacher?.user) return "N/A";
-    return `${teacher.user.first_name} ${teacher.user.last_name}`;
+  const getInstructorName = (course) => {
+    return getCourseTeacherNames(course) || "N/A";
   };
 
   const filteredCourses = (apiResponse?.results || []).filter((c) => {
@@ -714,7 +719,7 @@ const Courses = () => {
           {viewMode === "grid" ? (
             <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 tracking-tight">
               {filteredCourses.map((c) => {
-                const instructorName = getInstructorName(c.teacher);
+                const instructorName = getInstructorName(c);
                 const statusLabel = getStatusLabel(c.status);
                 return (
                   <div
@@ -761,17 +766,30 @@ const Courses = () => {
                         </h4>
                         <div className="flex items-center justify-between gap-2 text-stone-600">
                           <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center">
-                              {c.teacher?.profile_picture ? (
-                                <img
-                                  src={c.teacher.profile_picture}
-                                  className="w-full h-full rounded-full object-cover"
-                                />
-                              ) : (
-                                <Users className="w-4 h-4" />
-                              )}
+                            <div className="flex -space-x-2 shrink-0">
+                              {(getCourseTeachers(c).length
+                                ? getCourseTeachers(c).slice(0, 3)
+                                : [null]
+                              ).map((t, i) => (
+                                <div
+                                  key={t?.id ?? i}
+                                  className="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center ring-2 ring-white"
+                                >
+                                  {t?.profile_picture ? (
+                                    <img
+                                      src={t.profile_picture}
+                                      className="w-full h-full rounded-full object-cover"
+                                    />
+                                  ) : (
+                                    <Users className="w-4 h-4" />
+                                  )}
+                                </div>
+                              ))}
                             </div>
-                            <span className="text-sm font-medium">
+                            <span
+                              className="text-sm font-medium line-clamp-2"
+                              title={instructorName}
+                            >
                               {instructorName}
                             </span>
                           </div>
@@ -868,7 +886,7 @@ const Courses = () => {
                 </thead>
                 <tbody className="divide-y divide-black/5">
                   {filteredCourses.map((c) => {
-                    const instructorName = getInstructorName(c.teacher);
+                    const instructorName = getInstructorName(c);
                     const statusLabel = getStatusLabel(c.status);
                     return (
                       <tr
@@ -884,7 +902,10 @@ const Courses = () => {
                             {c.title}
                           </span>
                         </td>
-                        <td className="py-4 px-6 text-neutral-600">
+                        <td
+                          className="py-4 px-6 text-neutral-600 max-w-[16rem] truncate"
+                          title={instructorName}
+                        >
                           {instructorName}
                         </td>
                         <td className="py-4 px-6 text-center text-neutral-600">

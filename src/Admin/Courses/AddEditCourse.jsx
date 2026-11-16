@@ -7,12 +7,14 @@ import {
   Trash2,
   Plus,
   ChevronDown,
+  X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import TextEditor from "../../components/Editor";
 import CourseCurriculum from "./CourseCurriculum";
+import { getCourseTeachers } from "../../utils/courseTeachers";
 import {
   useCreateCourseMutation,
   useUpdateCourseMutation,
@@ -44,7 +46,7 @@ const AddEditCourse = ({ onSave }) => {
     title: "",
     subtitle: "",
     description: "",
-    teacher: "",
+    teachers: [],
     category: "",
     status: "upcoming",
     price: "",
@@ -131,7 +133,9 @@ const AddEditCourse = ({ onSave }) => {
         title: courseDetails.title || "",
         subtitle: courseDetails.subtitle || "",
         description: cleanHtml(courseDetails.description || ""),
-        teacher: courseDetails.teacher?.id || "",
+        teachers: getCourseTeachers(courseDetails)
+          .map((t) => t.id)
+          .filter((tid) => tid !== undefined && tid !== null),
         category: courseDetails.category?.id || "",
         status: courseDetails.status || "upcoming",
         price: courseDetails.price || "",
@@ -160,6 +164,36 @@ const AddEditCourse = ({ onSave }) => {
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
     }
+  };
+
+  const addTeacher = (value) => {
+    if (!value) return;
+    const match = teachers.find((t) => String(t.id) === String(value));
+    if (!match) return;
+    setFormData((prev) =>
+      prev.teachers.some((tid) => String(tid) === String(match.id))
+        ? prev
+        : { ...prev, teachers: [...prev.teachers, match.id] },
+    );
+  };
+
+  const removeTeacher = (teacherId) => {
+    setFormData((prev) => ({
+      ...prev,
+      teachers: prev.teachers.filter(
+        (tid) => String(tid) !== String(teacherId),
+      ),
+    }));
+  };
+
+  const makeLeadTeacher = (teacherId) => {
+    setFormData((prev) => ({
+      ...prev,
+      teachers: [
+        ...prev.teachers.filter((tid) => String(tid) === String(teacherId)),
+        ...prev.teachers.filter((tid) => String(tid) !== String(teacherId)),
+      ],
+    }));
   };
 
   const handleCurriculumChange = (newCurriculum) => {
@@ -294,8 +328,8 @@ const AddEditCourse = ({ onSave }) => {
       toast.error("Please select a category.");
       return;
     }
-    if (!formData.teacher) {
-      toast.error("Please assign a teacher.");
+    if (!formData.teachers.length) {
+      toast.error("Please assign at least one teacher.");
       return;
     }
     if (!formData.price) {
@@ -310,7 +344,7 @@ const AddEditCourse = ({ onSave }) => {
       if (formData.description)
         payload.append("description", formData.description);
       payload.append("category_id", formData.category);
-      payload.append("teacher_id", formData.teacher);
+      formData.teachers.forEach((tid) => payload.append("teacher_ids", tid));
       payload.append("price", formData.price);
       payload.append("level", formData.level);
       payload.append("status", formData.status);
@@ -351,7 +385,7 @@ const AddEditCourse = ({ onSave }) => {
         title: "",
         subtitle: "",
         description: "",
-        teacher: "",
+        teachers: [],
         category: "",
         status: "upcoming",
         price: "",
@@ -648,20 +682,74 @@ const AddEditCourse = ({ onSave }) => {
                         />
                       </FormGroup>
                     )}
-                    <FormGroup label="Assign Teacher">
-                      <select
-                        name="teacher"
-                        value={formData.teacher}
-                        onChange={handleChange}
-                        className="w-full bg-stone-50 border border-stone-100 rounded-xl px-4 py-2 outline-none appearance-none cursor-pointer"
-                      >
-                        <option value="">Select Teacher</option>
-                        {teachers.map((t) => (
-                          <option key={t.id} value={t.id}>
-                            {t.user?.first_name} {t.user?.last_name}
+                    <FormGroup label="Assign Teachers">
+                      <div className="space-y-2">
+                        {formData.teachers.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {formData.teachers.map((tid, index) => {
+                              const t = teachers.find(
+                                (x) => String(x.id) === String(tid),
+                              );
+                              const name = t
+                                ? `${t.user?.first_name || ""} ${t.user?.last_name || ""}`.trim()
+                                : `Teacher #${tid}`;
+                              return (
+                                <span
+                                  key={tid}
+                                  className="inline-flex items-center gap-2 bg-stone-50 border border-stone-100 rounded-xl pl-3 pr-2 py-1.5 text-sm font-bold text-stone-800"
+                                >
+                                  {name}
+                                  {index === 0 ? (
+                                    <span className="text-[10px] font-black uppercase tracking-wider bg-teal-50 text-teal-700 rounded-md px-1.5 py-0.5">
+                                      Lead
+                                    </span>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => makeLeadTeacher(tid)}
+                                      className="text-[10px] font-bold uppercase tracking-wider text-stone-400 hover:text-teal-600"
+                                      title="Make lead teacher"
+                                    >
+                                      Make lead
+                                    </button>
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={() => removeTeacher(tid)}
+                                    className="text-stone-400 hover:text-red-500"
+                                    aria-label={`Remove ${name}`}
+                                  >
+                                    <X size={14} />
+                                  </button>
+                                </span>
+                              );
+                            })}
+                          </div>
+                        )}
+                        <select
+                          value=""
+                          onChange={(e) => addTeacher(e.target.value)}
+                          className="w-full bg-stone-50 border border-stone-100 rounded-xl px-4 py-2 outline-none appearance-none cursor-pointer"
+                        >
+                          <option value="">
+                            {formData.teachers.length
+                              ? "Add another teacher"
+                              : "Select Teacher"}
                           </option>
-                        ))}
-                      </select>
+                          {teachers
+                            .filter(
+                              (t) =>
+                                !formData.teachers.some(
+                                  (tid) => String(tid) === String(t.id),
+                                ),
+                            )
+                            .map((t) => (
+                              <option key={t.id} value={t.id}>
+                                {t.user?.first_name} {t.user?.last_name}
+                              </option>
+                            ))}
+                        </select>
+                      </div>
                     </FormGroup>
                   </div>
 

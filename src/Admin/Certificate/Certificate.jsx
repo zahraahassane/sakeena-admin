@@ -8,6 +8,7 @@ import {
 import CertificateDetails from "./CertificateDetails";
 import { useGetCoursesDataQuery } from "../../Api/adminApi";
 import Pagination from "../../components/Pagination";
+import { getCourseTeacherNames } from "../../utils/courseTeachers";
 
 const StepItem = ({ number, title, subtitle }) => (
   <div className="w-full flex items-start gap-4">
@@ -26,9 +27,7 @@ const StepItem = ({ number, title, subtitle }) => (
 );
 
 const CourseCard = ({ course, onClick }) => {
-  const teacherName = course.teacher?.user 
-    ? `${course.teacher.user.first_name} ${course.teacher.user.last_name}`.trim() 
-    : "Unknown Instructor";
+  const teacherName = getCourseTeacherNames(course) || "Unknown Instructor";
 
   return (
     <div

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { BookOpen, CalendarDays, Clock, Eye, Lock, Search, User, X } from "lucide-react";
 import { useGetCategoriesQuery, useGetCoursesQuery } from "../Api/api";
+import { getCourseTeacherNames } from "../utils/courseTeachers";
 
 export default function MyCourses() {
   const navigate = useNavigate();
@@ -58,9 +59,7 @@ export default function MyCourses() {
             : "bg-gray-400 text-white");
 
     const instructorName =
-      course.teacher?.user?.first_name && course.teacher?.user?.last_name
-        ? `${course.teacher.user.first_name} ${course.teacher.user.last_name}`
-        : course.instructor || "Instructor";
+      getCourseTeacherNames(course) || course.instructor || "Instructor";
 
     return {
       ...course,

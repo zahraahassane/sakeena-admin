@@ -10,6 +10,7 @@ import {
   useDeleteCourseAnnouncementMutation,
 } from "../../Api/adminApi";
 import Pagination from "../../components/Pagination";
+import { getCourseTeachers, getCourseTeacherNames } from "../../utils/courseTeachers";
 import toast from "react-hot-toast";
 
 import {
@@ -481,8 +482,12 @@ const Announcement = () => {
                                    )}
                                 </div>
                                 <div className="flex items-center gap-2 mt-5 text-sm text-neutral-500 font-medium border-t border-black/5 pt-4">
-                                   <img src={course.teacher?.profile_picture} alt="" className="w-6 h-6 rounded-full object-cover" onError={(e) => e.target.style.display='none'}/>
-                                   <span className="truncate">{course.teacher?.user?.first_name} {course.teacher?.user?.last_name}</span>
+                                   <div className="flex -space-x-2 shrink-0">
+                                      {getCourseTeachers(course).slice(0, 3).map((t, i) => (
+                                         <img key={t.id ?? i} src={t.profile_picture} alt="" className="w-6 h-6 rounded-full object-cover ring-2 ring-white" onError={(e) => e.target.style.display='none'}/>
+                                      ))}
+                                   </div>
+                                   <span className="truncate" title={getCourseTeacherNames(course)}>{getCourseTeacherNames(course)}</span>
                                 </div>
                              </div>
                            ) : (
@@ -552,11 +557,15 @@ const Announcement = () => {
                                 {/* Right: Teacher & Price */}
                                 <div className="flex items-center justify-between lg:justify-end gap-6 border-t lg:border-t-0 border-neutral-100 pt-4 lg:pt-0 shrink-0">
                                    {/* Teacher */}
-                                   {course.teacher && (
+                                   {getCourseTeachers(course).length > 0 && (
                                       <div className="flex items-center gap-2.5 text-sm text-neutral-500 font-medium">
-                                         <img src={course.teacher.profile_picture} alt="" className="w-8 h-8 rounded-full object-cover border border-black/5" />
+                                         <div className="flex -space-x-2 shrink-0">
+                                            {getCourseTeachers(course).slice(0, 3).map((t, i) => (
+                                               <img key={t.id ?? i} src={t.profile_picture} alt="" className="w-8 h-8 rounded-full object-cover border border-black/5 ring-2 ring-white" />
+                                            ))}
+                                         </div>
                                          <div className="flex flex-col">
-                                            <span className="font-bold text-neutral-800 line-clamp-1">{course.teacher.user?.first_name} {course.teacher.user?.last_name}</span>
+                                            <span className="font-bold text-neutral-800 line-clamp-1" title={getCourseTeacherNames(course)}>{getCourseTeacherNames(course)}</span>
                                             <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider">Instructor</span>
                                          </div>
                                       </div>

@@ -10,6 +10,11 @@ import {
   Users,
   LayoutGrid,
 } from "lucide-react";
+import {
+  getCourseTeachers,
+  getTeacherName,
+  getCourseTeacherNames,
+} from "../../utils/courseTeachers";
 
 const CourseDetailsContent = ({ course }) => {
   if (!course) return null;
@@ -26,9 +31,8 @@ const CourseDetailsContent = ({ course }) => {
     return String(value);
   };
 
-  const instructorName = course.teacher?.user 
-    ? `${course.teacher.user.first_name} ${course.teacher.user.last_name}`
-    : "N/A";
+  const courseTeachers = getCourseTeachers(course);
+  const instructorName = getCourseTeacherNames(course) || "N/A";
 
   const categoryName = course.category?.name || "N/A";
   const durationText = course.duration_in_weeks ? `${course.duration_in_weeks} Weeks` : "N/A";
@@ -118,39 +122,54 @@ const CourseDetailsContent = ({ course }) => {
       </div>
 
       {/* Teacher Profile Section */}
-      {course.teacher && (
+      {courseTeachers.length > 0 && (
         <section className="bg-white p-8 rounded-[2rem] border border-stone-200 shadow-sm space-y-6">
           <div className="flex items-center gap-2 text-stone-400 font-bold uppercase tracking-widest text-xs">
             <Users className="w-4 h-4 text-teal-600" />
-            About the Instructor
+            {courseTeachers.length > 1 ? "About the Instructors" : "About the Instructor"}
           </div>
-          <div className="flex flex-col md:flex-row items-start gap-6 p-6 bg-stone-50 rounded-3xl border border-stone-100">
-            <img 
-              src={course.teacher.profile_picture || "https://zahra-cdn.b-cdn.net/teachers/profiles/placeholder.webp"} 
-              alt={instructorName}
-              className="w-24 h-24 rounded-2xl object-cover shadow-sm border-4 border-white"
-            />
-            <div className="space-y-3 flex-1">
-              <div>
-                <h4 className="text-xl font-black text-stone-900 tracking-tight">{instructorName}</h4>
-                <p className="text-sm font-bold text-teal-600 uppercase tracking-wider">{course.teacher.professional_title || "Instructor"}</p>
-              </div>
-              <p className="text-[15px] text-stone-600 leading-relaxed font-medium">
-                {course.teacher.about || "No biography provided."}
-              </p>
-              <div className="flex flex-wrap gap-4 pt-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-black text-stone-400 uppercase tracking-widest">Rate:</span>
-                  <span className="text-xs font-bold text-stone-700">${course.teacher.consultation_rate}/hr</span>
+          {courseTeachers.map((teacher, index) => {
+            const name = getTeacherName(teacher) || "N/A";
+            return (
+              <div
+                key={teacher.id ?? index}
+                className="flex flex-col md:flex-row items-start gap-6 p-6 bg-stone-50 rounded-3xl border border-stone-100"
+              >
+                <img 
+                  src={teacher.profile_picture || "https://zahra-cdn.b-cdn.net/teachers/profiles/placeholder.webp"} 
+                  alt={name}
+                  className="w-24 h-24 rounded-2xl object-cover shadow-sm border-4 border-white"
+                />
+                <div className="space-y-3 flex-1">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h4 className="text-xl font-black text-stone-900 tracking-tight">{name}</h4>
+                      {courseTeachers.length > 1 && index === 0 && (
+                        <span className="px-2 py-0.5 bg-teal-50 text-teal-600 text-[10px] font-bold rounded-full uppercase tracking-tighter">
+                          Lead
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm font-bold text-teal-600 uppercase tracking-wider">{teacher.professional_title || "Instructor"}</p>
+                  </div>
+                  <p className="text-[15px] text-stone-600 leading-relaxed font-medium">
+                    {teacher.about || "No biography provided."}
+                  </p>
+                  <div className="flex flex-wrap gap-4 pt-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-black text-stone-400 uppercase tracking-widest">Rate:</span>
+                      <span className="text-xs font-bold text-stone-700">${teacher.consultation_rate}/hr</span>
+                    </div>
+                    {teacher.offers_consultations && (
+                      <span className="px-2 py-0.5 bg-teal-50 text-teal-600 text-[10px] font-bold rounded-full uppercase tracking-tighter">
+                        Available for Consultations
+                      </span>
+                    )}
+                  </div>
                 </div>
-                {course.teacher.offers_consultations && (
-                  <span className="px-2 py-0.5 bg-teal-50 text-teal-600 text-[10px] font-bold rounded-full uppercase tracking-tighter">
-                    Available for Consultations
-                  </span>
-                )}
               </div>
-            </div>
-          </div>
+            );
+          })}
         </section>
       )}
 

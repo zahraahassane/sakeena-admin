@@ -1,4 +1,5 @@
 import React from "react";
+import { getCourseTeacherNames } from "../../utils/courseTeachers";
 import { X, BookOpen } from "lucide-react";
 import {
   useGetStudentProfileQuery,
@@ -91,11 +92,7 @@ const StudentDetailsModal = ({ isOpen, onClose, student }) => {
                         {enrollment?.course?.title}
                       </td>
                       <td className="py-3 px-4 text-neutral-950">
-                        {
-                          enrollment?.course?.teacher?.user?.first_name &&
-                            enrollment?.course?.teacher?.user?.last_name ?
-                            `${enrollment?.course?.teacher?.user?.first_name} ${enrollment?.course?.teacher?.user?.last_name}`.trim() : "No teacher assign yet"
-                        }
+                        {getCourseTeacherNames(enrollment?.course) || "No teacher assign yet"}
                       </td>
                     </tr>
                   ))}
