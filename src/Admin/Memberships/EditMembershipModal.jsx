@@ -9,6 +9,7 @@ const EditMembershipModal = ({ isOpen, onClose, plan }) => {
     description: "",
     price: "",
     duration_days: "",
+    yearly_price: "",
     is_active: true
   });
 
@@ -23,6 +24,7 @@ const EditMembershipModal = ({ isOpen, onClose, plan }) => {
           description: plan.description || "",
           price: plan.price || "",
           duration_days: plan.duration_days || "",
+          yearly_price: plan.yearly_price || "",
           is_active: plan.is_active !== undefined ? plan.is_active : true
         });
       } else {
@@ -31,6 +33,7 @@ const EditMembershipModal = ({ isOpen, onClose, plan }) => {
           description: "",
           price: "",
           duration_days: "",
+          yearly_price: "",
           is_active: true
         });
       }
@@ -50,7 +53,9 @@ const EditMembershipModal = ({ isOpen, onClose, plan }) => {
         description: settings.description,
         price: parseFloat(settings.price) || 0,
         is_active: settings.is_active,
-        duration_days: parseInt(settings.duration_days) || 0
+        duration_days: parseInt(settings.duration_days) || 0,
+        // Empty means monthly only. The site hides the yearly option when this is null.
+        yearly_price: settings.yearly_price === "" ? null : parseFloat(settings.yearly_price)
       };
       
       if (plan) {
@@ -124,6 +129,24 @@ const EditMembershipModal = ({ isOpen, onClose, plan }) => {
               type="number"
               value={settings.price}
               onChange={(e) => handleChange("price", e.target.value)}
+              className="px-4 py-2 rounded-[10px] border border-neutral-300 text-neutral-950 text-base font-normal arimo-font focus:outline-none focus:border-greenTeal"
+            />
+          </div>
+
+          {/* Yearly price */}
+          <div className="flex flex-col gap-2">
+            <label className="text-neutral-700 text-sm font-normal arimo-font">
+              Yearly Price ($)
+            </label>
+            <p className="text-xs text-neutral-500 -mt-1">
+              Optional. Students pay this once a year if they pick the yearly option. Leave empty to offer monthly only.
+            </p>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={settings.yearly_price}
+              onChange={(e) => handleChange("yearly_price", e.target.value)}
               className="px-4 py-2 rounded-[10px] border border-neutral-300 text-neutral-950 text-base font-normal arimo-font focus:outline-none focus:border-greenTeal"
             />
           </div>

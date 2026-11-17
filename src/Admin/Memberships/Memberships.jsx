@@ -87,6 +87,12 @@ const MembershipCard = ({ plan, onEdit }) => {
               <span className="text-white/80 text-base">
                 {getDurationString(plan.duration_days)}
               </span>
+              {plan.yearly_available && (
+                <span className="ml-3 text-white/90 text-base">
+                  or ${plan.yearly_price}/year
+                  {plan.yearly_savings_percent ? ` (save ${plan.yearly_savings_percent}%)` : ""}
+                </span>
+              )}
             </div>
 
             {/* Benefits Grid */}
