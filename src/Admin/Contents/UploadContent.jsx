@@ -16,6 +16,10 @@ import {
   useDeleteBlogCategoryMutation,
 } from "../../Api/adminApi";
 import TextEditor from "../../components/Editor";
+import ResourcePdfField, {
+  appendResource,
+  resourceFromBlog,
+} from "../../components/ResourcePdfField";
 import toast from "react-hot-toast";
 
 const UploadContent = ({ onSave, onBack, editItem }) => {
@@ -32,6 +36,7 @@ const UploadContent = ({ onSave, onBack, editItem }) => {
     category: editItem?.categoryId || "",
   });
 
+  const [resource, setResource] = useState(() => resourceFromBlog(editItem));
   const [tagInput, setTagInput] = useState("");
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
@@ -171,6 +176,7 @@ const UploadContent = ({ onSave, onBack, editItem }) => {
       formData.tags.forEach((tag) => {
         uploadData.append("tags", tag);
       });
+      appendResource(uploadData, resource);
 
       if (editItem) {
         await updateBlog({ slug: editItem.slug, body: uploadData }).unwrap();
@@ -247,6 +253,9 @@ const UploadContent = ({ onSave, onBack, editItem }) => {
               />
             </div>
           </div>
+
+          {/* Free resource PDF */}
+          <ResourcePdfField value={resource} onChange={setResource} />
 
           {/* Content Title */}
           <div className="bg-white p-6 rounded-2xl border border-black/10 shadow-sm space-y-4">

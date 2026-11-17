@@ -8,6 +8,7 @@ import {
   useGetTeacherProfileMeQuery
 } from '../Api/adminApi';
 import TextEditor from '../components/Editor';
+import ResourcePdfField, { appendResource, emptyResource } from '../components/ResourcePdfField';
 import Pagination from '../components/Pagination';
 import { Search } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -28,6 +29,7 @@ export default function ContentUpload() {
   const totalPages = blogsResponse?.total_pages || 1;
   const categories = categoriesData || [];
 
+  const [resource, setResource] = useState({ ...emptyResource });
   const [formData, setFormData] = useState({
     title: '',
     content: '',
@@ -93,11 +95,13 @@ export default function ContentUpload() {
       formData.tags.forEach(tag => {
         payload.append("tags", tag);
       });
+      appendResource(payload, resource);
 
       await addBlog(payload).unwrap();
 
       toast.success('Content published successfully!');
       setFormData({ title: '', content: '', coverImagePreview: null, coverImageFile: null, tags: [], excerpt: '', category_id: '' });
+      setResource({ ...emptyResource });
       setActiveTab('my-content');
     } catch (err) {
       toast.error('Failed to publish content. Check your inputs and try again.');
@@ -285,6 +289,9 @@ export default function ContentUpload() {
                   isEditable={true}
                 />
               </div>
+
+              {/* Free resource PDF */}
+              <ResourcePdfField value={resource} onChange={setResource} />
 
               {/* Additional Media */}
               {/* <div className="bg-white p-6 rounded-lg border border-gray-200">
