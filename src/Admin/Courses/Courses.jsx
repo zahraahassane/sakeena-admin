@@ -41,9 +41,8 @@ import {
   useAddCourseCategoryMutation,
   useDeleteCourseCategoryMutation,
 } from "../../Api/adminApi";
-import CourseBuilder from "./CourseBuilder";
-import LiveSessions from "./LiveSessions";
 import Pagination from "../../components/Pagination";
+import useUrlParam, { useResetPage } from "../../hooks/useUrlParam";
 import {
   getCourseTeachers,
   getCourseTeacherNames,
@@ -119,19 +118,20 @@ const SortableCourseRow = ({ course, getInstructorName, getStatusLabel }) => {
 const Courses = () => {
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState("grid");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState("All");
+  // List filters and page live in the URL so opening a course and coming back
+  // (or refreshing) keeps the list as it was.
+  const [searchQuery, setSearchQuery] = useUrlParam("search", "");
+  const [selectedCategory, setSelectedCategory] = useUrlParam("category", "");
+  const [selectedStatus, setSelectedStatus] = useUrlParam("status", "All");
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [isStatusOpen, setIsStatusOpen] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [activeView, setActiveView] = useState("listing"); // listing, add-edit, builder, live-sessions, reorder
   const [courseToEdit, setCourseToEdit] = useState(null);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useUrlParam("page", 1);
 
   // Reorder state
   const [isReorderMode, setIsReorderMode] = useState(false);
@@ -168,9 +168,7 @@ const Courses = () => {
   }, [allCoursesRaw]);
 
   // Reset to page 1 when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, selectedCategory, selectedStatus]);
+  useResetPage(setCurrentPage, [searchQuery, selectedCategory, selectedStatus]);
 
   const categories = categoriesResponse || [];
   const statuses = ["All", "Running", "Recorded", "Upcoming"];
@@ -210,8 +208,7 @@ const Courses = () => {
   };
 
   const handleOpenBuilder = (course) => {
-    setSelectedCourse(course);
-    setActiveView("builder");
+    navigate(`/admin/courses-management/${course.id}`);
   };
 
   const handleDeleteCourse = (course) => {
@@ -332,11 +329,6 @@ const Courses = () => {
     );
   };
 
-  const handleSaveCourse = (formData) => {
-    // API integration for saving would go here
-    setActiveView("listing");
-  };
-
   // Sync allCoursesRaw into reorderedCourses when reorder mode activates
   const enterReorderMode = () => {
     setIsReorderMode(true);
@@ -434,19 +426,6 @@ const Courses = () => {
         )}
       </div>
     );
-  }
-
-  if (activeView === "builder") {
-    return (
-      <CourseBuilder
-        course={selectedCourse}
-        onBack={() => setActiveView("listing")}
-      />
-    );
-  }
-
-  if (activeView === "live-sessions") {
-    return <LiveSessions onBack={() => setActiveView("listing")} />;
   }
 
   return (

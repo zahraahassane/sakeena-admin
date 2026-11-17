@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
   Search,
@@ -8,7 +9,9 @@ import {
   X,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { getCourseTeacherNames } from "../../utils/courseTeachers";
 import {
+  useGetCourseDetailsQuery,
   useGetCompletedStudentsQuery,
   useGetCertificateTemplatesQuery,
   useLazyGetCertificateTemplatePreviewQuery,
@@ -94,7 +97,23 @@ const StudentRow = ({ enrollment, isSelected, onSelect }) => {
   );
 };
 
-const CertificateDetails = ({ selectedCourse, onBack }) => {
+// Routed page: /admin/certificates/:courseId
+const CertificateDetails = () => {
+  const { courseId } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { data: course } = useGetCourseDetailsQuery(courseId);
+  const courseTitle = course?.title || "";
+  const instructorName = course
+    ? getCourseTeacherNames(course) || "Unknown Instructor"
+    : "";
+
+  // Back to the course list, on the same page the admin came from.
+  const onBack = () => {
+    if (location.key !== "default") navigate(-1);
+    else navigate("/admin/certificates", { replace: true });
+  };
+
   const [selectedEnrollments, setSelectedEnrollments] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
@@ -123,7 +142,7 @@ const CertificateDetails = ({ selectedCourse, onBack }) => {
   }, [isPreviewOpen]);
 
   // Queries
-  const { data: enrollmentsData, isLoading: isEnrollmentsLoading } = useGetCompletedStudentsQuery({ course: selectedCourse.id, page: currentPage });
+  const { data: enrollmentsData, isLoading: isEnrollmentsLoading } = useGetCompletedStudentsQuery({ course: courseId, page: currentPage });
   const { data: templatesData, isLoading: isTemplatesLoading } = useGetCertificateTemplatesQuery({ page_size: 1000 });
   const [fetchPreview] = useLazyGetCertificateTemplatePreviewQuery();
   const [issueCertificates, { isLoading: isIssuing }] = useIssueCertificatesMutation();
@@ -230,10 +249,10 @@ const CertificateDetails = ({ selectedCourse, onBack }) => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
         <div>
           <h1 className="text-neutral-800 text-2xl font-bold arimo-font">
-            {selectedCourse.title}
+            {courseTitle}
           </h1>
           <p className="text-neutral-500 text-sm font-normal arimo-font mt-1">
-            Instructor: {selectedCourse.instructor}
+            Instructor: {instructorName}
           </p>
         </div>
         <div className="flex flex-col gap-1 w-full md:min-w-[280px] md:w-auto">

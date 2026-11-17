@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   X,
   Mail,
@@ -19,7 +20,20 @@ import {
 } from "../../Api/adminApi";
 import toast from "react-hot-toast";
 
-const TeacherDetails = ({ teacher, onBack }) => {
+// Routed page: /admin/users-management/teachers/:id
+const TeacherDetails = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const routerLocation = useLocation();
+  // Stable object: the effect below depends on it.
+  const teacher = useMemo(() => ({ id }), [id]);
+
+  // Back to the list the admin came from (same tab, search and page).
+  const onBack = () => {
+    if (routerLocation.key !== "default") navigate(-1);
+    else navigate("/admin/users-management?tab=teachers", { replace: true });
+  };
+
   const { data, isLoading, isError } = useGetTeacherProfileQuery(teacher?.id, {
     skip: !teacher?.id,
   });

@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React from "react";
+import useUrlTab from "../../hooks/useUrlTab";
 import { Heart } from "lucide-react";
 import CourseTransactionsTable from "./CourseTransactionsTable";
 import DonationsTable from "./DonationsTable";
 
 const Payments = () => {
-  const [activeTab, setActiveTab] = useState("course"); // 'course' | 'donation'
+  const [activeTab, setActiveTab] = useUrlTab(["course", "donation"]);
 
   return (
     <div className="p-8 space-y-8 animate-in fade-in duration-500 min-h-screen">

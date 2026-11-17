@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import useUrlTab from "../../hooks/useUrlTab";
 import { Search, Filter, BookOpen, FileText } from "lucide-react";
 import AssignmentSection from "./AssignmentSection";
 import QuizSection from "./QuizSection";
@@ -10,7 +11,7 @@ import {
 } from "../../Api/adminApi";
 
 const Submission = () => {
-  const [activeTab, setActiveTab] = useState("assignment");
+  const [activeTab, setActiveTab] = useUrlTab(["assignment", "quiz"]);
   const [selectedCourseId, setSelectedCourseId] = useState("");
   const [selectedAssignmentCourseId, setSelectedAssignmentCourseId] = useState("");
   const [searchTerm, setSearchTerm] = useState("");

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import useUrlTab from '../hooks/useUrlTab';
 import { Eye, X, Play, Upload } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -15,7 +16,7 @@ import toast from 'react-hot-toast';
 
 export default function ContentUpload() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('my-content');
+  const [activeTab, setActiveTab] = useUrlTab(['my-content', 'upload']);
 
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);

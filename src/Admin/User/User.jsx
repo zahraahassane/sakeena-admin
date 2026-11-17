@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Search, Filter } from "lucide-react";
 import Pagination from "../../components/Pagination";
 import StudentTable from "./StudentTable";
 import TeacherTable from "./TeacherTable";
-import TeacherDetails from "./TeacherDetails";
+import useUrlTab from "../../hooks/useUrlTab";
+import useUrlParam, { useResetPage } from "../../hooks/useUrlParam";
 import AddUserModal from "./AddUserModal";
 import toast from "react-hot-toast";
 import {
@@ -14,12 +16,14 @@ import {
 } from "../../Api/adminApi";
 
 const User = () => {
-  const [activeTab, setActiveTab] = useState("students");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedTeacher, setSelectedTeacher] = useState(null);
+  const navigate = useNavigate();
+  // Tab, search and pages live in the URL so Back from a teacher's page
+  // returns to the same list.
+  const [activeTab, setActiveTab] = useUrlTab(["students", "teachers"]);
+  const [searchQuery, setSearchQuery] = useUrlParam("search", "");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [studentPage, setStudentPage] = useState(1);
-  const [teacherPage, setTeacherPage] = useState(1);
+  const [studentPage, setStudentPage] = useUrlParam("page", 1);
+  const [teacherPage, setTeacherPage] = useUrlParam("tpage", 1);
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
 
   useEffect(() => {
@@ -91,11 +95,7 @@ const User = () => {
   const filteredData = activeTab === "students" ? students : teachers;
 
   const handleTeacherView = (teacher) => {
-    setSelectedTeacher(teacher);
-  };
-
-  const handleBackToList = () => {
-    setSelectedTeacher(null);
+    navigate(`/admin/users-management/teachers/${teacher.id}`);
   };
 
   const handleAddUser = (userData) => {
@@ -159,13 +159,6 @@ const User = () => {
       toast.error("Failed to delete user. Please try again.");
     }
   };
-
-  // Render the details view if a teacher is selected
-  if (selectedTeacher) {
-    return (
-      <TeacherDetails teacher={selectedTeacher} onBack={handleBackToList} />
-    );
-  }
 
   return (
     <div className="pt-2 flex flex-col gap-6 animate-in fade-in duration-500">

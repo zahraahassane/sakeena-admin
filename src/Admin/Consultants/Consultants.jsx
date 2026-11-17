@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 import {
   User,
@@ -29,9 +30,11 @@ import ManageRecurringSchedulesModal from "./ManageRecurringSchedulesModal";
 import ManualBookingModal from "./ManualBookingModal";
 import RescheduleBookingModal from "./RescheduleBookingModal";
 import Pagination from "../../components/Pagination";
+import { updateUrlParams } from "../../hooks/useUrlParam";
 import {
   useGetConsultationsQuery,
   useGetTeacherProfilesQuery,
+  useGetTeacherProfileQuery,
   useGetRescheduleRequestsQuery,
   useGetConsultationCalendarQuery,
   useGetConsultationTimeslotsQuery,
@@ -422,11 +425,30 @@ const ConsultationCard = ({
   );
 };
 
+// Tab labels and what they look like in the URL (?tab=reschedule).
+const TAB_KEYS = {
+  Consultations: "consultations",
+  "Reschedule Requests": "reschedule",
+  "Booked Consultations": "booked",
+};
+
 const Consultants = () => {
-  const [activeTab, setActiveTab] = useState("Consultations"); // 'Consultations' or 'Reschedule Requests' or 'Booked Consultations'
-  const [activeView, setActiveView] = useState("teachers"); // 'teachers' or 'consultations' (for the teachers tab)
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  // The tab and the chosen teacher live in the URL (?tab=booked,
+  // ?teacher=12), so Back from a teacher's plans returns to the teacher list.
+  const activeTab =
+    Object.keys(TAB_KEYS).find((t) => TAB_KEYS[t] === searchParams.get("tab")) ||
+    "Consultations";
+  const teacherId =
+    activeTab === "Consultations" ? searchParams.get("teacher") : null;
+  const activeView = teacherId ? "consultations" : "teachers"; // teachers tab: list or one teacher's plans
+  const { data: teacherProfile } = useGetTeacherProfileQuery(teacherId, {
+    skip: !teacherId,
+  });
+  const selectedTeacher = teacherId ? { id: teacherId, ...teacherProfile } : null;
   const [bookedConsultationsView, setBookedConsultationsView] = useState("cards"); // 'cards' or 'table'
-  const [selectedTeacher, setSelectedTeacher] = useState(null);
   const [isConsultationModalOpen, setIsConsultationModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isManageRecurringModalOpen, setIsManageRecurringModalOpen] = useState(false);
@@ -476,7 +498,7 @@ const Consultants = () => {
 
   // Only fetch consultations when a teacher is selected and in the correct view/tab
   const shouldFetchConsultations =
-    !!selectedTeacher &&
+    !!teacherId &&
     activeView === "consultations" &&
     activeTab === "Consultations";
   const {
@@ -485,7 +507,7 @@ const Consultants = () => {
     isError: isConsultationsError,
   } = useGetConsultationsQuery(
     {
-      teacher: selectedTeacher?.id,
+      teacher: teacherId,
       search: searchQuery,
       page: consultationPage,
     },
@@ -562,25 +584,30 @@ const Consultants = () => {
   };
 
   const handleTeacherClick = (teacher) => {
-    setSelectedTeacher(teacher);
-    setActiveView("consultations");
+    // A new history entry, so Back returns to the teacher list.
+    const params = new URLSearchParams(searchParams);
+    params.set("teacher", teacher.id);
+    setSearchParams(params);
     setSearchQuery("");
     setConsultationPage(1);
   };
 
   const handleBackToTeachers = () => {
-    setActiveView("teachers");
-    setSelectedTeacher(null);
+    if (location.key !== "default") {
+      navigate(-1);
+    } else {
+      updateUrlParams(searchParams, setSearchParams, (p) => p.delete("teacher"));
+    }
     setSearchQuery("");
   };
 
   const handleTabChange = (tab) => {
-    setActiveTab(tab);
+    updateUrlParams(searchParams, setSearchParams, (p) => {
+      if (tab === "Consultations") p.delete("tab");
+      else p.set("tab", TAB_KEYS[tab]);
+      p.delete("teacher");
+    });
     setSearchQuery("");
-    if (tab === "Consultations") {
-      setActiveView("teachers");
-      setSelectedTeacher(null);
-    }
   };
 
   const getStatusBadge = (status) => {

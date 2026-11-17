@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { Search, ChevronDown, MessageSquare, Loader2 } from "lucide-react";
-import { useGetDiscussionInboxQuery } from "../../Api/adminApi";
+import {
+  useGetDiscussionInboxQuery,
+  useGetCourseDiscussionDetailsQuery,
+} from "../../Api/adminApi";
+import { updateUrlParams } from "../../hooks/useUrlParam";
 import CommunityChat from "../../components/CommunityChat";
 import Pagination from "../../components/Pagination";
 
@@ -41,7 +46,34 @@ const Discussions = () => {
   const [search, setSearch] = useState("");
   const [course, setCourse] = useState("");
   const [page, setPage] = useState(1);
-  const [openTopic, setOpenTopic] = useState(null);
+  // The open thread lives in the URL (?topic=5&topic_course=2), so Back from a
+  // thread returns to the inbox and a thread can be linked to or refreshed.
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const topicId = searchParams.get("topic");
+  const topicCourseId = searchParams.get("topic_course");
+  const { data: openTopic, isError: isTopicError } =
+    useGetCourseDiscussionDetailsQuery(
+      { course_pk: topicCourseId, id: topicId },
+      { skip: !topicId || !topicCourseId },
+    );
+
+  const openThread = (topic) => {
+    // A new history entry, so Back returns to the inbox.
+    const params = new URLSearchParams(searchParams);
+    params.set("topic", topic.id);
+    params.set("topic_course", topic.course);
+    setSearchParams(params);
+  };
+  const closeThread = () => {
+    if (location.key !== "default") navigate(-1);
+    else
+      updateUrlParams(searchParams, setSearchParams, (p) => {
+        p.delete("topic");
+        p.delete("topic_course");
+      });
+  };
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -60,14 +92,37 @@ const Discussions = () => {
   const topics = data?.results || [];
   const courseOptions = data?.courses || [];
 
-  if (openTopic) {
+  if (topicId && topicCourseId) {
+    if (isTopicError) {
+      return (
+        <div className="py-24 flex flex-col items-center gap-4">
+          <p className="text-stone-600 text-lg">This discussion could not be loaded.</p>
+          <button
+            onClick={closeThread}
+            className="text-greenTeal font-medium hover:underline"
+          >
+            Back to discussions
+          </button>
+        </div>
+      );
+    }
+    if (!openTopic) {
+      return (
+        <div className="py-24 flex justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-greenTeal" />
+        </div>
+      );
+    }
     return (
       <div className="pt-2 pb-10 animate-in fade-in duration-500">
         <CommunityChat
-          courseId={openTopic.course}
-          courseTitle={openTopic.course_title}
+          key={openTopic.id}
+          courseId={topicCourseId}
+          courseTitle={
+            topics.find((t) => String(t.id) === topicId)?.course_title || ""
+          }
           initialDiscussion={openTopic}
-          onBack={() => setOpenTopic(null)}
+          onBack={closeThread}
         />
       </div>
     );
@@ -151,7 +206,7 @@ const Discussions = () => {
                 {topics.map((t) => (
                   <tr
                     key={t.id}
-                    onClick={() => setOpenTopic(t)}
+                    onClick={() => openThread(t)}
                     className="hover:bg-zinc-50/50 transition-colors cursor-pointer"
                   >
                     <td className="py-4 px-6 max-w-[360px]">

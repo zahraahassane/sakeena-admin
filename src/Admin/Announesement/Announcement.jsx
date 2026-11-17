@@ -1,4 +1,7 @@
 import React, { useState } from "react";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import useUrlTab from "../../hooks/useUrlTab";
+import { updateUrlParams } from "../../hooks/useUrlParam";
 import CreateAnnouncementModal from "./CreateAnnouncementModal";
 import CreatePopupAnnouncementModal from "./CreatePopupAnnouncementModal";
 import EditPopupAnnouncementModal from "./EditPopupAnnouncementModal";
@@ -6,6 +9,7 @@ import {
   useGetSiteAnnouncementsQuery, 
   useDeleteSiteAnnouncementMutation,
   useGetCoursesDataQuery,
+  useGetCourseDetailsQuery,
   useGetCourseAnnouncementsQuery,
   useDeleteCourseAnnouncementMutation,
 } from "../../Api/adminApi";
@@ -204,7 +208,12 @@ const CourseAnnouncementCard = ({ announcement, onDelete }) => {
 };
 
 const Announcement = () => {
-  const [activeTab, setActiveTab] = useState("announcements");
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  // The tab and the course being managed live in the URL (?tab=popups,
+  // ?course=7) so Back from one course's notices returns to the course list.
+  const [activeTab, setActiveTab] = useUrlTab(["announcements", "popups"]);
   const [viewMode, setViewMode] = useState("grid");
   
   const [isModalOpen, setIsModalOpen] = useState(false); // For Course Announcement Creates
@@ -243,7 +252,21 @@ const Announcement = () => {
   const popups = popupsData?.results || [];
 
   // Course Announcements Data
-  const [selectedCourse, setSelectedCourse] = useState(null);
+  const courseId = searchParams.get("course");
+  const { data: courseDetails } = useGetCourseDetailsQuery(courseId, {
+    skip: !courseId,
+  });
+  const selectedCourse = courseId ? { id: courseId, ...courseDetails } : null;
+  const openCourse = (course) => {
+    // A new history entry, so Back returns to the course list.
+    const params = new URLSearchParams(searchParams);
+    params.set("course", course.id);
+    setSearchParams(params);
+  };
+  const closeCourse = () => {
+    if (location.key !== "default") navigate(-1);
+    else updateUrlParams(searchParams, setSearchParams, (p) => p.delete("course"));
+  };
   const [coursePage, setCoursePage] = useState(1);
   const [courseAnnouncementPage, setCourseAnnouncementPage] = useState(1);
 
@@ -465,7 +488,7 @@ const Announcement = () => {
                            {viewMode === "grid" ? (
                              <div 
                                onClick={() => {
-                                 setSelectedCourse(course);
+                                 openCourse(course);
                                  setCourseAnnouncementPage(1);
                                }}
                                className="bg-white rounded-3xl p-6 border border-black/5 hover:border-[#7AA4A5] hover:shadow-xl transition-all cursor-pointer group flex flex-col justify-between min-h-[240px]"
@@ -493,7 +516,7 @@ const Announcement = () => {
                            ) : (
                              <div 
                                onClick={() => {
-                                 setSelectedCourse(course);
+                                 openCourse(course);
                                  setCourseAnnouncementPage(1);
                                }}
                                className="bg-white rounded-2xl p-5 border border-black/5 hover:border-[#7AA4A5] hover:shadow-xl transition-all cursor-pointer group flex flex-col lg:flex-row lg:items-center justify-between gap-6"
@@ -597,7 +620,7 @@ const Announcement = () => {
              <div className="space-y-6">
                 <div className="flex items-center gap-4">
                   <button 
-                    onClick={() => setSelectedCourse(null)}
+                    onClick={closeCourse}
                     className="p-2 bg-white hover:bg-gray-100 border border-black/5 rounded-xl transition-colors"
                   >
                      <ChevronLeft size={20} className="text-neutral-600" />

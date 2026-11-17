@@ -1,11 +1,12 @@
-import React, { useState } from "react";
+import React from "react";
+import { useNavigate } from "react-router-dom";
 import {
   BookOpen,
   Award,
   ChevronRight,
   CheckCircle,
 } from "lucide-react";
-import CertificateDetails from "./CertificateDetails";
+import useUrlParam from "../../hooks/useUrlParam";
 import { useGetCoursesDataQuery } from "../../Api/adminApi";
 import Pagination from "../../components/Pagination";
 import { getCourseTeacherNames } from "../../utils/courseTeachers";
@@ -59,20 +60,11 @@ const CourseCard = ({ course, onClick }) => {
 };
 
 const Certificate = () => {
-  const [selectedCourse, setSelectedCourse] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
+  const navigate = useNavigate();
+  const [currentPage, setCurrentPage] = useUrlParam("page", 1);
 
   const { data: coursesData, isLoading } = useGetCoursesDataQuery(currentPage);
   const courses = coursesData?.results || [];
-
-  if (selectedCourse) {
-    return (
-      <CertificateDetails
-        selectedCourse={selectedCourse}
-        onBack={() => setSelectedCourse(null)}
-      />
-    );
-  }
 
   return (
     <div className="min-h-screen bg-slate-50/50 p-8 space-y-8 animate-in fade-in duration-500">
@@ -145,7 +137,7 @@ const Certificate = () => {
               <CourseCard
                 key={course.id}
                 course={course}
-                onClick={setSelectedCourse}
+                onClick={(c) => navigate(`/admin/certificates/${c.id}`)}
               />
             ))}
           </div>

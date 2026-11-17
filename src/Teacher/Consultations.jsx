@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import useUrlTab from '../hooks/useUrlTab';
 import { Navigate } from 'react-router-dom';
 import { Calendar, Clock, Video, ChevronLeft, ChevronRight, X, Loader2, AlertCircle, DollarSign } from 'lucide-react';
 import {
@@ -444,7 +445,7 @@ function SessionsCalendar({ sessions, isLoading, isError }) {
 
 
 export default function Consultations() {
-  const [activeTab, setActiveTab] = useState('booked');
+  const [activeTab, setActiveTab] = useUrlTab(['booked', 'availability']);
 
   const { data: teacherProfileMe, isLoading: profileLoading } = useGetTeacherProfileMeQuery();
   const consultation = teacherProfileMe?.consultations?.[0] ?? null;

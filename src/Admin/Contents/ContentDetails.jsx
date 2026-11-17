@@ -22,6 +22,9 @@ const ContentDetails = () => {
   const detailPath = isTeacher ? "/teacher/content-details" : "/admin/contents";
   
   const type = searchParams.get("type") || "Article";
+  // Back goes to the list tab this item lives in (videos have their own tab).
+  const listPath =
+    !isTeacher && type === "Video" ? `${basePath}?tab=videos` : basePath;
   const [isPlaying, setIsPlaying] = useState(false);
 
   const { data: blog, isLoading: isBlogLoading, isError: isBlogError } = useGetBlogDetailsQuery(slug, {
@@ -62,7 +65,7 @@ const ContentDetails = () => {
       <div className="min-h-screen flex items-center justify-center bg-white flex-col gap-4">
         <p className="text-stone-600 text-lg">Error loading {type.toLowerCase()} details.</p>
         <button
-          onClick={() => navigate(basePath)}
+          onClick={() => navigate(listPath)}
           className="text-[#7AA4A5] hover:underline"
         >
           Go back to contents
@@ -100,7 +103,7 @@ const ContentDetails = () => {
     <div className="min-h-screen bg-white pb-20 arimo-font animate-in fade-in duration-500">
       {/* Back Button */}
       <button
-        onClick={() => navigate(basePath)}
+        onClick={() => navigate(listPath)}
         className="flex items-center gap-2 px-4 py-2 text-zinc-900 hover:bg-zinc-100 rounded-md transition-colors mb-4"
       >
         <ArrowLeft className="w-4 h-4" />

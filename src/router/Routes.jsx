@@ -18,14 +18,17 @@ import TeacherSettings from "../Teacher/Settings";
 import CourseDetailsPage from "../Teacher/CourseDetails/CourseDetailsPage";
 
 import User from "../Admin/User/User";
+import TeacherDetails from "../Admin/User/TeacherDetails";
 import Scholarships from "../Admin/Scholarships/Scholarships";
 import Payments from "../Admin/Payments/Payments";
 import Memberships from "../Admin/Memberships/Memberships";
 import Courses from "../Admin/Courses/Courses";
 import Discussions from "../Admin/Discussions/Discussions";
 import AddEditCourse from "../Admin/Courses/AddEditCourse";
+import CourseBuilder from "../Admin/Courses/CourseBuilder";
 import Contents from "../Admin/Contents/Contents";
 import ContentDetails from "../Admin/Contents/ContentDetails";
+import ContentForm from "../Admin/Contents/ContentForm";
 import BookLibrary from "../Admin/BookLibrary/BookLibrary";
 import BookDetailsPage from "../Admin/BookLibrary/BookDetailsPage";
 import BookEditor from "../Admin/BookLibrary/BookEditor";
@@ -35,6 +38,7 @@ import Announcement from "../Admin/Announesement/Announcement";
 import EditProfile from "../components/EditProfile";
 import Newsletter from "../Admin/Newsletter/Newsletter";
 import Certificate from "../Admin/Certificate/Certificate";
+import CertificateDetails from "../Admin/Certificate/CertificateDetails";
 import EmailTemplates from "../Admin/EmailTemp/EmailTemp";
 import Doors from "../Admin/Doors/Doors";
 import Consultants from "../Admin/Consultants/Consultants";
@@ -77,14 +81,18 @@ const router = createBrowserRouter([
         element: <MainDashboard />,
       },
       { path: "users-management", element: <User /> },
+      { path: "users-management/teachers/:id", element: <TeacherDetails /> },
       { path: "courses-management", element: <Courses /> },
       { path: "courses-management/add", element: <AddEditCourse /> },
       { path: "courses-management/edit/:id", element: <AddEditCourse /> },
+      { path: "courses-management/:id", element: <CourseBuilder /> },
       { path: "discussions", element: <Discussions /> },
       { path: "submissions", element: <Submission /> },
       { path: "consultants", element: <Consultants /> },
       { path: "settings", element: <TermsAndPolicies /> },
       { path: "contents", element: <Contents /> },
+      { path: "contents/:kind/new", element: <ContentForm /> },
+      { path: "contents/:kind/:slug/edit", element: <ContentForm /> },
       { path: "contents/:id", element: <ContentDetails /> },
       { path: "book-library", element: <BookLibrary /> },
       { path: "book-library/new", element: <BookEditor /> },
@@ -97,6 +105,7 @@ const router = createBrowserRouter([
       { path: "email-templates", element: <EmailTemplates /> },
       { path: "scholarships", element: <Scholarships /> },
       { path: "certificates", element: <Certificate /> },
+      { path: "certificates/:courseId", element: <CertificateDetails /> },
       { path: "memberships", element: <Memberships /> },
       { path: "coupons", element: <Coupons /> },
       { path: "payments", element: <Payments /> },

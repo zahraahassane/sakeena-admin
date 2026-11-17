@@ -26,21 +26,21 @@ import {
   useGetVideosDataQuery,
   useDeleteVideoMutation,
 } from "../../Api/adminApi";
-import UploadContent from "./UploadContent";
-import UploadVideo from "./UploadVideo";
+import useUrlTab from "../../hooks/useUrlTab";
+import useUrlParam, { useResetPage } from "../../hooks/useUrlParam";
 import Pagination from "../../components/Pagination";
 
 const Contents = () => {
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [showUploadForm, setShowUploadForm] = useState(null); // 'article', 'video', or null
-  const [editItem, setEditItem] = useState(null);
-  const [selectedCategory, setSelectedCategory] = useState("");
+  // Tab, filters and pages live in the URL, so coming back from an edit or a
+  // details page (or refreshing) lands on the same list.
+  const [searchQuery, setSearchQuery] = useUrlParam("search", "");
+  const [selectedCategory, setSelectedCategory] = useUrlParam("category", "");
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
-  const [activeTab, setActiveTab] = useState("blogs");
-  const [blogsPage, setBlogsPage] = useState(1);
-  const [videosPage, setVideosPage] = useState(1);
+  const [activeTab, setActiveTab] = useUrlTab(["blogs", "videos"]);
+  const [blogsPage, setBlogsPage] = useUrlParam("page", 1);
+  const [videosPage, setVideosPage] = useUrlParam("vpage", 1);
 
   const { data: blogsResponse, isLoading: isBlogsLoading } =
     useGetBlogsDataQuery({ page: blogsPage });
@@ -60,23 +60,23 @@ const Contents = () => {
   const currentPage = activeTab === "blogs" ? blogsPage : videosPage;
   const totalPages = activeTab === "blogs" ? blogTotalPages : videoTotalPages;
 
-  // Clamp current page if APIs report fewer pages
+  // Clamp current page if APIs report fewer pages (only once the data is in,
+  // otherwise a page read from the URL would be cut to 1 while loading)
   useEffect(() => {
-    if (blogsPage > blogTotalPages) setBlogsPage(blogTotalPages || 1);
-  }, [blogTotalPages]);
+    if (blogsResponse && blogsPage > blogTotalPages)
+      setBlogsPage(blogTotalPages || 1);
+  }, [blogsResponse, blogTotalPages]);
 
   useEffect(() => {
-    if (videosPage > videoTotalPages) setVideosPage(videoTotalPages || 1);
-  }, [videoTotalPages]);
+    if (videosResponse && videosPage > videoTotalPages)
+      setVideosPage(videoTotalPages || 1);
+  }, [videosResponse, videoTotalPages]);
 
-  // Reset active tab page when filters change
-  useEffect(() => {
-    if (activeTab === "blogs") {
-      setBlogsPage(1);
-    } else {
-      setVideosPage(1);
-    }
-  }, [searchQuery, selectedCategory, activeTab]);
+  // Back to page 1 when the filters change (on the tab being shown)
+  useResetPage(activeTab === "blogs" ? setBlogsPage : setVideosPage, [
+    searchQuery,
+    selectedCategory,
+  ]);
 
   const handleDelete = async (slug, type) => {
     const isVideo = type === "Video";
@@ -342,38 +342,6 @@ const Contents = () => {
     return matchesSearch && matchesCategory;
   });
 
-  const handleSaveContent = (newItem) => {
-    // Both articles and videos now handled by API invalidation
-    setShowUploadForm(null);
-    setEditItem(null);
-  };
-
-  if (showUploadForm === "article") {
-    return (
-      <UploadContent
-        editItem={editItem}
-        onSave={handleSaveContent}
-        onBack={() => {
-          setShowUploadForm(null);
-          setEditItem(null);
-        }}
-      />
-    );
-  }
-
-  if (showUploadForm === "video") {
-    return (
-      <UploadVideo
-        editItem={editItem}
-        onSave={handleSaveContent}
-        onBack={() => {
-          setShowUploadForm(null);
-          setEditItem(null);
-        }}
-      />
-    );
-  }
-
   return (
     <div className="pt-2 flex flex-col gap-8 animate-in fade-in duration-500 pb-10 arimo-font">
       {/* Header */}
@@ -404,7 +372,7 @@ const Contents = () => {
 
           <div className="flex items-center gap-4 inter-font">
             <button
-              onClick={() => setShowUploadForm("article")}
+              onClick={() => navigate("/admin/contents/article/new")}
               className="w-56 h-7 px-2 py-1 bg-greenTeal rounded-2xl outline outline-1 outline-offset-[-1px] outline-black/0 inline-flex justify-center items-center gap-1.5 hover:opacity-90 transition-all font-semibold"
             >
               <span className="text-center text-white text-sm font-semibold leading-5">
@@ -412,7 +380,7 @@ const Contents = () => {
               </span>
             </button>
             <button
-              onClick={() => setShowUploadForm("video")}
+              onClick={() => navigate("/admin/contents/video/new")}
               className="w-56 h-7 px-2 py-1 bg-gray-200 rounded-2xl inline-flex justify-center items-center gap-1.5 hover:bg-gray-300 transition-all font-semibold"
             >
               <span className="text-center text-neutral-950 text-sm font-semibold leading-5">
@@ -653,12 +621,11 @@ const Contents = () => {
                 </button>
                 {(item.type === "Article" || item.type === "Video") && (
                   <button
-                    onClick={() => {
-                      setEditItem(item);
-                      setShowUploadForm(
-                        item.type === "Video" ? "video" : "article",
-                      );
-                    }}
+                    onClick={() =>
+                      navigate(
+                        `/admin/contents/${item.type === "Video" ? "video" : "article"}/${item.slug}/edit`,
+                      )
+                    }
                     className={`px-4 py-1.5 bg-white border rounded-lg text-xs font-semibold transition-colors ${
                       item.type === "Video"
                         ? "border-amber-200 text-amber-600 hover:bg-amber-50"

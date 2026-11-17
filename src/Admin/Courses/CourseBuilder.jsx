@@ -1,5 +1,7 @@
-import React, { useState } from "react";
-import { ChevronLeft, Save } from "lucide-react";
+import React from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { ChevronLeft } from "lucide-react";
+import useUrlTab from "../../hooks/useUrlTab";
 import CommunityChat from "../../components/CommunityChat";
 import CourseReviews from "./CourseReviews";
 import CourseDetailsContent from "./CourseDetailsContent";
@@ -8,17 +10,29 @@ import CourseEnrollments from "./CourseEnrollments";
 import { useGetCourseDetailsQuery } from "../../Api/adminApi";
 import { Loader2 } from "lucide-react";
 
-const CourseBuilder = ({ course, onBack }) => {
-  const [activeTab, setActiveTab] = useState("Course Details");
-  const { data: fullCourse, isLoading, isError } = useGetCourseDetailsQuery(course.id);
+// Tab keys are what appears in the URL (?tab=curriculum).
+const TABS = [
+  { key: "details", label: "Course Details" },
+  { key: "curriculum", label: "Curriculum" },
+  { key: "enrollments", label: "Enrollments" },
+  { key: "reviews", label: "Reviews" },
+  { key: "chat", label: "Community Chat" },
+];
 
-  const tabs = [
-    "Course Details",
-    "Curriculum",
-    "Enrollments",
-    "Reviews",
-    "Community Chat",
-  ];
+// Routed page: /admin/courses-management/:id
+const CourseBuilder = () => {
+  const { id: courseId } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [activeTab, setActiveTab] = useUrlTab(TABS.map((t) => t.key));
+  const { data: fullCourse, isLoading, isError } = useGetCourseDetailsQuery(courseId);
+
+  // Back to the list the admin came from (keeps its search and page); a page
+  // opened directly has no history, so go to the list.
+  const onBack = () => {
+    if (location.key !== "default") navigate(-1);
+    else navigate("/admin/courses-management");
+  };
 
   return (
     <div className="flex flex-col gap-6 animate-in slide-in-from-right-4 duration-500 pb-20">
@@ -47,16 +61,16 @@ const CourseBuilder = ({ course, onBack }) => {
 
       {/* Tabs */}
       <div className="flex border-b border-stone-200 overflow-x-auto no-scrollbar">
-        {tabs.map((tab) => (
+        {TABS.map(({ key, label }) => (
           <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`px-6 py-4 text-sm font-bold transition-all border-b-2 whitespace-nowrap ${activeTab === tab
+            key={key}
+            onClick={() => setActiveTab(key)}
+            className={`px-6 py-4 text-sm font-bold transition-all border-b-2 whitespace-nowrap ${activeTab === key
                 ? "border-teal-600 text-teal-700"
                 : "border-transparent text-stone-400 hover:text-stone-600"
               }`}
           >
-            {tab}
+            {label}
           </button>
         ))}
       </div>
@@ -74,21 +88,18 @@ const CourseBuilder = ({ course, onBack }) => {
         </div>
       ) : (
         <>
-          {activeTab === "Course Details" && (
-            <CourseDetailsContent course={fullCourse || course} />
+          {activeTab === "details" && (
+            <CourseDetailsContent course={fullCourse} />
           )}
-          {activeTab === "Curriculum" && (
-            <CourseCurriculum courseId={course.id} />
+          {activeTab === "curriculum" && (
+            <CourseCurriculum courseId={courseId} />
           )}
-          {activeTab === "Enrollments" && (
-            <CourseEnrollments courseId={course.id} />
+          {activeTab === "enrollments" && (
+            <CourseEnrollments courseId={courseId} />
           )}
-          {activeTab === "Reviews" && <CourseReviews courseId={course.id} />}
-          {activeTab === "Community Chat" && (
-            <CommunityChat
-              courseTitle={fullCourse?.title || course.title}
-              courseId={course.id}
-            />
+          {activeTab === "reviews" && <CourseReviews courseId={courseId} />}
+          {activeTab === "chat" && (
+            <CommunityChat courseTitle={fullCourse?.title} courseId={courseId} />
           )}
         </>
       )}

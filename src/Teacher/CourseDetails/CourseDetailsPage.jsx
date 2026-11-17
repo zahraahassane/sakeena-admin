@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import useUrlTab from "../../hooks/useUrlTab";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import CourseOverview from "./Overview";
 import CourseCurriculum from "./Curriculum";
@@ -23,7 +24,12 @@ export default function CourseDetailsPage() {
   const { courseId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useUrlTab([
+    "overview",
+    "curriculum",
+    "reviews",
+    "community",
+  ]);
 
   const { data: courseDetail, isLoading: courseLoading } = useGetCourseByIdQuery(courseId, {
     skip: !courseId,
