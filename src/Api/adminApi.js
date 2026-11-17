@@ -1160,6 +1160,7 @@ export const adminApi = api.injectEndpoints({
         if (params?.user) queryParams.append("user", params.user);
         if (params?.course) queryParams.append("course", params.course);
         if (params?.page) queryParams.append("page", params.page);
+        if (params?.page_size) queryParams.append("page_size", params.page_size);
         const q = queryParams.toString();
         return `/enrollments/${q ? `?${q}` : ""}`;
       },

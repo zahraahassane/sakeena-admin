@@ -1,21 +1,46 @@
 import React from "react";
-import { getCourseTeacherNames } from "../../utils/courseTeachers";
 import { X, BookOpen } from "lucide-react";
 import {
   useGetStudentProfileQuery,
   useGetEnrollmentsQuery,
 } from "../../Api/adminApi";
 
-const StudentDetailsModal = ({ isOpen, onClose, student }) => {
-  if (!isOpen || !student) return null;
+const SOURCE_LABELS = {
+  purchase: "Purchase",
+  membership: "Membership",
+  free: "Free",
+  admin: "Admin",
+  legacy: "Legacy",
+};
 
-  const { data: studentDetails } = useGetStudentProfileQuery(student.id);
+const formatDate = (value) => {
+  const date = new Date(value);
+  if (!value || isNaN(date.getTime())) return "N/A";
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+};
+
+const StudentDetailsModal = ({ isOpen, onClose, student }) => {
+  const isActive = isOpen && !!student;
+
+  const { data: studentDetails } = useGetStudentProfileQuery(student?.id, {
+    skip: !isActive,
+  });
+  // The filter has to be an object: a bare id sends no `user` filter at all,
+  // which returns everyone's enrollments (first page of 9).
   const { data: enrollments } = useGetEnrollmentsQuery(
-    studentDetails?.user.id,
-    { skip: !studentDetails },
+    { user: studentDetails?.user.id, page_size: 100 },
+    { skip: !isActive || !studentDetails },
   );
 
-  const courses = enrollments?.results || [];
+  const courses = [...(enrollments?.results || [])].sort(
+    (a, b) => new Date(b.enrolled_at) - new Date(a.enrolled_at),
+  );
+
+  if (!isActive) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -78,10 +103,16 @@ const StudentDetailsModal = ({ isOpen, onClose, student }) => {
                 <thead className="border-b border-black/10 sticky top-0 bg-white">
                   <tr>
                     <th className="py-2.5 px-4 font-normal text-neutral-950">
-                      Course Name
+                      Course
+                    </th>
+                    <th className="py-2.5 px-4 font-normal text-neutral-950 whitespace-nowrap">
+                      Enrolled on
                     </th>
                     <th className="py-2.5 px-4 font-normal text-neutral-950">
-                      Teacher
+                      Access
+                    </th>
+                    <th className="py-2.5 px-4 font-normal text-neutral-950">
+                      Status
                     </th>
                   </tr>
                 </thead>
@@ -91,15 +122,29 @@ const StudentDetailsModal = ({ isOpen, onClose, student }) => {
                       <td className="py-3 px-4 text-neutral-950">
                         {enrollment?.course?.title}
                       </td>
+                      <td className="py-3 px-4 text-neutral-950 whitespace-nowrap">
+                        {formatDate(enrollment.enrolled_at)}
+                      </td>
                       <td className="py-3 px-4 text-neutral-950">
-                        {getCourseTeacherNames(enrollment?.course) || "No teacher assign yet"}
+                        {SOURCE_LABELS[enrollment.source] || enrollment.source}
+                      </td>
+                      <td className="py-3 px-4">
+                        <span
+                          className={`inline-block whitespace-nowrap px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                            enrollment.is_completed
+                              ? "bg-emerald-50 text-emerald-700"
+                              : "bg-amber-50 text-amber-700"
+                          }`}
+                        >
+                          {enrollment.is_completed ? "Completed" : "In Progress"}
+                        </span>
                       </td>
                     </tr>
                   ))}
                   {courses.length === 0 && (
                     <tr>
                       <td
-                        colSpan="2"
+                        colSpan="4"
                         className="py-8 text-center text-gray-400 italic"
                       >
                         No courses enrolled
