@@ -1,12 +1,13 @@
 import React, { useMemo, useState } from "react";
-import { X, Video, User, Package, DollarSign, CircleAlert, Search, ChevronLeft, ChevronRight, Copy, Layout } from "lucide-react";
+import { X, Video, User, Package, DollarSign, CircleAlert, Search, Copy, Layout } from "lucide-react";
 import toast from "react-hot-toast";
 import {
-  useGetTeacherProfilesQuery,
+  useGetAllTeacherProfilesUnpaginatedQuery,
   useCreateConsultationMutation,
   useCreateConsultationRecurringMutation,
   useCreateConsultationBundleMutation,
 } from "../../Api/adminApi";
+import SearchableSelect from "../../components/SearchableSelect";
 
 const ScheduleConsultationModal = ({ isOpen, onClose, onSchedule }) => {
   const [formData, setFormData] = useState({
@@ -23,14 +24,13 @@ const ScheduleConsultationModal = ({ isOpen, onClose, onSchedule }) => {
   });
 
   const [teacherSearch, setTeacherSearch] = useState("");
-  const [teacherPage, setTeacherPage] = useState(1);
 
+  // Every teacher who offers consultations, filtered by the search box (not paged).
   const { data: teacherData, isError: isTeacherError, isFetching: isFetchingTeachers } =
-    useGetTeacherProfilesQuery({
-      page: teacherPage,
-      search: teacherSearch,
-      offers_consultations: true
-    }, { skip: !isOpen });
+    useGetAllTeacherProfilesUnpaginatedQuery(
+      { search: teacherSearch, offers_consultations: true },
+      { skip: !isOpen },
+    );
 
   const [createConsultation, { isLoading: isCreatingConsultation }] =
     useCreateConsultationMutation();
@@ -41,11 +41,7 @@ const ScheduleConsultationModal = ({ isOpen, onClose, onSchedule }) => {
   const isSaving =
     isCreatingConsultation || isCreatingRecurring || isCreatingBundle;
 
-  const teacherProfiles = useMemo(
-    () => teacherData?.results || [],
-    [teacherData],
-  );
-  const totalTeacherPages = teacherData?.total_pages || 1;
+  const teacherProfiles = useMemo(() => teacherData || [], [teacherData]);
 
   const days = [
     "Monday",
@@ -257,57 +253,30 @@ const ScheduleConsultationModal = ({ isOpen, onClose, onSchedule }) => {
               )}
             </div>
 
-            <div className="relative">
-              <select
-                required
-                value={formData.teacherId}
-                onChange={(e) => handleTeacherChange(e.target.value)}
-                className={`w-full bg-stone-100/50 border border-transparent rounded-xl px-4 py-3 outline-none focus:bg-white focus:border-teal-500 transition-all font-medium text-stone-800 inter-font appearance-none ${isFetchingTeachers ? 'opacity-50 pointer-events-none' : ''}`}
-              >
-                <option value="">{isFetchingTeachers ? "Loading..." : "Choose a teacher..."}</option>
-                {isTeacherError && (
-                  <option value="" disabled>
-                    Failed to load teachers
-                  </option>
-                )}
-                {!isFetchingTeachers && teacherProfiles.length === 0 && (
-                  <option value="" disabled>No teachers found</option>
-                )}
-                {teacherProfiles.map((teacher) => (
-                  <option key={teacher.id} value={teacher.id}>
-                    {`${teacher.user.first_name || ""} ${teacher.user.last_name || ""}`.trim()}{" "}
-                    ({teacher.user.email})
-                  </option>
-                ))}
-              </select>
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-stone-400">
-                {/* Lucide icon doesn't work well inside select, so we just use default arrow or custom if overlayed */}
-              </div>
-            </div>
-
-            {totalTeacherPages > 1 && (
-              <div className="flex items-center justify-center gap-4 pt-1">
-                <button
-                  type="button"
-                  disabled={teacherPage === 1 || isFetchingTeachers}
-                  onClick={() => setTeacherPage(p => p - 1)}
-                  className="p-1.5 rounded-lg border border-stone-200 text-stone-400 hover:bg-stone-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <span className="text-xs font-bold text-stone-400">
-                  Page {teacherPage} of {totalTeacherPages}
-                </span>
-                <button
-                  type="button"
-                  disabled={teacherPage === totalTeacherPages || isFetchingTeachers}
-                  onClick={() => setTeacherPage(p => p + 1)}
-                  className="p-1.5 rounded-lg border border-stone-200 text-stone-400 hover:bg-stone-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-            )}
+            <SearchableSelect
+              options={teacherProfiles.map((teacher) => ({
+                value: String(teacher.id),
+                label:
+                  `${teacher.user?.first_name || ""} ${teacher.user?.last_name || ""}`.trim() ||
+                  teacher.user?.email,
+                description: teacher.user?.email,
+              }))}
+              selected={
+                formData.teacherId
+                  ? {
+                      value: String(formData.teacherId),
+                      label: formData.teacherName || formData.teacherEmail || "Selected teacher",
+                    }
+                  : null
+              }
+              onSelect={(option) => handleTeacherChange(option.value)}
+              search={teacherSearch}
+              onSearchChange={setTeacherSearch}
+              isLoading={isFetchingTeachers}
+              placeholder="Choose a teacher..."
+              searchPlaceholder="Search by name or email..."
+              emptyText={isTeacherError ? "Failed to load teachers" : "No teachers found"}
+            />
           </div>
 
           <div className="grid grid-cols-1 gap-4">

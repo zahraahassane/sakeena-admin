@@ -78,7 +78,11 @@ const ConsultationDetailsModal = ({ isOpen, onClose, consultation: initialConsul
       onClose();
     } catch (err) {
       console.error("Failed to delete consultation plan:", err);
-      toast.error("Failed to delete consultation plan.");
+      // A plan with bookings is refused by the server, with the reason and the count.
+      setShowDeleteConfirm(false);
+      toast.error(err?.data?.error || "Failed to delete consultation plan.", {
+        duration: 8000,
+      });
     }
   };
 
