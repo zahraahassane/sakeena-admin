@@ -134,6 +134,11 @@ const ScheduleConsultationModal = ({ isOpen, onClose, onSchedule }) => {
       return;
     }
 
+    if (!formData.standardPrice || Number(formData.standardPrice) <= 0) {
+      toast.error("Please enter the price students pay per session.");
+      return;
+    }
+
     if (
       formData.schedules.some((s) => !s.day || !s.startTime || !s.endTime)
     ) {
@@ -146,9 +151,7 @@ const ScheduleConsultationModal = ({ isOpen, onClose, onSchedule }) => {
         teacher_id: Number(formData.teacherId),
         title: formData.title,
       };
-      if (formData.standardPrice) {
-        consultationBody.standard_price = formData.standardPrice;
-      }
+      consultationBody.standard_price = formData.standardPrice;
 
       const consultation = await createConsultation(consultationBody).unwrap();
 
@@ -283,11 +286,12 @@ const ScheduleConsultationModal = ({ isOpen, onClose, onSchedule }) => {
             <div className="space-y-2">
               <label className="flex items-center gap-2 text-sm font-bold text-stone-700 inter-font">
                 <DollarSign className="w-4 h-4 text-stone-400" />
-                Standard Price
+                Price per Session <span className="text-red-500">*</span>
               </label>
               <input
                 type="number"
-                min="0"
+                required
+                min="0.01"
                 step="0.01"
                 placeholder="e.g. 45.00"
                 value={formData.standardPrice}
@@ -297,7 +301,7 @@ const ScheduleConsultationModal = ({ isOpen, onClose, onSchedule }) => {
                 className="w-full bg-stone-100/50 border border-transparent rounded-xl px-4 py-3 outline-none focus:bg-white focus:border-teal-500 transition-all font-medium text-stone-800 inter-font"
               />
               <p className="text-[11px] text-stone-400">
-                Optional. Leave empty to use the default teacher rate.
+                Required. This is the price a student pays per session. It is not the teacher's earning rate.
               </p>
             </div>
             {/* <div className="space-y-2">

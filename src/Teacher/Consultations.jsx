@@ -484,7 +484,7 @@ export default function Consultations() {
         <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-600 text-sm font-medium">Standard Price</p>
+              <p className="text-gray-600 text-sm font-medium">Price per Session</p>
               <p className="text-3xl font-bold text-gray-900 mt-2">
                 {teacherProfileMe?.consultation_rate ? `$${parseFloat(teacherProfileMe.consultation_rate).toFixed(0)}` : '—'}
               </p>

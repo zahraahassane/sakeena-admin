@@ -310,7 +310,7 @@ const ScheduleConsultationModal = ({ isOpen, onClose, onSchedule }) => {
             <div className="space-y-2">
               <label className="flex items-center gap-2 text-sm font-bold text-stone-700 inter-font">
                 <DollarSign className="w-4 h-4 text-stone-400" />
-                Standard Price
+                Price per Session
               </label>
               <input
                 type="number"

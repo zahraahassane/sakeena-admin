@@ -226,7 +226,7 @@ const ConsultationDetailsModal = ({ isOpen, onClose, consultation: initialConsul
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-bold text-stone-500 uppercase tracking-wider inter-font">
-                    Standard Price ($)
+                    Price per Session ($)
                   </label>
                   <input
                     type="number"
