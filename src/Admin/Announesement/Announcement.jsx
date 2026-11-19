@@ -174,7 +174,7 @@ const AnnouncementCard = ({ announcement, onEdit, onDelete }) => {
 };
 
 const CourseAnnouncementCard = ({ announcement, onDelete }) => {
-  const formattedDate = announcement.created_at ? new Date(announcement.created_at).toLocaleDateString("en-US", { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : "Recently";
+  const formattedDate = announcement.created_at ? new Date(announcement.created_at).toLocaleDateString("en-US", { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }) + " UTC" : "Recently";
 
   return (
     <div className="w-full bg-white rounded-2xl shadow-sm border border-black/5 p-6 hover:shadow-lg transition-all relative group">

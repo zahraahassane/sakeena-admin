@@ -29,7 +29,7 @@ function toModalShape(sub, historyCount = 0) {
     studentName: `${sub.user_detail?.first_name ?? ""} ${sub.user_detail?.last_name ?? ""}`.trim(),
     studentEmail: sub.user_detail?.email ?? "",
     submittedDate: sub.created_at
-      ? new Date(sub.created_at).toLocaleString()
+      ? `${new Date(sub.created_at).toLocaleString("en-US", { timeZone: "UTC" })} UTC`
       : "—",
     studentComments: sub.submission_text || "No text submitted.",
     files: getSubmissionFiles(sub),
@@ -39,13 +39,14 @@ function toModalShape(sub, historyCount = 0) {
     mark: sub.mark,
     teacher_feedback: sub.teacher_feedback,
     submissionDate: sub.created_at
-      ? new Date(sub.created_at).toLocaleDateString()
+      ? new Date(sub.created_at).toLocaleDateString("en-US", { timeZone: "UTC" })
       : "—",
     submissionTime: sub.created_at
-      ? new Date(sub.created_at).toLocaleTimeString([], {
+      ? new Date(sub.created_at).toLocaleTimeString("en-US", {
           hour: "2-digit",
           minute: "2-digit",
-        })
+          timeZone: "UTC",
+        }) + " UTC"
       : "",
     points: sub.mark != null ? `${sub.mark} pts` : "—",
     historyCount,

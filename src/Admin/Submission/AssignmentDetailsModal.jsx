@@ -126,7 +126,7 @@ const AssignmentDetailsModal = ({ isOpen, onClose, submission, onGrade }) => {
                     <div className="flex items-center justify-between">
                       <p className="text-sm font-medium text-neutral-800 font-['Arimo']">
                         {attempt.created_at
-                          ? new Date(attempt.created_at).toLocaleString()
+                          ? `${new Date(attempt.created_at).toLocaleString("en-US", { timeZone: "UTC" })} UTC`
                           : "—"}
                       </p>
                       <span

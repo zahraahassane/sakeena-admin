@@ -194,7 +194,7 @@ export default function AssignmentDetailsModal({
                     <div className="flex items-center justify-between">
                       <p className="text-sm font-medium text-gray-900">
                         {attempt.created_at
-                          ? new Date(attempt.created_at).toLocaleString()
+                          ? `${new Date(attempt.created_at).toLocaleString("en-US", { timeZone: "UTC" })} UTC`
                           : "—"}
                       </p>
                       <span

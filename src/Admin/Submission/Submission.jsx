@@ -25,16 +25,18 @@ const Submission = () => {
       year: "numeric",
       month: "short",
       day: "numeric",
+      timeZone: "UTC",
     });
   };
 
   const formatTime = (isoString) => {
     if (!isoString) return "N/A";
     const date = new Date(isoString);
-    return date.toLocaleTimeString("en-US", {
+    return `${date.toLocaleTimeString("en-US", {
       hour: "2-digit",
       minute: "2-digit",
-    });
+      timeZone: "UTC",
+    })} UTC`;
   };
 
   const queryParams = {

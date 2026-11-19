@@ -217,7 +217,7 @@ const ReplyItem = ({ reply, courseId, discussionId, currentUserId, currentUserRo
 
           <div className="mt-3 pt-3 border-t border-stone-50 flex items-center justify-between">
             <span className="text-[10px] text-stone-400 font-medium">
-              {new Date(reply.created_at).toLocaleString()}
+              {`${new Date(reply.created_at).toLocaleString("en-US", { timeZone: "UTC" })} UTC`}
             </span>
             <button 
               onClick={() => setIsReplying(!isReplying)}
