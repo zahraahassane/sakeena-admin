@@ -141,7 +141,7 @@ export default function CourseCurriculum({ course }) {
                                 </span>
                                 {lesson.content_type === "live" && lesson.scheduled_at && (
                                   <p className="text-xs text-stone-400 mt-0.5">
-                                    {new Date(lesson.scheduled_at).toLocaleString()}
+                                    {`${new Date(lesson.scheduled_at).toLocaleString("en-US", { timeZone: "UTC" })} UTC`}
                                   </p>
                                 )}
                               </div>

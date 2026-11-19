@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { Video, Calendar, Clock, Users, ExternalLink, Play, Radio, CheckCircle, Loader2, AlertCircle } from 'lucide-react';
 import { useGetTeacherLiveSessionsQuery } from '../Api/adminApi';
 
-const TZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
+// Staff work in UTC everywhere.
+const TZ = 'UTC';
 
 function formatLocal(utcStr, opts) {
   return new Intl.DateTimeFormat('en-US', { ...opts, timeZone: TZ }).format(new Date(utcStr));
@@ -49,7 +50,7 @@ function SessionCard({ session }) {
     ? formatLocal(
         new Date(new Date(session.scheduled_at).getTime() + session.duration_in_minutes * 60000).toISOString(),
         { hour: '2-digit', minute: '2-digit' }
-      )
+      ) + ' UTC'
     : null;
 
   return (

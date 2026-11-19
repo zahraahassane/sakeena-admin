@@ -134,7 +134,7 @@ const CouponModal = ({ isOpen, onClose, coupon, onSave, isLoading }) => {
 
             <div>
               <label className="block text-xs font-black text-neutral-700 uppercase tracking-widest mb-2">
-                Expiry Date
+                Expiry Date (UTC)
               </label>
               <input
                 type="datetime-local"
@@ -444,6 +444,7 @@ const Coupons = () => {
                                   year: "numeric",
                                   month: "short",
                                   day: "numeric",
+                                  timeZone: "UTC",
                                 }
                               )
                             : "No Expiry"}

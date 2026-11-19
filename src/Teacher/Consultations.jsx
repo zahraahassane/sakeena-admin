@@ -15,7 +15,7 @@ import {
 function formatLocal(utcStr, opts = {}) {
   return new Intl.DateTimeFormat('en-US', {
     ...opts,
-    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    timeZone: 'UTC',
   }).format(new Date(utcStr));
 }
 
@@ -38,7 +38,7 @@ function DaySlotsPanel({ consultationId, date, onClose }) {
   // API returns paginated { count, results: [...] } — normalise to array
   const slots = Array.isArray(slotsRaw) ? slotsRaw : (slotsRaw?.results ?? []);
 
-  const displayDate = formatLocal(date + 'T00:00:00', {
+  const displayDate = formatLocal(date + 'T12:00:00Z', {
     weekday: 'long', month: 'long', day: 'numeric',
   });
 
@@ -79,7 +79,7 @@ function DaySlotsPanel({ consultationId, date, onClose }) {
             <div className="space-y-3">
               {slots.map((slot) => {
                 const startTime = formatLocal(slot.scheduled_start, { hour: '2-digit', minute: '2-digit' });
-                const endTime = formatLocal(slot.scheduled_end, { hour: '2-digit', minute: '2-digit' });
+                const endTime = formatLocal(slot.scheduled_end, { hour: '2-digit', minute: '2-digit' }) + ' UTC';
                 const duration = durationMinutes(slot.scheduled_start, slot.scheduled_end);
                 return (
                   <div
@@ -112,7 +112,7 @@ function DaySlotsPanel({ consultationId, date, onClose }) {
 function AvailabilityCalendar({ consultationId }) {
   const today = new Date();
   const [currentMonth, setCurrentMonth] = useState(
-    new Date(today.getFullYear(), today.getMonth(), 1)
+    new Date(today.getUTCFullYear(), today.getUTCMonth(), 1)
   );
   const [selectedDate, setSelectedDate] = useState(null);
 
@@ -121,7 +121,7 @@ function AvailabilityCalendar({ consultationId }) {
   const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`;
 
   const { data: calendarData, isLoading, isError } = useGetConsultationCalendarQuery(
-    { id: consultationId, month: monthKey, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone },
+    { id: consultationId, month: monthKey, timezone: 'UTC' },
     { skip: !consultationId }
   );
 
@@ -137,7 +137,7 @@ function AvailabilityCalendar({ consultationId }) {
   ];
   while (cells.length % 7 !== 0) cells.push(null);
 
-  const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const todayKey = today.toISOString().slice(0, 10);
 
   const getDateKey = (day) =>
     `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -250,7 +250,7 @@ function AvailabilityCalendar({ consultationId }) {
 
 // ── Sessions Day Panel ────────────────────────────────────────────────────────
 function SessionsDayPanel({ sessions, date, onClose }) {
-  const displayDate = formatLocal(date + 'T00:00:00', {
+  const displayDate = formatLocal(date + 'T12:00:00Z', {
     weekday: 'long', month: 'long', day: 'numeric',
   });
 
@@ -271,7 +271,7 @@ function SessionsDayPanel({ sessions, date, onClose }) {
         <div className="flex-1 overflow-y-auto p-5 space-y-3">
           {sessions.map((slot) => {
             const startTime = formatLocal(slot.scheduled_start, { hour: '2-digit', minute: '2-digit' });
-            const endTime = formatLocal(slot.scheduled_end, { hour: '2-digit', minute: '2-digit' });
+            const endTime = formatLocal(slot.scheduled_end, { hour: '2-digit', minute: '2-digit' }) + ' UTC';
             const duration = durationMinutes(slot.scheduled_start, slot.scheduled_end);
             const canStart = isWithin30Min(slot.scheduled_start);
 
@@ -317,7 +317,7 @@ function SessionsDayPanel({ sessions, date, onClose }) {
 function SessionsCalendar({ sessions, isLoading, isError }) {
   const today = new Date();
   const [currentMonth, setCurrentMonth] = useState(
-    new Date(today.getFullYear(), today.getMonth(), 1)
+    new Date(today.getUTCFullYear(), today.getUTCMonth(), 1)
   );
   const [selectedDate, setSelectedDate] = useState(null);
 
@@ -331,7 +331,7 @@ function SessionsCalendar({ sessions, isLoading, isError }) {
   const sessionsByDate = {};
   sessions.forEach((slot) => {
     const d = new Date(slot.scheduled_start);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const key = d.toISOString().slice(0, 10);
     if (!sessionsByDate[key]) sessionsByDate[key] = [];
     sessionsByDate[key].push(slot);
   });
@@ -339,7 +339,7 @@ function SessionsCalendar({ sessions, isLoading, isError }) {
   const getDateKey = (day) =>
     `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 
-  const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const todayKey = today.toISOString().slice(0, 10);
 
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDayMon = (new Date(year, month, 1).getDay() + 6) % 7;

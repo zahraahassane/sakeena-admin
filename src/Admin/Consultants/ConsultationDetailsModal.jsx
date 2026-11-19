@@ -20,6 +20,7 @@ import {
 } from "../../Api/adminApi";
 import Pagination from "../../components/Pagination";
 import { toast } from "react-hot-toast";
+import { TIME_ZONE } from "../../utils/utcTime";
 
 const ConsultationDetailsModal = ({ isOpen, onClose, consultation: initialConsultation }) => {
   const { data: latestConsultation } = useGetConsultationQuery(initialConsultation?.id, {
@@ -84,11 +85,12 @@ const ConsultationDetailsModal = ({ isOpen, onClose, consultation: initialConsul
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     // We append noon so timezone drift doesn't accidentally shift the day back one step
-    const date = new Date(dateString + "T12:00:00");
+    const date = new Date(dateString + "T12:00:00Z");
     return date.toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
       day: "numeric",
+      timeZone: "UTC",
     });
   };
 
@@ -98,21 +100,22 @@ const ConsultationDetailsModal = ({ isOpen, onClose, consultation: initialConsul
     if (dateOrTimeString.includes("T")) {
       date = new Date(dateOrTimeString);
     } else {
-      date = new Date(`1970-01-01T${dateOrTimeString}`);
+      date = new Date(`1970-01-01T${dateOrTimeString}Z`);
     }
     if (Number.isNaN(date.getTime())) return "N/A";
     return date.toLocaleTimeString("en-US", {
       hour: "numeric",
       minute: "2-digit",
+      timeZone: "UTC",
     });
   };
 
   const [calendarDate, setCalendarDate] = useState(() => {
     const today = new Date();
-    return new Date(today.getFullYear(), today.getMonth(), 1);
+    return new Date(today.getUTCFullYear(), today.getUTCMonth(), 1);
   });
 
-  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const timeZone = TIME_ZONE;
   const monthString = `${calendarDate.getFullYear()}-${String(
     calendarDate.getMonth() + 1,
   ).padStart(2, "0")}`;
@@ -420,7 +423,7 @@ const ConsultationDetailsModal = ({ isOpen, onClose, consultation: initialConsul
                                 }`}
                               >
                                 {formatTime(slot.scheduled_start)} -{" "}
-                                {formatTime(slot.scheduled_end)}
+                                {formatTime(slot.scheduled_end)} UTC
                               </span>
                             </div>
                             

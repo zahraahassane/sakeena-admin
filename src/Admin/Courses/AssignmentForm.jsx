@@ -201,7 +201,7 @@ const AssignmentForm = ({ data, onChange, onRemoveFile }) => {
         {/* Due Date */}
         <div className="space-y-2">
           <label className="text-sm font-bold text-stone-700 ml-1 inter-font">
-            Due Date
+            Due Date (ends 23:59 UTC)
           </label>
           <div className="relative">
             <input

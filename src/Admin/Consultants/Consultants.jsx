@@ -50,6 +50,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "react-hot-toast";
+import { TIME_ZONE } from "../../utils/utcTime";
 
 // Consultation Card Component with Calendar
 const ConsultationCard = ({
@@ -110,11 +111,11 @@ const ConsultationCard = ({
   };
 
   // Get calendar state for this consultation
-  const calendarDate = calendarDates[consultation.id] || new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  const calendarDate = calendarDates[consultation.id] || new Date(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1);
   const selectedDate = selectedDates[consultation.id] || null;
   const timeslotPage = timeslotPages[consultation.id] || 1;
   const monthString = getMonthString(calendarDate);
-  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const timeZone = TIME_ZONE;
   
   // Fetch calendar and timeslots
   const { data: calendarData, isLoading: isCalendarLoading } = useGetConsultationCalendarQuery(
@@ -260,7 +261,7 @@ const ConsultationCard = ({
                                   : "text-stone-800"
                               }`}
                             >
-                              {formatTime(slot.scheduled_start)} - {formatTime(slot.scheduled_end)}
+                              {formatTime(slot.scheduled_start)} - {formatTime(slot.scheduled_end)} UTC
                             </span>
                           </div>
 
@@ -551,7 +552,7 @@ const Consultants = () => {
       date = new Date(dateString);
     } else {
       // We append noon so timezone drift doesn't accidentally shift the day back one step for calendar dates
-      date = new Date(dateString + "T12:00:00");
+      date = new Date(dateString + "T12:00:00Z");
     }
     if (Number.isNaN(date.getTime())) return "N/A";
 
@@ -564,8 +565,10 @@ const Consultants = () => {
       options.hour = "2-digit";
       options.minute = "2-digit";
     }
+    options.timeZone = "UTC";
 
-    return date.toLocaleDateString("en-US", options);
+    const formatted = date.toLocaleDateString("en-US", options);
+    return includeTime ? `${formatted} UTC` : formatted;
   };
 
   const formatTime = (dateOrTimeString) => {
@@ -574,12 +577,13 @@ const Consultants = () => {
     if (dateOrTimeString.includes("T")) {
       date = new Date(dateOrTimeString);
     } else {
-      date = new Date(`1970-01-01T${dateOrTimeString}`);
+      date = new Date(`1970-01-01T${dateOrTimeString}Z`);
     }
     if (Number.isNaN(date.getTime())) return "N/A";
     return date.toLocaleTimeString("en-US", {
       hour: "numeric",
       minute: "2-digit",
+      timeZone: "UTC",
     });
   };
 

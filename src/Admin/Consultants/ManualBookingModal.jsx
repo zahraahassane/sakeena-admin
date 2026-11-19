@@ -16,6 +16,14 @@ import {
   Trash2,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import {
+  TIME_ZONE,
+  UTC_LABEL,
+  fmtDateTime,
+  fmtTime,
+  utcInputToDate,
+  utcInputToIso,
+} from "../../utils/utcTime";
 import SearchableSelect from "../../components/SearchableSelect";
 import {
   useGetConsultationsQuery,
@@ -36,7 +44,7 @@ const ManualBookingModal = ({ isOpen, onClose }) => {
 
   const [calendarDate, setCalendarDate] = useState(() => {
     const today = new Date();
-    return new Date(today.getFullYear(), today.getMonth(), 1);
+    return new Date(today.getUTCFullYear(), today.getUTCMonth(), 1);
   });
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedSlotIds, setSelectedSlotIds] = useState([]);
@@ -50,7 +58,7 @@ const ManualBookingModal = ({ isOpen, onClose }) => {
   const [priceOverride, setPriceOverride] = useState("");
   const [paymentReference, setPaymentReference] = useState("");
 
-  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const timeZone = TIME_ZONE;
 
   const resetAll = () => {
     setConsultationSearch("");
@@ -145,29 +153,30 @@ const ManualBookingModal = ({ isOpen, onClose }) => {
       : "0.00";
 
   const formatCustomStart = (value) =>
-    new Date(value).toLocaleString("en-US", {
+    `${fmtDateTime(value, {
       weekday: "short",
       month: "short",
       day: "numeric",
       year: "numeric",
       hour: "numeric",
       minute: "2-digit",
-    });
+    })} UTC`;
 
   const addCustomSlot = () => {
     if (!customStart) {
       toast.error("Choose a date and time first.");
       return;
     }
-    if (new Date(customStart) <= new Date()) {
+    if (utcInputToDate(customStart) <= new Date()) {
       toast.error("The session must start in the future.");
       return;
     }
-    if (customSlots.some((c) => c.start === customStart)) {
+    const customIso = utcInputToIso(customStart);
+    if (customSlots.some((c) => c.start === customIso)) {
       toast.error("That time is already added.");
       return;
     }
-    setCustomSlots((prev) => [...prev, { start: customStart, duration: Number(customDuration) }]);
+    setCustomSlots((prev) => [...prev, { start: customIso, duration: Number(customDuration) }]);
     setCustomStart("");
     setConflicts(null);
   };
@@ -196,7 +205,7 @@ const ManualBookingModal = ({ isOpen, onClose }) => {
       student_id: selectedStudent.id,
       timeslot_ids: selectedSlotIds,
       custom_slots: customSlots.map((c) => ({
-        start: new Date(c.start).toISOString(),
+        start: c.start,
         duration_minutes: c.duration,
       })),
     };
@@ -463,15 +472,7 @@ const ManualBookingModal = ({ isOpen, onClose }) => {
                               {isChecked && <div className="w-1.5 h-1.5 bg-white rounded-sm" />}
                             </div>
                             <span className="text-sm font-bold text-stone-800 inter-font">
-                              {new Date(slot.scheduled_start).toLocaleTimeString("en-US", {
-                                hour: "numeric",
-                                minute: "2-digit",
-                              })}{" "}
-                              -{" "}
-                              {new Date(slot.scheduled_end).toLocaleTimeString("en-US", {
-                                hour: "numeric",
-                                minute: "2-digit",
-                              })}
+                              {fmtTime(slot.scheduled_start)} - {fmtTime(slot.scheduled_end)}
                             </span>
                           </button>
                         );
@@ -498,7 +499,7 @@ const ManualBookingModal = ({ isOpen, onClose }) => {
                 <p className="text-[11px] text-stone-400">
                   Use this when the time you need is not in the list above. If a timeslot already
                   exists at exactly this time, that one is booked. Otherwise a new session is
-                  created. Times are in your timezone ({timeZone}).
+                  created. Times are in {UTC_LABEL}.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3">
                   <input
@@ -602,7 +603,7 @@ const ManualBookingModal = ({ isOpen, onClose }) => {
                 {conflicts.map((c) => (
                   <li key={c.id}>
                     {c.consultation}, {formatCustomStart(c.start)} to{" "}
-                    {new Date(c.end).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}{" "}
+                    {fmtTime(c.end)}{" "}
                     ({c.is_booked ? "booked" : "open slot, stays open"})
                   </li>
                 ))}

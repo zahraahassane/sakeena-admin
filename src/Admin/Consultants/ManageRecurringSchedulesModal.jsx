@@ -176,7 +176,7 @@ const ManageRecurringSchedulesModal = ({ isOpen, onClose, consultation }) => {
                   <h4 className="text-sm font-bold text-teal-700 inter-font">Create New Schedule</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-stone-500">Day <span className="text-red-500">*</span></label>
+                      <label className="text-xs font-bold text-stone-500">Day (UTC) <span className="text-red-500">*</span></label>
                       <select 
                         required
                         value={editFormData.weekday} 
@@ -189,7 +189,7 @@ const ManageRecurringSchedulesModal = ({ isOpen, onClose, consultation }) => {
                       </select>
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-stone-500">Start Time <span className="text-red-500">*</span></label>
+                      <label className="text-xs font-bold text-stone-500">Start Time (UTC) <span className="text-red-500">*</span></label>
                       <input 
                         required
                         type="time" 
@@ -199,7 +199,7 @@ const ManageRecurringSchedulesModal = ({ isOpen, onClose, consultation }) => {
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-stone-500">End Time <span className="text-red-500">*</span></label>
+                      <label className="text-xs font-bold text-stone-500">End Time (UTC) <span className="text-red-500">*</span></label>
                       <input 
                         required
                         type="time" 
@@ -251,7 +251,7 @@ const ManageRecurringSchedulesModal = ({ isOpen, onClose, consultation }) => {
                       <form onSubmit={handleUpdate} className="space-y-4">
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                           <div className="space-y-1.5">
-                            <label className="text-xs font-bold text-stone-500">Day <span className="text-red-500">*</span></label>
+                            <label className="text-xs font-bold text-stone-500">Day (UTC) <span className="text-red-500">*</span></label>
                             <select 
                               required
                               value={editFormData.weekday} 
@@ -264,7 +264,7 @@ const ManageRecurringSchedulesModal = ({ isOpen, onClose, consultation }) => {
                             </select>
                           </div>
                           <div className="space-y-1.5">
-                            <label className="text-xs font-bold text-stone-500">Start Time <span className="text-red-500">*</span></label>
+                            <label className="text-xs font-bold text-stone-500">Start Time (UTC) <span className="text-red-500">*</span></label>
                             <input 
                               required
                               type="time" 
@@ -274,7 +274,7 @@ const ManageRecurringSchedulesModal = ({ isOpen, onClose, consultation }) => {
                             />
                           </div>
                           <div className="space-y-1.5">
-                            <label className="text-xs font-bold text-stone-500">End Time <span className="text-red-500">*</span></label>
+                            <label className="text-xs font-bold text-stone-500">End Time (UTC) <span className="text-red-500">*</span></label>
                             <input 
                               required
                               type="time" 

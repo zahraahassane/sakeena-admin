@@ -2,22 +2,22 @@ import { BookOpen, Video, Upload, Loader2, Calendar, Users, FileText, CheckCircl
 import { useGetTeacherDashboardQuery } from "../Api/adminApi";
 
 const isSameLocalDay = (a, b) =>
-  a.getFullYear() === b.getFullYear() &&
-  a.getMonth() === b.getMonth() &&
-  a.getDate() === b.getDate();
+  a.getUTCFullYear() === b.getUTCFullYear() &&
+  a.getUTCMonth() === b.getUTCMonth() &&
+  a.getUTCDate() === b.getUTCDate();
 
 const formatDateTime = (dateString) => {
   const date = new Date(dateString);
-  const time = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const time = date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" }) + " UTC";
 
   const today = new Date();
   const tomorrow = new Date(today);
-  tomorrow.setDate(today.getDate() + 1);
+  tomorrow.setUTCDate(today.getUTCDate() + 1);
 
   if (isSameLocalDay(date, today)) return `Today · ${time}`;
   if (isSameLocalDay(date, tomorrow)) return `Tomorrow · ${time}`;
 
-  const day = date.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
+  const day = date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" });
   return `${day} · ${time}`;
 };
 

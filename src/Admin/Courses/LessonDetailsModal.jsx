@@ -183,7 +183,7 @@ const LessonDetailsModal = ({ lesson, isOpen, onClose }) => {
                     <span>Scheduled Time</span>
                   </div>
                   <span className="text-sm font-black text-stone-800">
-                    {new Date(lesson.scheduled_at).toLocaleString()}
+                    {`${new Date(lesson.scheduled_at).toLocaleString("en-US", { timeZone: "UTC" })} UTC`}
                   </span>
                 </div>
               )}
@@ -284,7 +284,7 @@ const LessonDetailsModal = ({ lesson, isOpen, onClose }) => {
                     Due Date
                   </span>
                   <span className="text-lg font-black text-stone-800">
-                    {lesson.assignment_details.due_date ? new Date(lesson.assignment_details.due_date).toLocaleDateString() : "No deadline"}
+                    {lesson.assignment_details.due_date ? new Date(lesson.assignment_details.due_date).toLocaleString("en-US", { timeZone: "UTC", dateStyle: "medium", timeStyle: "short" }) + " UTC" : "No deadline"}
                   </span>
                 </div>
               </div>
@@ -356,7 +356,7 @@ const LessonDetailsModal = ({ lesson, isOpen, onClose }) => {
                     <span>Scheduled At</span>
                   </div>
                   <span className="text-sm font-black text-red-800">
-                    {lesson.scheduled_at ? new Date(lesson.scheduled_at).toLocaleString() : "Not scheduled"}
+                    {lesson.scheduled_at ? `${new Date(lesson.scheduled_at).toLocaleString("en-US", { timeZone: "UTC" })} UTC` : "Not scheduled"}
                   </span>
                 </div>
                 {lesson.duration_in_minutes > 0 && (

@@ -28,12 +28,14 @@ const RescheduleDetailsModal = ({ isOpen, onClose, request }) => {
     const date = new Date(dateString);
     if (Number.isNaN(date.getTime())) return "N/A";
 
-    return date.toLocaleDateString("en-US", {
+    const formatted = date.toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
       day: "numeric",
+      timeZone: "UTC",
       ...(includeTime && { hour: "2-digit", minute: "2-digit" })
     });
+    return includeTime ? `${formatted} UTC` : formatted;
   };
 
   const handleAction = async (action) => {

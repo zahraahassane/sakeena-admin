@@ -5,31 +5,29 @@ import {
   useGetRescheduleOptionsQuery,
   useRescheduleConsultationPurchaseMutation,
 } from "../../Api/adminApi";
+import {
+  fmtDate,
+  fmtTime,
+  fmtDateTime,
+  utcDateKey,
+  utcInputToDate,
+  utcInputToIso,
+  UTC_LABEL,
+} from "../../utils/utcTime";
 
-const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
-const dayKey = (iso) => {
-  const d = new Date(iso);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-};
+const dayKey = (iso) => utcDateKey(iso);
 const dayLabel = (iso) =>
-  new Date(iso).toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
-const timeLabel = (iso) =>
-  new Date(iso).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  fmtDate(iso, { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+const timeLabel = (iso) => fmtTime(iso);
 const slotLabel = (slot) =>
-  `${new Date(slot.scheduled_start).toLocaleString("en-US", {
+  `${fmtDateTime(slot.scheduled_start, {
     weekday: "short",
     month: "short",
     day: "numeric",
     year: "numeric",
     hour: "numeric",
     minute: "2-digit",
-  })}`;
+  })} UTC`;
 
 /**
  * Admin moves one session of a booking to another free slot, without a student
@@ -99,12 +97,12 @@ const RescheduleBookingModal = ({ isOpen, onClose, booking }) => {
   const submit = async (allowOverlap = false) => {
     if (!oldSlotId) return toast.error("Choose the session to move.");
     if (!hasNewTime) return toast.error("Choose a new time.");
-    if (customStart && new Date(customStart) <= new Date()) {
+    if (customStart && utcInputToDate(customStart) <= new Date()) {
       return toast.error("The new time must be in the future.");
     }
     const body = { old_slot_id: Number(oldSlotId), reason: reason.trim() };
     if (customStart) {
-      body.custom_start = new Date(customStart).toISOString();
+      body.custom_start = utcInputToIso(customStart);
       body.custom_duration_minutes = Number(customDuration);
       if (allowOverlap) body.allow_overlap = true;
     } else {
@@ -226,20 +224,19 @@ const RescheduleBookingModal = ({ isOpen, onClose, booking }) => {
                   </button>
                 ))}
               </div>
-              <p className="text-[10px] text-stone-400">Times are in your timezone ({timeZone}).</p>
+              <p className="text-[10px] text-stone-400">Times are in {UTC_LABEL}.</p>
             </div>
           )}
 
           <div className="space-y-2">
             <label className="flex items-center gap-2 text-[10px] font-black text-stone-400 uppercase tracking-widest">
               <CalendarPlus className="w-3.5 h-3.5" />
-              Or a custom date and time
+              Or a custom date and time ({UTC_LABEL})
             </label>
             <div className="bg-stone-50/60 border border-stone-200 rounded-2xl p-4 space-y-3">
               <p className="text-[11px] text-stone-400">
                 Use this when the time you need is not in the list. If a free slot already exists at
-                exactly this time, that one is used. Otherwise a new session is created. Times are in
-                your timezone ({timeZone}).
+                exactly this time, that one is used. Otherwise a new session is created. Times are in {UTC_LABEL}.
               </p>
               <div className="flex flex-col sm:flex-row gap-3">
                 <input
@@ -319,7 +316,7 @@ const RescheduleBookingModal = ({ isOpen, onClose, booking }) => {
               {newSlot
                 ? `The session moves to ${slotLabel(newSlot)}. `
                 : customStart
-                  ? `The session moves to ${slotLabel({ scheduled_start: customStart })} (${customDuration} min). `
+                  ? `The session moves to ${slotLabel({ scheduled_start: utcInputToDate(customStart) })} (${customDuration} min). `
                   : "The session moves to the time you pick. "}
               The old Zoom meeting is removed, a new one is created, and the student is emailed.
             </span>

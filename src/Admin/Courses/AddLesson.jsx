@@ -137,9 +137,10 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
       }
 
       if (lessonDetails.scheduled_at) {
-        const dt = new Date(lessonDetails.scheduled_at);
-        setLiveDate(dt.toISOString().split('T')[0]);
-        setLiveTime(dt.toTimeString().split(' ')[0].slice(0, 5));
+        // Staff work in UTC: show the stored UTC date and time as they are.
+        const iso = new Date(lessonDetails.scheduled_at).toISOString();
+        setLiveDate(iso.slice(0, 10));
+        setLiveTime(iso.slice(11, 16));
       }
 
       if (lessonDetails.assignment_details) {
@@ -904,7 +905,7 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-3">
                     <label className="text-sm font-bold text-stone-700 ml-1 inter-font">
-                      Session Date
+                      Session Date (UTC)
                     </label>
                     <div className="relative">
                       <input
@@ -918,7 +919,7 @@ const AddLesson = ({ isOpen, onClose, courseId, moduleId, lessonId }) => {
                   </div>
                   <div className="space-y-3">
                     <label className="text-sm font-bold text-stone-700 ml-1 inter-font">
-                      Session Time
+                      Session Time (UTC)
                     </label>
                     <div className="relative">
                       <input

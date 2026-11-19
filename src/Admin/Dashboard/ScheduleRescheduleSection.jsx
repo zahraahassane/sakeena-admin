@@ -8,13 +8,14 @@ const ScheduleRescheduleSection = ({ classes = [] }) => {
   const formatTime = (isoString) => {
     if (!isoString) return "N/A";
     const date = new Date(isoString);
-    return date.toLocaleString("en-US", {
+    return `${date.toLocaleString("en-US", {
       month: "short",
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
       hour12: true,
-    });
+      timeZone: "UTC",
+    })} UTC`;
   };
 
   const shortenUrl = (url) => {

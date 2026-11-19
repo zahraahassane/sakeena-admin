@@ -395,7 +395,7 @@ const ScheduleConsultationModal = ({ isOpen, onClose, onSchedule }) => {
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-stone-700 inter-font">
-                    Start Time <span className="text-red-500">*</span>
+                    Start Time (UTC) <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="time"
@@ -411,7 +411,7 @@ const ScheduleConsultationModal = ({ isOpen, onClose, onSchedule }) => {
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-stone-700 inter-font">
-                    End Time <span className="text-red-500">*</span>
+                    End Time (UTC) <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="time"

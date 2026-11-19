@@ -120,7 +120,7 @@ function LiveViewer({ lesson }) {
             <div className="bg-white border border-gray-200 rounded-lg p-3">
               <p className="text-xs text-gray-400 mb-1">Scheduled At</p>
               <p className="text-sm font-medium text-gray-700">
-                {new Date(lesson.scheduled_at).toLocaleString()}
+                {`${new Date(lesson.scheduled_at).toLocaleString("en-US", { timeZone: "UTC" })} UTC`}
               </p>
             </div>
           )}
@@ -301,7 +301,7 @@ function AssignmentViewer({ lesson, courseId }) {
             {a.due_date && (
               <div className="flex items-center gap-1.5 text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
                 <Clock size={14} className="text-gray-400" />
-                Due: {new Date(a.due_date).toLocaleString()}
+                Due: {`${new Date(a.due_date).toLocaleString("en-US", { timeZone: "UTC" })} UTC`}
               </div>
             )}
             {a.allowed_file_types && (
