@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { X, CalendarClock, Loader2, CircleAlert } from "lucide-react";
+import { X, CalendarClock, Loader2, CircleAlert, CalendarPlus } from "lucide-react";
 import toast from "react-hot-toast";
 import {
   useGetRescheduleOptionsQuery,
@@ -41,6 +41,10 @@ const RescheduleBookingModal = ({ isOpen, onClose, booking }) => {
   const [day, setDay] = useState("");
   const [newSlotId, setNewSlotId] = useState(null);
   const [reason, setReason] = useState("");
+  // Custom time, for when no free slot exists at the time the admin needs.
+  const [customStart, setCustomStart] = useState("");
+  const [customDuration, setCustomDuration] = useState("60");
+  const [conflicts, setConflicts] = useState(null);
 
   const bookedSlots = useMemo(() => booking?.booked_slots || [], [booking]);
 
@@ -50,8 +54,22 @@ const RescheduleBookingModal = ({ isOpen, onClose, booking }) => {
       setDay("");
       setNewSlotId(null);
       setReason("");
+      setCustomStart("");
+      setCustomDuration("60");
+      setConflicts(null);
     }
   }, [isOpen, bookedSlots]);
+
+  // Default the custom duration to the length of the session being moved.
+  useEffect(() => {
+    const moving = bookedSlots.find((s) => String(s.id) === String(oldSlotId));
+    if (moving) {
+      const minutes = Math.round(
+        (new Date(moving.scheduled_end) - new Date(moving.scheduled_start)) / 60000,
+      );
+      if (minutes >= 15 && minutes <= 480) setCustomDuration(String(minutes));
+    }
+  }, [oldSlotId, bookedSlots]);
 
   const { data: options, isFetching } = useGetRescheduleOptionsQuery(booking?.id, {
     skip: !isOpen || !booking,
@@ -73,24 +91,42 @@ const RescheduleBookingModal = ({ isOpen, onClose, booking }) => {
 
   if (!isOpen || !booking) return null;
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const durationOptions = [...new Set([30, 45, 60, 90, 120, Number(customDuration)])].sort(
+    (a, b) => a - b,
+  );
+  const hasNewTime = !!newSlotId || !!customStart;
+
+  const submit = async (allowOverlap = false) => {
     if (!oldSlotId) return toast.error("Choose the session to move.");
-    if (!newSlotId) return toast.error("Choose the new date and time.");
+    if (!hasNewTime) return toast.error("Choose a new time.");
+    if (customStart && new Date(customStart) <= new Date()) {
+      return toast.error("The new time must be in the future.");
+    }
+    const body = { old_slot_id: Number(oldSlotId), reason: reason.trim() };
+    if (customStart) {
+      body.custom_start = new Date(customStart).toISOString();
+      body.custom_duration_minutes = Number(customDuration);
+      if (allowOverlap) body.allow_overlap = true;
+    } else {
+      body.new_slot_id = newSlotId;
+    }
     try {
-      await reschedule({
-        id: booking.id,
-        body: {
-          old_slot_id: Number(oldSlotId),
-          new_slot_id: newSlotId,
-          reason: reason.trim(),
-        },
-      }).unwrap();
+      await reschedule({ id: booking.id, body }).unwrap();
       toast.success("Session rescheduled. The student has been emailed.");
       onClose();
     } catch (err) {
+      if (err?.status === 409 && err?.data?.conflicts) {
+        setConflicts(err.data.conflicts);
+        return;
+      }
       toast.error(err?.data?.error || "Unable to reschedule this session. Please try again.");
     }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setConflicts(null);
+    submit(false);
   };
 
   return (
@@ -150,6 +186,8 @@ const RescheduleBookingModal = ({ isOpen, onClose, booking }) => {
                 onChange={(e) => {
                   setDay(e.target.value);
                   setNewSlotId(null);
+                  setCustomStart("");
+                  setConflicts(null);
                 }}
                 className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 text-sm font-bold text-stone-700 inter-font"
               >
@@ -173,7 +211,11 @@ const RescheduleBookingModal = ({ isOpen, onClose, booking }) => {
                   <button
                     key={s.id}
                     type="button"
-                    onClick={() => setNewSlotId(s.id)}
+                    onClick={() => {
+                      setNewSlotId(s.id);
+                      setCustomStart("");
+                      setConflicts(null);
+                    }}
                     className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all ${
                       newSlotId === s.id
                         ? "bg-teal-600 text-white border-teal-600"
@@ -185,6 +227,76 @@ const RescheduleBookingModal = ({ isOpen, onClose, booking }) => {
                 ))}
               </div>
               <p className="text-[10px] text-stone-400">Times are in your timezone ({timeZone}).</p>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 text-[10px] font-black text-stone-400 uppercase tracking-widest">
+              <CalendarPlus className="w-3.5 h-3.5" />
+              Or a custom date and time
+            </label>
+            <div className="bg-stone-50/60 border border-stone-200 rounded-2xl p-4 space-y-3">
+              <p className="text-[11px] text-stone-400">
+                Use this when the time you need is not in the list. If a free slot already exists at
+                exactly this time, that one is used. Otherwise a new session is created. Times are in
+                your timezone ({timeZone}).
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <input
+                  type="datetime-local"
+                  value={customStart}
+                  onChange={(e) => {
+                    setCustomStart(e.target.value);
+                    setConflicts(null);
+                    if (e.target.value) {
+                      setNewSlotId(null);
+                      setDay("");
+                    }
+                  }}
+                  className="flex-1 bg-white border border-stone-200 rounded-xl px-4 py-2.5 outline-none focus:border-teal-500 transition-all text-sm font-medium text-stone-800 inter-font"
+                />
+                <select
+                  value={customDuration}
+                  onChange={(e) => {
+                    setCustomDuration(e.target.value);
+                    setConflicts(null);
+                  }}
+                  className="sm:w-36 bg-white border border-stone-200 rounded-xl px-4 py-2.5 outline-none focus:border-teal-500 transition-all text-sm font-medium text-stone-800 inter-font"
+                >
+                  {durationOptions.map((m) => (
+                    <option key={m} value={m}>
+                      {m} minutes
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {conflicts && (
+            <div className="rounded-xl px-4 py-3 border border-red-200 bg-red-50 space-y-2">
+              <div className="flex items-center gap-2 text-red-700">
+                <CircleAlert className="w-4 h-4 shrink-0" />
+                <span className="text-xs font-bold inter-font">
+                  This time overlaps sessions this teacher already has:
+                </span>
+              </div>
+              <ul className="text-xs text-red-700 inter-font list-disc pl-10">
+                {conflicts.map((c) => (
+                  <li key={c.id}>
+                    {c.consultation}, {slotLabel({ scheduled_start: c.start })} to {timeLabel(c.end)}{" "}
+                    ({c.is_booked ? "booked" : "open slot, stays open"})
+                  </li>
+                ))}
+              </ul>
+              <button
+                type="button"
+                disabled={isLoading}
+                onClick={() => submit(true)}
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-xs font-bold transition-all inter-font disabled:opacity-50"
+              >
+                Reschedule anyway
+              </button>
             </div>
           )}
 
@@ -206,7 +318,9 @@ const RescheduleBookingModal = ({ isOpen, onClose, booking }) => {
             <span className="text-[11px] font-bold inter-font">
               {newSlot
                 ? `The session moves to ${slotLabel(newSlot)}. `
-                : "The session moves to the time you pick. "}
+                : customStart
+                  ? `The session moves to ${slotLabel({ scheduled_start: customStart })} (${customDuration} min). `
+                  : "The session moves to the time you pick. "}
               The old Zoom meeting is removed, a new one is created, and the student is emailed.
             </span>
           </div>
@@ -221,7 +335,7 @@ const RescheduleBookingModal = ({ isOpen, onClose, booking }) => {
             </button>
             <button
               type="submit"
-              disabled={isLoading || !oldSlotId || !newSlotId}
+              disabled={isLoading || !oldSlotId || !hasNewTime}
               className="flex-1 bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-xl font-bold shadow-lg shadow-teal-900/10 active:scale-95 transition-all inter-font disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
