@@ -445,7 +445,7 @@ const AddEditCourse = ({ onSave }) => {
             </h1>
             <p className="text-stone-500 font-medium tracking-wide text-sm font-['Arimo']">
               {id
-                ? "Update existing course content"
+                ? courseDetails?.title || "Update existing course content"
                 : "Create comprehensive course content"}
             </p>
           </div>

@@ -178,6 +178,7 @@ const SortableLessonItem = ({ lesson, mod, onLessonDetails, onEditLesson, handle
 
 const ModuleItem = ({
   mod,
+  moduleIndex,
   courseId,
   onAddLesson,
   onEditLesson,
@@ -217,6 +218,7 @@ const ModuleItem = ({
     );
 
   const [localLessons, setLocalLessons] = useState([]);
+  const lessonCount = lessonsResponse?.count ?? mod.total_lessons ?? 0;
 
   useEffect(() => {
     setLocalLessons(lessonsResponse?.results || []);
@@ -430,7 +432,7 @@ const ModuleItem = ({
               </h3>
             )}
             <span className="text-xs font-medium text-stone-400 uppercase tracking-widest mt-1">
-              Modules Lessons
+              Module {moduleIndex + 1} • {lessonCount} {lessonCount === 1 ? "lesson" : "lessons"}
             </span>
           </div>
         </div>
@@ -672,10 +674,11 @@ const CourseCurriculum = ({ courseId, onInitialize }) => {
               items={modules.map((m) => m.id)}
               strategy={verticalListSortingStrategy}
             >
-              {modules.map((mod) => (
+              {modules.map((mod, moduleIndex) => (
                 <ModuleItem
                   key={mod.id}
                   mod={mod}
+                  moduleIndex={moduleIndex}
                   courseId={courseId}
                   onAddLesson={openAddContentModal}
                   onEditLesson={openEditContentModal}
