@@ -15,6 +15,34 @@ import {
   useDeleteTeacherProfileMutation,
 } from "../../Api/adminApi";
 
+// Table rows built from the API's profile objects. Also used for a profile that
+// was just created, so the new row looks the same as it will after the refetch.
+const toStudentRow = (student) => ({
+  id: student.id,
+  name:
+    `${student.user.first_name || ""} ${student.user.last_name || ""}`.trim() ||
+    student.user.email?.split("@")[0],
+  email: student.user.email,
+  phone: student.phone_number || "N/A",
+  courses: 0,
+  joined: student.user.joined_at
+    ? new Date(student.user.joined_at).toLocaleDateString()
+    : "N/A",
+});
+
+const toTeacherRow = (teacher) => ({
+  id: teacher.id,
+  name:
+    `${teacher.user.first_name || ""} ${teacher.user.last_name || ""}`.trim() ||
+    teacher.user.email?.split("@")[0],
+  email: teacher.user.email,
+  phone: teacher.phone_number || "N/A",
+  department: teacher.professional_title || "N/A",
+  courses: teacher.courses ? teacher.courses || teacher.courses.length : 0,
+  students: 0,
+  raw: teacher,
+});
+
 const User = () => {
   const navigate = useNavigate();
   // Tab, search and pages live in the URL so Back from a teacher's page
@@ -51,41 +79,13 @@ const User = () => {
   const [teachers, setTeachers] = useState([]);
   useEffect(() => {
     if (studentProfiles?.results) {
-      setStudents(
-        studentProfiles.results.map((student) => ({
-          id: student.id,
-          name:
-            `${student.user.first_name || ""} ${student.user.last_name || ""}`.trim() ||
-            student.user.email.split("@")[0],
-          email: student.user.email,
-          phone: student.phone_number || "N/A",
-          courses: 0,
-          joined: student.user.joined_at
-            ? new Date(student.user.joined_at).toLocaleDateString()
-            : "N/A",
-        })),
-      );
+      setStudents(studentProfiles.results.map(toStudentRow));
     }
   }, [studentProfiles]);
 
   useEffect(() => {
     if (teacherProfiles?.results) {
-      setTeachers(
-        teacherProfiles.results.map((teacher) => ({
-          id: teacher.id,
-          name:
-            `${teacher.user.first_name || ""} ${teacher.user.last_name || ""}`.trim() ||
-            teacher.user.email.split("@")[0],
-          email: teacher.user.email,
-          phone: teacher.phone_number || "N/A",
-          department: teacher.professional_title || "N/A",
-          courses: teacher.courses
-            ? teacher.courses || teacher.courses.length
-            : 0,
-          students: 0,
-          raw: teacher,
-        })),
-      );
+      setTeachers(teacherProfiles.results.map(toTeacherRow));
     }
   }, [teacherProfiles]);
 
@@ -100,11 +100,13 @@ const User = () => {
 
   const handleAddUser = (userData) => {
     if (activeTab === "students") {
-      setStudents((prev) => [userData, ...prev]);
-      toast.success(`Student ${userData.name} added successfully!`);
+      const row = toStudentRow(userData);
+      setStudents((prev) => [row, ...prev]);
+      toast.success(`Student ${row.name} added successfully!`);
     } else {
-      setTeachers((prev) => [userData, ...prev]);
-      toast.success(`Teacher ${userData.name} added successfully!`);
+      const row = toTeacherRow(userData);
+      setTeachers((prev) => [row, ...prev]);
+      toast.success(`Teacher ${row.name} added successfully!`);
     }
   };
 
