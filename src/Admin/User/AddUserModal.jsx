@@ -3,6 +3,7 @@ import {
   X,
   User,
   Mail,
+  Phone,
   Briefcase,
   ShieldCheck,
   Lock,
@@ -37,6 +38,7 @@ const AddUserModal = ({ isOpen, onClose, type, onAdd }) => {
     first_name: "",
     last_name: "",
     email: "",
+    phone_number: "",
     password: "",
   });
 
@@ -80,7 +82,13 @@ const AddUserModal = ({ isOpen, onClose, type, onAdd }) => {
   useEffect(() => {
     // Reset states when type changes
     if (type === "students") {
-      setStudentData({ name: "", email: "", password: "" });
+      setStudentData({
+        first_name: "",
+        last_name: "",
+        email: "",
+        phone_number: "",
+        password: "",
+      });
     }
   }, [type, isOpen]);
 
@@ -97,6 +105,10 @@ const AddUserModal = ({ isOpen, onClose, type, onAdd }) => {
           first_name: studentData.first_name,
           last_name: studentData.last_name,
         },
+        // Optional. The API rejects an empty string, so leave it out when blank.
+        ...(studentData.phone_number.trim() && {
+          phone_number: studentData.phone_number.trim(),
+        }),
       }).unwrap();
 
       onAdd({
@@ -110,6 +122,7 @@ const AddUserModal = ({ isOpen, onClose, type, onAdd }) => {
         first_name: "",
         last_name: "",
         email: "",
+        phone_number: "",
         password: "",
       });
 
@@ -322,6 +335,28 @@ const AddUserModal = ({ isOpen, onClose, type, onAdd }) => {
                     setStudentData({ ...studentData, email: e.target.value })
                   }
                   required
+                />
+              </div>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-neutral-700 ml-1">
+                Phone Number{" "}
+                <span className="text-gray-400 font-normal">(optional)</span>
+              </label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="tel"
+                  maxLength={30}
+                  placeholder="e.g. +44 7700 900123"
+                  className="w-full h-11 pl-10 pr-4 bg-gray-50 border border-black/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#89A6A7]/20 focus:border-[#89A6A7] transition-all text-sm"
+                  value={studentData.phone_number}
+                  onChange={(e) =>
+                    setStudentData({
+                      ...studentData,
+                      phone_number: e.target.value,
+                    })
+                  }
                 />
               </div>
             </div>
