@@ -3,7 +3,6 @@ import {
   X,
   User,
   Mail,
-  Phone,
   Briefcase,
   ShieldCheck,
   Lock,
@@ -24,6 +23,7 @@ import {
   useUpdateTeacherProfileMutation,
 } from "../../Api/adminApi";
 import toast from "react-hot-toast";
+import PhoneInput from "@/components/ui/phone-input";
 
 const AddUserModal = ({ isOpen, onClose, type, onAdd }) => {
   const [addStudentProfile, { isLoading: isAddingStudent }] =
@@ -343,22 +343,13 @@ const AddUserModal = ({ isOpen, onClose, type, onAdd }) => {
                 Phone Number{" "}
                 <span className="text-gray-400 font-normal">(optional)</span>
               </label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="tel"
-                  maxLength={30}
-                  placeholder="e.g. +44 7700 900123"
-                  className="w-full h-11 pl-10 pr-4 bg-gray-50 border border-black/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#89A6A7]/20 focus:border-[#89A6A7] transition-all text-sm"
-                  value={studentData.phone_number}
-                  onChange={(e) =>
-                    setStudentData({
-                      ...studentData,
-                      phone_number: e.target.value,
-                    })
-                  }
-                />
-              </div>
+              <PhoneInput
+                placeholder="Enter phone number"
+                value={studentData.phone_number}
+                onChange={(phone_number) =>
+                  setStudentData((prev) => ({ ...prev, phone_number }))
+                }
+              />
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-neutral-700 ml-1">
