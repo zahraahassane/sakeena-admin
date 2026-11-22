@@ -20,6 +20,11 @@ const QuizForm = ({ data, onChange }) => {
   const addOption = (qId) => {
     const updatedQuestions = data.questions.map((q) => {
       if (q.id === qId && q.options.length < 4) {
+        // A second option makes it a True / False question: fill in the real
+        // words (a placeholder is not a value and would be sent blank).
+        if (q.options.length === 1 && !q.options[0].trim()) {
+          return { ...q, options: ["True", "False"] };
+        }
         return { ...q, options: [...q.options, ""] };
       }
       return q;
