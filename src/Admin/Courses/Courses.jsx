@@ -92,6 +92,11 @@ const SortableCourseRow = ({ course, getInstructorName, getStatusLabel }) => {
       <div className="flex-1 min-w-0">
         <p className="text-sm font-bold text-stone-900 truncate">
           {course.title}
+          {course.is_active === false && (
+            <span className="ml-2 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-stone-200 text-stone-700">
+              Hidden
+            </span>
+          )}
         </p>
         <p className="text-xs text-stone-400 truncate" title={instructorName}>
           {instructorName}
@@ -736,6 +741,14 @@ const Courses = () => {
                           )}
                           {statusLabel}
                         </span>
+                        {c.is_active === false && (
+                          <span
+                            className="ml-2 px-4 py-1.5 rounded-[20px] text-xs font-semibold bg-stone-200 text-stone-700"
+                            title="Hidden from the public site. Enrolled students keep access."
+                          >
+                            Hidden
+                          </span>
+                        )}
                       </div>
 
                       {/* Title and Instructor */}
@@ -880,6 +893,14 @@ const Courses = () => {
                           <span className="text-neutral-950 font-bold">
                             {c.title}
                           </span>
+                          {c.is_active === false && (
+                            <span
+                              className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-stone-200 text-stone-700 shrink-0"
+                              title="Hidden from the public site. Enrolled students keep access."
+                            >
+                              Hidden
+                            </span>
+                          )}
                         </td>
                         <td
                           className="py-4 px-6 text-neutral-600 max-w-[16rem] truncate"

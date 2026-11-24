@@ -751,6 +751,26 @@ const AddEditCourse = ({ onSave }) => {
                         </select>
                       </div>
                     </FormGroup>
+                    <FormGroup label="Visibility">
+                      <select
+                        name="is_active"
+                        value={formData.is_active ? "visible" : "hidden"}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            is_active: e.target.value === "visible",
+                          }))
+                        }
+                        className="w-full bg-stone-50 border border-stone-100 rounded-xl px-4 py-2 outline-none appearance-none cursor-pointer font-bold text-stone-800"
+                      >
+                        <option value="visible">Visible on the public site</option>
+                        <option value="hidden">Hidden from the public site</option>
+                      </select>
+                      <p className="mt-2 text-xs font-medium text-stone-400">
+                        A hidden course can't be found or bought. Students who
+                        are already enrolled keep full access to it.
+                      </p>
+                    </FormGroup>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
