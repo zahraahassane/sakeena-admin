@@ -21,6 +21,7 @@ import {
 import Pagination from "../../components/Pagination";
 import { toast } from "react-hot-toast";
 import { TIME_ZONE } from "../../utils/utcTime";
+import BundleDiscounts from "./BundleDiscounts";
 
 const ConsultationDetailsModal = ({ isOpen, onClose, consultation: initialConsultation }) => {
   const { data: latestConsultation } = useGetConsultationQuery(initialConsultation?.id, {
@@ -585,39 +586,7 @@ const ConsultationDetailsModal = ({ isOpen, onClose, consultation: initialConsul
           </div>
         </div>
 
-        {consultation.bundle_sessions && (
-          <div className="px-6 pb-8 md:px-8">
-            <div className="relative bg-white rounded-3xl border-2 border-amber-600 shadow-xl p-6 flex flex-col items-center text-center group">
-              <div className="absolute -top-4 bg-amber-600 text-white text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest shadow-lg transform transition-transform group-hover:scale-110">
-                Best Value
-              </div>
-              <div className="w-14 h-14 bg-amber-50 rounded-2xl flex items-center justify-center border-2 border-amber-100 mb-4 shadow-inner">
-                <Package className="w-8 h-8 text-amber-600" />
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-2xl font-black text-stone-900 arimo-font tracking-tight">
-                  Complete Bundle
-                </h3>
-                <p className="text-sm font-bold text-stone-500 inter-font uppercase tracking-widest">
-                  {consultation.bundle_sessions} sessions included
-                </p>
-              </div>
-              <div className="mt-4 flex items-baseline gap-3">
-                <span className="text-4xl font-black text-amber-600 arimo-font tracking-tighter">
-                  $
-                  {(
-                    rate *
-                    consultation.bundle_sessions *
-                    (1 - (parseFloat(consultation.discount_percentage) || 0) / 100)
-                  ).toFixed(0)}
-                </span>
-                <span className="text-lg font-bold text-stone-300 line-through decoration-amber-200/50">
-                  ${(rate * consultation.bundle_sessions).toFixed(0)}
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
+        <BundleDiscounts consultation={consultation} rate={rate} />
       </div>
     </div>
   );

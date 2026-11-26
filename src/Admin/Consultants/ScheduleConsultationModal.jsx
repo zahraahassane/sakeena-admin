@@ -146,6 +146,28 @@ const ScheduleConsultationModal = ({ isOpen, onClose, onSchedule }) => {
       return;
     }
 
+    // Check the bundle first, so a bad bundle never leaves a half-created consultation.
+    const hasBundleSessions = String(formData.bundleSessions).trim() !== "";
+    const hasBundleDiscount = String(formData.discount).trim() !== "";
+    if (hasBundleSessions || hasBundleDiscount) {
+      const sessions = Number(formData.bundleSessions);
+      const discount = Number(formData.discount);
+      if (!hasBundleSessions || !hasBundleDiscount) {
+        toast.error(
+          "Fill in both Bundle Sessions and Discount, or leave both empty.",
+        );
+        return;
+      }
+      if (!Number.isInteger(sessions) || sessions < 2) {
+        toast.error("A bundle needs at least 2 sessions.");
+        return;
+      }
+      if (!(discount > 0 && discount <= 100)) {
+        toast.error("The discount must be more than 0 and at most 100.");
+        return;
+      }
+    }
+
     try {
       const consultationBody = {
         teacher_id: Number(formData.teacherId),
@@ -179,13 +201,11 @@ const ScheduleConsultationModal = ({ isOpen, onClose, onSchedule }) => {
       const recurrings = await Promise.all(recurringPromises);
 
       let bundle = null;
-      if (formData.bundleSessions) {
+      if (hasBundleSessions) {
         const bundleBody = {
           num_sessions: Number(formData.bundleSessions),
+          discount_percentage: Number(formData.discount),
         };
-        if (formData.discount) {
-          bundleBody.discount_percentage = Number(formData.discount);
-        }
         bundle = await createConsultationBundle({
           consultationId: consultation.id,
           body: bundleBody,

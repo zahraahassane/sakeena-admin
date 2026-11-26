@@ -1046,6 +1046,21 @@ export const adminApi = api.injectEndpoints({
       }),
       invalidatesTags: ["consultations"],
     }),
+    updateConsultationBundle: builder.mutation({
+      query: ({ consultationId, id, body }) => ({
+        url: `/consultations/${consultationId}/bundles/${id}/`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: ["consultations"],
+    }),
+    deleteConsultationBundle: builder.mutation({
+      query: ({ consultationId, id }) => ({
+        url: `/consultations/${consultationId}/bundles/${id}/`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["consultations"],
+    }),
     getConsultationCalendar: builder.query({
       query: ({ id, month, timezone }) =>
         `/consultations/${id}/calendar/?month=${month}&timezone=${timezone || ""}`,
@@ -1744,6 +1759,8 @@ export const {
   useUpdateConsultationRecurringMutation,
   useDeleteConsultationRecurringMutation,
   useCreateConsultationBundleMutation,
+  useUpdateConsultationBundleMutation,
+  useDeleteConsultationBundleMutation,
   useGetConsultationCalendarQuery,
   useGetConsultationTimeslotsQuery,
   useGetBookedConsultationsQuery,
